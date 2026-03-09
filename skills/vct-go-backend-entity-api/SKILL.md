@@ -1,85 +1,43 @@
 ---
 name: vct-go-backend-entity-api
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: Entity API implementation workflow for VCT Platform backend in Go 1.26. Use when adding or refactoring `/api/v1/{entity}` CRUD routes, bulk/import/export handlers, allow-listed entities, store behavior, or payload compatibility with frontend EntityRepository and ApiAdapter contracts.
 ---
 
-# Vct Go Backend Entity Api
+# VCT Go Backend Entity API
 
-## Overview
+## Quick Start
 
-[TODO: 1-2 sentences explaining what this skill enables]
+1. Read `references/entity-route-contract.md` to confirm route and payload shape.
+2. Read `references/store-semantics.md` before changing in-memory entity behavior.
+3. Determine whether request affects route mapping, allow-list, validation, or import/export semantics.
+4. Implement updates in `internal/httpapi/server.go` and `internal/store/store.go`.
+5. Add tests in `internal/httpapi/server_test.go` and store tests when logic changes.
 
-## Structuring This Skill
+## Workflow
 
-[TODO: Choose the structure that best fits this skill's purpose. Common patterns:
+1. For new entity support:
+   - Add entity key to `defaultEntitySet()` in sorted order.
+   - Seed initial data only when needed by tests or local development.
+2. For CRUD behavior changes:
+   - Preserve route shape and HTTP methods.
+   - Keep ID requirement strict (`id` must be non-empty string).
+3. For bulk/import/export changes:
+   - Keep `PUT /bulk` replacing full collection atomically.
+   - Keep `POST /import` returning imported/rejected report.
+   - Keep `GET /export` supporting `json` and `csv` only.
+4. For auth gating changes:
+   - Respect `VCT_DISABLE_AUTH_FOR_DATA` toggle in route path.
+5. For response consistency:
+   - Use shared `success`, `badRequest`, and `methodNotAllowed` helpers.
 
-**1. Workflow-Based** (best for sequential processes)
-- Works well when there are clear step-by-step procedures
-- Example: DOCX skill with "Workflow Decision Tree" -> "Reading" -> "Creating" -> "Editing"
-- Structure: ## Overview -> ## Workflow Decision Tree -> ## Step 1 -> ## Step 2...
+## Guardrails
 
-**2. Task-Based** (best for tool collections)
-- Works well when the skill offers different operations/capabilities
-- Example: PDF skill with "Quick Start" -> "Merge PDFs" -> "Split PDFs" -> "Extract Text"
-- Structure: ## Overview -> ## Quick Start -> ## Task Category 1 -> ## Task Category 2...
+- Return `404` for unknown entities and unsupported deep paths.
+- Avoid schema-specific branching in generic handlers unless explicitly requested.
+- Preserve existing frontend compatibility for list/get/create/update/delete and import/export flows.
+- Keep collection ordering deterministic when returning list output.
 
-**3. Reference/Guidelines** (best for standards or specifications)
-- Works well for brand guidelines, coding standards, or requirements
-- Example: Brand styling with "Brand Guidelines" -> "Colors" -> "Typography" -> "Features"
-- Structure: ## Overview -> ## Guidelines -> ## Specifications -> ## Usage...
+## References
 
-**4. Capabilities-Based** (best for integrated systems)
-- Works well when the skill provides multiple interrelated features
-- Example: Product Management with "Core Capabilities" -> numbered capability list
-- Structure: ## Overview -> ## Core Capabilities -> ### 1. Feature -> ### 2. Feature...
-
-Patterns can be mixed and matched as needed. Most skills combine patterns (e.g., start with task-based, add workflow for complex operations).
-
-Delete this entire "Structuring This Skill" section when done - it's just guidance.]
-
-## [TODO: Replace with the first main section based on chosen structure]
-
-[TODO: Add content here. See examples in existing skills:
-- Code samples for technical skills
-- Decision trees for complex workflows
-- Concrete examples with realistic user requests
-- References to scripts/templates/references as needed]
-
-## Resources (optional)
-
-Create only the resource directories this skill actually needs. Delete this section if no resources are required.
-
-### scripts/
-Executable code (Python/Bash/etc.) that can be run directly to perform specific operations.
-
-**Examples from other skills:**
-- PDF skill: `fill_fillable_fields.py`, `extract_form_field_info.py` - utilities for PDF manipulation
-- DOCX skill: `document.py`, `utilities.py` - Python modules for document processing
-
-**Appropriate for:** Python scripts, shell scripts, or any executable code that performs automation, data processing, or specific operations.
-
-**Note:** Scripts may be executed without loading into context, but can still be read by Codex for patching or environment adjustments.
-
-### references/
-Documentation and reference material intended to be loaded into context to inform Codex's process and thinking.
-
-**Examples from other skills:**
-- Product management: `communication.md`, `context_building.md` - detailed workflow guides
-- BigQuery: API reference documentation and query examples
-- Finance: Schema documentation, company policies
-
-**Appropriate for:** In-depth documentation, API references, database schemas, comprehensive guides, or any detailed information that Codex should reference while working.
-
-### assets/
-Files not intended to be loaded into context, but rather used within the output Codex produces.
-
-**Examples from other skills:**
-- Brand styling: PowerPoint template files (.pptx), logo files
-- Frontend builder: HTML/React boilerplate project directories
-- Typography: Font files (.ttf, .woff2)
-
-**Appropriate for:** Templates, boilerplate code, document templates, images, icons, fonts, or any files meant to be copied or used in the final output.
-
----
-
-**Not every skill requires all three types of resources.**
+- Route and entity contract: `references/entity-route-contract.md`
+- Store behavior and data rules: `references/store-semantics.md`
