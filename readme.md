@@ -1,22 +1,26 @@
 # VCT Platform Monorepo
 
-Nền tảng quản trị giải đấu võ thuật chạy song song:
+Nền tảng quản trị giải võ cổ truyền chạy song song:
 - Web: Next.js App Router (`apps/next`)
 - Mobile: Expo + React Navigation (`apps/expo`)
+- Backend: Go 1.26 (`backend`)
 - Shared app layer: `packages/app`
 
-## Muc tieu san pham
+## Mục tiêu sản phẩm
 
-- Quan tri giai dau tu dang ky den ket qua, bang huy chuong, bao cao.
-- Dong bo logic nghiep vu giua Web va Expo qua code dung chung trong `packages/app`.
-- San sang mo rong backend hybrid qua `EntityRepository` + adapter mock/api.
+- Quản trị giải đấu từ đăng ký đến kết quả, bảng huy chương, báo cáo.
+- Đồng bộ logic nghiệp vụ giữa Web và Expo qua code dùng chung trong `packages/app`.
+- Sẵn sàng mở rộng backend hybrid qua `EntityRepository` + adapter mock/api.
 
-## Cau truc thu muc
+## Cấu trúc thư mục
 
 ```text
 apps/
   next/      # Web app (App Router)
   expo/      # Mobile app (Expo)
+backend/
+  cmd/server # Go 1.26 API entrypoint
+  internal/  # auth, http handlers, store, config
 packages/
   app/
     features/
@@ -24,82 +28,129 @@ packages/
       data/        # mock data, types, repositories, export utils
       layout/      # AppShell, Sidebar, RouteRegistry
       mobile/      # Mobile screens (Expo)
-      tournament/  # Web modules theo nghiep vu
+      auth/        # session auth + login UI
+      tournament/  # Web modules theo nghiệp vụ
     navigation/    # Native navigation
     provider/      # Theme, safe-area, navigation providers
 scripts/
   run-tests.mjs    # smoke tests
 ```
 
-## Feature map hien tai
+## Feature map hiện tại
 
-- Cau hinh giai: thong tin giai, noi dung/hang can, san dau.
-- Dang ky: don vi, van dong vien, dang ky noi dung.
-- Trong tai: danh sach va phan cong.
-- Thi dau: hop chuyen mon, boc tham, can ky, doi khang, quyen, bracket, ket qua.
-- Tong hop: lich thi dau, huy chuong, khieu nai, bao cao.
-- Expo parity: Teams, Athletes, Registration, Results, Schedule.
+- Cấu hình giải: thông tin giải, nội dung/hạng cân, sàn đấu.
+- Đăng ký: đơn vị, vận động viên, đăng ký nội dung.
+- Trọng tài: danh sách và phân công.
+- Thi đấu: họp chuyên môn, bốc thăm, cân ký, đối kháng, quyền, bracket, kết quả.
+- Tổng hợp: lịch thi đấu, huy chương, khiếu nại, báo cáo.
+- Import VĐV: hỗ trợ CSV/JSON + file mẫu import.
+- Export báo cáo: CSV, Excel (.xls XML), JSON, in/PDF.
+- Expo parity: Teams, Athletes, Registration, Results, Schedule (repository-driven + role guard).
+- Login web: route `/login` + session auth (token, tournament code, operation shift).
 
 ## Data architecture
 
-`packages/app/features/data/repository` cung cap:
+`packages/app/features/data/repository` cung cấp:
 
 - `EntityRepository<T>` contract:
   - `list/getById/create/update/remove/replaceAll/importItems/exportItems`
 - `createMockAdapter`:
-  - luu local qua `localStorage` (web) hoac memory fallback
+  - lưu local qua `localStorage` (web) hoặc memory fallback
 - `createApiAdapter`:
-  - khung san sang noi backend
+  - sẵn sàng nối backend qua endpoint contract + bearer token
 
-Repositories da co:
+Repositories đã có:
 - `teams`, `athletes`, `registration`, `results`, `schedule`
 - `arenas`, `referees`, `appeals`
+- `weighIns`, `combatMatches`, `formPerformances`
+
+`NEXT_PUBLIC_API_BASE_URL` dùng để trỏ frontend sang backend Go (ví dụ: `http://localhost:18080`).
+
+## Backend Go 1.26
+
+- Thư mục backend: `backend/`
+- Runtime: `go 1.26`
+- Auth API:
+  - `POST /api/v1/auth/login`
+  - `GET /api/v1/auth/me`
+  - `POST /api/v1/auth/logout`
+- Entity API (khớp `EntityRepository`):
+  - `GET/POST /api/v1/{entity}`
+  - `GET/PATCH/DELETE /api/v1/{entity}/{id}`
+  - `PUT /api/v1/{entity}/bulk`
+  - `POST /api/v1/{entity}/import`
+  - `GET /api/v1/{entity}/export?format=json|csv`
+
+Tài khoản demo backend:
+- `admin / Admin@123`
+- `btc / Btc@123`
+- `ref-manager / Ref@123`
+- `referee / Judge@123`
+- `delegate / Delegate@123`
 
 ## Navigation architecture
 
 - Route source of truth: `packages/app/features/layout/route-registry.ts`
-- Dung chung cho:
+- Dùng chung cho:
   - Sidebar group/menu
   - Page title
   - Breadcrumbs
-- Co metadata `roles` cho tung route de lam RBAC menu/guard.
-- Da mapping day du route web nghiep vu (bao gom `hop-chuyen-mon`).
+- Có metadata `roles` cho từng route để làm RBAC menu/guard.
+- Mobile route map: `packages/app/features/mobile/mobile-routes.ts`
+  - Dùng chung cho Home mobile, deep-link config và guard native screens.
 
-## RBAC mock layer
+## RBAC + Auth layer
 
-- `AuthProvider` trong `packages/app/features/auth` quan ly role hien tai.
-- AppShell co role switcher de mo phong quyen:
-  - admin
-  - btc
-  - referee_manager
-  - referee
-  - delegate
-- Route khong du quyen se hien AccessDenied state va dieu huong ve route hop le.
+- `AuthProvider` trong `packages/app/features/auth` quản lý session.
+- Route `/login` là public; module nghiệp vụ là private và được guard tại AppShell.
+- AppShell có role switcher để mô phỏng RBAC nhanh khi kiểm thử nghiệp vụ.
+- Route không đủ quyền sẽ hiện AccessDenied state và điều hướng về route hợp lệ.
 
-## UI/UX va accessibility baseline
+## UI/UX và accessibility baseline
 
 - AppShell responsive: desktop sidebar, mobile drawer.
-- Icon buttons da co `aria-label` o cac luong chinh.
+- Icon buttons có `aria-label` ở luồng chính.
 - `:focus-visible` global style.
-- Modal co `role="dialog"` + `aria-modal`.
-- Toast co `role="status"` + `aria-live`.
+- Modal có `role="dialog"` + `aria-modal`.
+- Toast có `role="status"` + `aria-live`.
+- Trang login có label rõ ràng cho input/select, hỗ trợ keyboard submit.
 
-## Lenh phat trien
+## UI architecture v2
 
-Tu root:
+- `packages/app/features/components/vct-ui.tsx` là barrel export.
+- Tách theo domain:
+  - `vct-ui-layout.tsx`
+  - `vct-ui-form.tsx`
+  - `vct-ui-data-display.tsx`
+  - `vct-ui-overlay.tsx`
+- Source implementation legacy: `vct-ui.legacy.tsx`.
+
+## Lệnh phát triển
+
+Từ root:
 
 ```bash
-npm run dev         # web dev
-npm run dev:web     # web dev
-npm run dev:native  # expo dev
+npm run dev          # web dev
+npm run dev:web      # web dev
+npm run dev:backend  # go backend dev
+npm run dev:native   # expo dev
 npm run lint
 npm run typecheck
 npm run test
+npm run test:ui      # playwright - breakpoint tests
+npm run test:e2e     # playwright - core workflow
 npm run build
+npm run build:backend
 npm run ci
 ```
 
-## Quy trinh chat luong
+Docker backend:
+
+```bash
+docker compose -f docker-compose.backend.yml up --build
+```
+
+## Quy trình chất lượng
 
 - CI workflow: `.github/workflows/frontend-ci.yml`
   - typecheck
@@ -107,21 +158,26 @@ npm run ci
   - smoke tests
   - web build
 - Smoke tests script: `scripts/run-tests.mjs`
+- Playwright tests:
+  - Breakpoint UI: `tests/e2e/appshell.breakpoints.spec.mjs`
+  - Core business flow: `tests/e2e/core-workflow.spec.mjs`
 
-## Quy uoc code
+## Quy ước code
 
-- Uu tien dung lai UI primitives trong `vct-ui.tsx`.
-- Trang nghiep vu su dung repository thay vi clone state cuc bo tu mock arrays.
-- Uu tien dung `useToast` tai `packages/app/features/hooks/use-toast.ts` thay vi tu tao `setTimeout` moi man.
-- Khi them module moi:
-  1. Khai bao route trong `route-registry.ts`
-  2. Them page wrapper trong `apps/next/app/*/page.tsx`
-  3. Them repository + validator neu co CRUD
-  4. Bo sung smoke test/toi thieu
+- Ưu tiên dùng lại UI primitives trong `vct-ui.tsx`.
+- Trang nghiệp vụ dùng repository thay vì clone state cục bộ từ mock arrays.
+- Ưu tiên dùng `useToast` tại `packages/app/features/hooks/use-toast.ts`.
+- Khi thêm module mới:
+  1. Khai báo route trong `route-registry.ts`
+  2. Thêm page wrapper trong `apps/next/app/*/page.tsx`
+  3. Thêm repository + validator nếu có CRUD
+  4. Bổ sung smoke test tối thiểu
+  5. Nếu có mobile parity, cập nhật `mobile-routes.ts` + deep link native
 
-## Huong nang cap tiep theo
+## Hướng nâng cấp tiếp theo
 
-- Tach `vct-ui.tsx` thanh nhom component typed theo domain (form/data-display/overlay).
-- Thay them cac man con lai sang repository-driven state de dong bo du lieu xuyen module.
-- Bo sung test UI theo breakpoint cho AppShell va e2e cho luong nghiep vu chinh.
-- Hoan thien `ApiAdapter` voi endpoint contracts de chuyen tu mock sang backend hybrid.
+- Chuyển các màn còn lại sang repository-driven state (nội dung, bracket, huy chương, phân công TT).
+- Bổ sung e2e cover login + RBAC + logout.
+- Bổ sung persistence backend (PostgreSQL) + JWT/refresh token cho production.
+- Hoàn thiện mobile login parity với web.
+

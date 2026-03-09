@@ -3,8 +3,8 @@ import { VCT_AppShell } from 'app/features/layout/AppShell'
 import './globals.css'
 
 export const metadata = {
-  title: 'VCT PLATFORM',
-  description: 'Tournament management system',
+  title: 'VCT PLATFORM - Võ Cổ Truyền',
+  description: 'Nền tảng quản lý và điều hành giải võ cổ truyền',
 }
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: any
 }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>
         <StylesProvider>
           <VCT_AppShell>

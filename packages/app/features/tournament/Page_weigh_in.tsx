@@ -9,8 +9,9 @@ import {
     VCT_AvatarLetter, VCT_SegmentedControl
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
-import { CAN_KYS } from '../data/mock-data';
 import type { CanKy, KetQuaCan } from '../data/types';
+import { repositories, useEntityCollection } from '../data/repository';
+import { useToast } from '../hooks/use-toast';
 
 const KQ_MAP: Record<KetQuaCan, { label: string; color: string; type: string }> = {
     dat: { label: '✓ Đạt', color: '#10b981', type: 'success' },
@@ -25,14 +26,22 @@ const PIPELINE = [
 ];
 
 export const Page_weigh_in = () => {
-    const [records, setRecords] = useState<CanKy[]>([...CAN_KYS]);
+    const { items: records, setItems: setRecordsState, uiState } = useEntityCollection(repositories.weighIns.mock);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
-    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+    const { toast, showToast, hideToast } = useToast();
     const [weighModal, setWeighModal] = useState<CanKy | null>(null);
     const [weighValue, setWeighValue] = useState('');
 
-    const showToast = useCallback((msg: string, type = 'success') => { setToast({ show: true, msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); }, []);
+    const setRecords = useCallback((updater: React.SetStateAction<CanKy[]>) => {
+        setRecordsState(prev => {
+            const next = typeof updater === 'function'
+                ? (updater as (value: CanKy[]) => CanKy[])(prev)
+                : updater;
+            void repositories.weighIns.mock.replaceAll(next);
+            return next;
+        });
+    }, [setRecordsState]);
 
     const filtered = useMemo(() => {
         let d = records;
@@ -65,12 +74,18 @@ export const Page_weigh_in = () => {
 
     return (
         <div style={{ maxWidth: 1400, margin: '0 auto', paddingBottom: 100 }}>
-            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={hideToast} />
+
+            {uiState.error && (
+                <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
+                    Không thể tải dữ liệu cân ký: {uiState.error}
+                </div>
+            )}
 
             {/* KPI Row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
                 <VCT_KpiCard label="Tổng VĐV cần cân" value={records.length} icon={<VCT_Icons.Activity size={24} />} color="#0ea5e9" />
-                <VCT_KpiCard label="Đã cân" value={daCan} icon={<VCT_Icons.Check size={24} />} color="#10b981" sub={`${Math.round(daCan / records.length * 100)}% hoàn thành`} />
+                <VCT_KpiCard label="Đã cân" value={daCan} icon={<VCT_Icons.Check size={24} />} color="#10b981" sub={`${Math.round((daCan / Math.max(1, records.length)) * 100)}% hoàn thành`} />
                 <VCT_KpiCard label="Đạt cân" value={records.filter(r => r.ket_qua === 'dat').length} icon={<VCT_Icons.Check size={24} />} color="#22d3ee" />
                 <VCT_KpiCard label="Lố cân" value={records.filter(r => r.ket_qua === 'khong_dat').length} icon={<VCT_Icons.Alert size={24} />} color="#ef4444" sub="Cần xử lý" />
                 <VCT_KpiCard label="Chờ cân" value={records.filter(r => r.ket_qua === 'cho_can').length} icon={<VCT_Icons.Clock size={24} />} color="#f59e0b" />

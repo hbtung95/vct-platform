@@ -3,14 +3,16 @@ import * as React from 'react';
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    VCT_Card, VCT_Badge, VCT_Button, VCT_Text, VCT_Stack, VCT_KpiCard,
-    VCT_Toast, VCT_Modal, VCT_SearchInput, VCT_Field, VCT_Input, VCT_Select,
-    VCT_ConfirmDialog, VCT_SegmentedControl, VCT_EmptyState, VCT_Divider
+    VCT_Badge, VCT_Button, VCT_Text, VCT_Stack, VCT_KpiCard,
+    VCT_Toast, VCT_Modal, VCT_SearchInput, VCT_ConfirmDialog,
+    VCT_SegmentedControl, VCT_EmptyState
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
 import { DON_VIS, HANG_CANS, NOI_DUNG_QUYENS, genId } from '../data/mock-data';
 import type { VanDongVien, TrangThaiVDV, GioiTinh } from '../data/types';
 import { repositories, useEntityCollection } from '../data/repository';
+import { csvRowsToObjects, downloadTextFile, parseCsvRows, rowsToCsv } from '../data/export-utils';
+import { useToast } from '../hooks/use-toast';
 
 const ST_MAP: Record<TrangThaiVDV, { l: string; t: string }> = {
     du_dieu_kien: { l: 'Đủ điều kiện', t: 'success' },
@@ -26,12 +28,6 @@ const DOCS_SCHEMA = [
     { key: 'cmnd', label: 'CCCD/Định danh' }
 ];
 
-const BLANK_VDV: Partial<VanDongVien> = {
-    ho_ten: '', gioi: 'nam', ngay_sinh: '', chieu_cao: 0, can_nang: 0, doan_id: '', doan_ten: '',
-    trang_thai: 'nhap', ghi_chu: '', nd_quyen: [], nd_dk: '', tuoi: 0,
-    ho_so: { kham_sk: false, bao_hiem: false, cmnd: false, anh: false }
-};
-
 const getDoanTen = (id: string) => DON_VIS.find(d => d.id === id)?.ten || 'Không rõ';
 const getDKTen = (id?: string) => {
     if (!id) return null;
@@ -42,28 +38,102 @@ const getDKTen = (id?: string) => {
 const getQuyenTen = (id: string) => NOI_DUNG_QUYENS.find(q => q.id === id)?.ten || id;
 const calcTuoi = (ns: string) => ns ? new Date().getFullYear() - parseInt(ns.substring(0, 4)) : 0;
 
+const VDV_STATUS_LIST: TrangThaiVDV[] = ['du_dieu_kien', 'cho_xac_nhan', 'thieu_ho_so', 'nhap'];
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+    value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+
+const normalizeString = (value: unknown) => String(value ?? '').trim();
+const normalizeNumber = (value: unknown, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+const normalizeBoolean = (value: unknown) => {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return ['true', '1', 'x', 'yes', 'co', 'có'].includes(normalized);
+};
+
+const pickField = (record: Record<string, unknown>, keys: string[]) => {
+    for (const key of keys) {
+        const value = record[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+            return value;
+        }
+    }
+    return '';
+};
+
+const parseNdQuyen = (value: unknown) => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return [] as string[];
+    return raw
+        .split(/[;,|]/g)
+        .map(item => item.trim())
+        .filter(Boolean);
+};
+
+const normalizeDoanId = (rawDoanId: string, rawDoanTen: string) => {
+    if (rawDoanId) return rawDoanId;
+    const matchedByName = DON_VIS.find(d => d.ten.toLowerCase() === rawDoanTen.toLowerCase());
+    return matchedByName?.id || '';
+};
+
+const mapImportedAthlete = (item: unknown): VanDongVien | null => {
+    const record = asRecord(item);
+    if (!record) return null;
+
+    const ho_ten = normalizeString(pickField(record, ['ho_ten', 'hoTen', 'name', 'ten']));
+    if (!ho_ten) return null;
+
+    const rawGioi = normalizeString(pickField(record, ['gioi', 'gioi_tinh', 'gender'])).toLowerCase();
+    const gioi: GioiTinh = rawGioi === 'nu' || rawGioi === 'nữ' || rawGioi === 'female' ? 'nu' : 'nam';
+
+    const ngay_sinh = normalizeString(pickField(record, ['ngay_sinh', 'ngaySinh', 'dob']));
+    const rawDoanId = normalizeString(pickField(record, ['doan_id', 'doanId', 'team_id']));
+    const rawDoanTen = normalizeString(pickField(record, ['doan_ten', 'doanTen', 'team_name', 'team']));
+    const doan_id = normalizeDoanId(rawDoanId, rawDoanTen);
+    const doan_ten = rawDoanTen || getDoanTen(doan_id);
+
+    const rawStatus = normalizeString(pickField(record, ['trang_thai', 'status'])).toLowerCase() as TrangThaiVDV;
+    const trang_thai = VDV_STATUS_LIST.includes(rawStatus) ? rawStatus : 'nhap';
+
+    const nd_quyen = parseNdQuyen(pickField(record, ['nd_quyen', 'noi_dung_quyen', 'quyen']));
+
+    return {
+        id: normalizeString(pickField(record, ['id', 'ma_vdv'])) || genId('V'),
+        ho_ten,
+        gioi,
+        ngay_sinh,
+        tuoi: calcTuoi(ngay_sinh),
+        can_nang: normalizeNumber(pickField(record, ['can_nang', 'canNang', 'weight'])),
+        chieu_cao: normalizeNumber(pickField(record, ['chieu_cao', 'chieuCao', 'height'])),
+        doan_id,
+        doan_ten,
+        nd_quyen,
+        nd_dk: normalizeString(pickField(record, ['nd_dk', 'noi_dung_doi_khang', 'doi_khang'])),
+        trang_thai,
+        ho_so: {
+            kham_sk: normalizeBoolean(pickField(record, ['kham_sk', 'ho_so_kham'])),
+            bao_hiem: normalizeBoolean(pickField(record, ['bao_hiem', 'ho_so_bao_hiem'])),
+            anh: normalizeBoolean(pickField(record, ['anh', 'ho_so_anh'])),
+            cmnd: normalizeBoolean(pickField(record, ['cmnd', 'cccd', 'ho_so_cccd'])),
+        },
+        ghi_chu: normalizeString(pickField(record, ['ghi_chu', 'note'])),
+    };
+};
+
 export const Page_athletes = () => {
     const { items: data, setItems: setDataState } = useEntityCollection(repositories.athletes.mock);
     const [search, setSearch] = useState('');
     const [filterDoan, setFilterDoan] = useState('');
     const [filterGioi, setFilterGioi] = useState('all');
-    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+    const { toast, showToast, hideToast } = useToast();
 
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]); // For bulk actions
 
-    // CRUD
-    const [showModal, setShowModal] = useState(false);
     const [showPrintModal, setShowPrintModal] = useState(false);
-    const [form, setForm] = useState<any>({ ...BLANK_VDV });
-    const [isEditing, setIsEditing] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<VanDongVien | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-
-    const showToast = useCallback((msg: string, type = 'success') => {
-        setToast({ show: true, msg, type });
-        setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3500);
-    }, []);
 
     const setData = useCallback((updater: React.SetStateAction<VanDongVien[]>) => {
         setDataState(prev => {
@@ -74,6 +144,87 @@ export const Page_athletes = () => {
             return next;
         });
     }, [setDataState]);
+
+    const downloadImportTemplate = useCallback(() => {
+        const templateRows = [
+            {
+                id: 'V001',
+                ho_ten: 'Nguyen Van A',
+                gioi: 'nam',
+                ngay_sinh: '2006-01-15',
+                can_nang: 52,
+                chieu_cao: 168,
+                doan_id: 'D01',
+                doan_ten: 'Bình Định',
+                nd_quyen: 'Q01;Q03',
+                nd_dk: 'HC01',
+                trang_thai: 'cho_xac_nhan',
+                kham_sk: true,
+                bao_hiem: true,
+                anh: true,
+                cmnd: true,
+                ghi_chu: '',
+            },
+        ];
+        downloadTextFile('mau-import-vdv.csv', rowsToCsv(templateRows), 'text/csv;charset=utf-8');
+        showToast('Đã tải file mẫu import VĐV');
+    }, [showToast]);
+
+    const openImportPicker = () => fileInputRef.current?.click();
+
+    const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const lowerName = file.name.toLowerCase();
+            const rawItems: unknown[] =
+                lowerName.endsWith('.json')
+                    ? (() => {
+                        const parsed = JSON.parse(text);
+                        return Array.isArray(parsed) ? parsed : [];
+                    })()
+                    : csvRowsToObjects(parseCsvRows(text));
+
+            if (rawItems.length === 0) {
+                showToast('File import không có dữ liệu hợp lệ', 'error');
+                return;
+            }
+
+            const imported: VanDongVien[] = [];
+            let rejectedCount = 0;
+            rawItems.forEach(item => {
+                const normalized = mapImportedAthlete(item);
+                if (!normalized || !normalized.doan_id) {
+                    rejectedCount += 1;
+                    return;
+                }
+                imported.push(normalized);
+            });
+
+            if (imported.length === 0) {
+                showToast('Không có VĐV hợp lệ để import', 'error');
+                return;
+            }
+
+            setData(prev => {
+                const byId = new Map(prev.map(row => [row.id, row]));
+                imported.forEach(row => byId.set(row.id, row));
+                return Array.from(byId.values());
+            });
+
+            const skippedPart = rejectedCount > 0 ? `, bỏ qua ${rejectedCount} dòng lỗi` : '';
+            showToast(`Đã import ${imported.length} VĐV${skippedPart}`, 'success');
+        } catch (error) {
+            showToast(
+                `Không đọc được file import: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`,
+                'error'
+            );
+        } finally {
+            event.target.value = '';
+        }
+    };
 
     // Derived states
     const filteredData = useMemo(() => {
@@ -145,7 +296,14 @@ export const Page_athletes = () => {
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
-            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={hideToast} />
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.json"
+                style={{ display: 'none' }}
+                onChange={handleImportFile}
+            />
 
             {/* KPI HEADERS */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
@@ -173,6 +331,14 @@ export const Page_athletes = () => {
                     options={[{ value: 'all', label: 'Tất cả' }, { value: 'nam', label: `Nam (${stats.nam})` }, { value: 'nu', label: `Nữ (${stats.nu})` }]}
                     value={filterGioi} onChange={setFilterGioi}
                 />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+                    <VCT_Button variant="secondary" icon={<VCT_Icons.Download size={14} />} onClick={downloadImportTemplate}>
+                        Tải mẫu
+                    </VCT_Button>
+                    <VCT_Button variant="secondary" icon={<VCT_Icons.Upload size={14} />} onClick={openImportPicker}>
+                        Import CSV/JSON
+                    </VCT_Button>
+                </div>
             </VCT_Stack>
 
             {/* BULK ACTION BAR */}
@@ -195,7 +361,7 @@ export const Page_athletes = () => {
             {/* LIST */}
             {filteredData.length === 0 ? <VCT_EmptyState title="Không tìm thấy Vận động viên" icon="👤" /> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {filteredData.map((v, i) => {
+                    {filteredData.map((v) => {
                         const isExpanded = expandedId === v.id;
                         const isSelected = selectedIds.includes(v.id);
                         const hd = Object.values(v.ho_so).filter(Boolean).length;

@@ -16,6 +16,26 @@ export interface EntityRepository<T extends { id: string }> {
   exportItems: (format: ExportFormat) => Promise<string>
 }
 
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+export interface ApiEndpointMap {
+  list?: string
+  getById?: string
+  create?: string
+  update?: string
+  remove?: string
+  replaceAll?: string
+  importItems?: string
+  exportItems?: string
+}
+
+export interface ApiAdapterConfig {
+  baseUrl?: string
+  headers?: Record<string, string>
+  getAuthToken?: () => string | null | undefined
+  endpoints?: ApiEndpointMap
+}
+
 const memoryStore = new Map<string, string>()
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
@@ -140,22 +160,117 @@ export const createMockAdapter = <T extends { id: string }>(
 }
 
 export const createApiAdapter = <T extends { id: string }>(
-  entityName: string
+  entityName: string,
+  config: ApiAdapterConfig = {}
 ): EntityRepository<T> => {
-  const fail = async () => {
-    throw new Error(
-      `ApiAdapter cho "${entityName}" chưa được cấu hình endpoint.`
-    )
+  const baseUrl = config.baseUrl ?? '/api/v1'
+  const endpointMap: Required<ApiEndpointMap> = {
+    list: config.endpoints?.list ?? '/{entity}',
+    getById: config.endpoints?.getById ?? '/{entity}/{id}',
+    create: config.endpoints?.create ?? '/{entity}',
+    update: config.endpoints?.update ?? '/{entity}/{id}',
+    remove: config.endpoints?.remove ?? '/{entity}/{id}',
+    replaceAll: config.endpoints?.replaceAll ?? '/{entity}/bulk',
+    importItems: config.endpoints?.importItems ?? '/{entity}/import',
+    exportItems: config.endpoints?.exportItems ?? '/{entity}/export',
+  }
+
+  const resolvePath = (
+    template: string,
+    params: Record<string, string | number | undefined> = {}
+  ) =>
+    template
+      .replace('{entity}', entityName)
+      .replace('{id}', encodeURIComponent(String(params.id ?? '')))
+
+  const request = async <R>(
+    method: HttpMethod,
+    path: string,
+    options: {
+      body?: unknown
+      query?: Record<string, string>
+      parseAs?: 'json' | 'text'
+    } = {}
+  ): Promise<R> => {
+    const token = config.getAuthToken?.()
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      ...config.headers,
+    }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    if (options.body !== undefined) {
+      headers['Content-Type'] = 'application/json'
+    }
+
+    const query = options.query
+      ? `?${new URLSearchParams(options.query).toString()}`
+      : ''
+    const response = await fetch(`${baseUrl}${path}${query}`, {
+      method,
+      headers,
+      body:
+        options.body === undefined ? undefined : JSON.stringify(options.body),
+    })
+
+    if (!response.ok) {
+      let reason = response.statusText
+      try {
+        const payload = (await response.json()) as { message?: string }
+        if (payload?.message) reason = payload.message
+      } catch {
+        // fallback to status text
+      }
+      throw new Error(
+        `ApiAdapter "${entityName}" lỗi ${response.status}: ${reason}`
+      )
+    }
+
+    if (options.parseAs === 'text') {
+      return (await response.text()) as R
+    }
+    if (response.status === 204) {
+      return undefined as R
+    }
+    return (await response.json()) as R
   }
 
   return {
-    list: fail,
-    getById: fail,
-    create: fail,
-    update: fail,
-    remove: fail,
-    replaceAll: fail,
-    importItems: fail,
-    exportItems: fail,
+    async list() {
+      return request<T[]>('GET', resolvePath(endpointMap.list))
+    },
+    async getById(id: string) {
+      return request<T | undefined>('GET', resolvePath(endpointMap.getById, { id }))
+    },
+    async create(item: T) {
+      return request<T>('POST', resolvePath(endpointMap.create), { body: item })
+    },
+    async update(id: string, patch: Partial<T>) {
+      return request<T>('PATCH', resolvePath(endpointMap.update, { id }), {
+        body: patch,
+      })
+    },
+    async remove(id: string) {
+      await request<void>('DELETE', resolvePath(endpointMap.remove, { id }), {
+        parseAs: 'text',
+      })
+    },
+    async replaceAll(items: T[]) {
+      return request<T[]>('PUT', resolvePath(endpointMap.replaceAll), {
+        body: { items },
+      })
+    },
+    async importItems(payload: unknown[]) {
+      return request<ImportReport<T>>('POST', resolvePath(endpointMap.importItems), {
+        body: { items: payload },
+      })
+    },
+    async exportItems(format: ExportFormat) {
+      return request<string>('GET', resolvePath(endpointMap.exportItems), {
+        query: { format },
+        parseAs: 'text',
+      })
+    },
   }
 }

@@ -5,13 +5,13 @@ import { motion } from 'framer-motion';
 import {
     VCT_Badge, VCT_Button, VCT_KpiCard, VCT_Stack, VCT_Toast,
     VCT_SearchInput, VCT_EmptyState, VCT_AvatarLetter, VCT_SegmentedControl,
-    VCT_Modal, VCT_Select, VCT_Input, VCT_Field, VCT_Card, VCT_Text
+    VCT_Modal, VCT_Select, VCT_Input, VCT_Field
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
-import { TRAN_DAUS, LUOT_THI_QUYENS, DON_VIS, genId } from '../data/mock-data';
+import { TRAN_DAUS, LUOT_THI_QUYENS, genId } from '../data/mock-data';
 import type { VongDau } from '../data/types';
 import { repositories, useEntityCollection, type ResultRecord } from '../data/repository';
-import { downloadTextFile, rowsToCsv } from '../data/export-utils';
+import { downloadRowsAsExcel, downloadTextFile, openPrintWindow, rowsToCsv } from '../data/export-utils';
 
 interface KetQuaItem extends ResultRecord {}
 
@@ -108,20 +108,65 @@ export const Page_results = () => {
         showToast('Đã thêm kết quả thủ công');
     };
 
-    const handleExport = () => {
-        const rows = filtered.map((item) => ({
-            loai: item.loai,
-            noi_dung: item.noi_dung,
-            vdv_ten: item.vdv_ten,
-            doan: item.doan,
-            ket_qua: item.ket_qua,
-            diem: item.diem,
-            huy_chuong: item.huy_chuong || '',
-        }));
-        const csv = rowsToCsv(rows);
+    const exportRows = useMemo(() => filtered.map((item) => ({
+        loai: item.loai,
+        noi_dung: item.noi_dung,
+        vdv_ten: item.vdv_ten,
+        doan: item.doan,
+        ket_qua: item.ket_qua,
+        diem: item.diem,
+        huy_chuong: item.huy_chuong || '',
+    })), [filtered]);
+
+    const handleExportCsv = () => {
+        const csv = rowsToCsv(exportRows);
         const stamp = new Date().toISOString().slice(0, 10);
         downloadTextFile(`ket-qua-${stamp}.csv`, csv, 'text/csv;charset=utf-8');
-        showToast(`Đã xuất ${rows.length} dòng kết quả`);
+        showToast(`Đã xuất ${exportRows.length} dòng kết quả`);
+    };
+
+    const handleExportExcel = () => {
+        const stamp = new Date().toISOString().slice(0, 10);
+        downloadRowsAsExcel(`ket-qua-${stamp}.xls`, exportRows, 'KetQua');
+        showToast(`Đã xuất Excel ${exportRows.length} dòng`);
+    };
+
+    const handleExportPdf = () => {
+        const html = `
+            <h1>Báo cáo kết quả thi đấu</h1>
+            <p class="muted">Sinh lúc ${new Date().toLocaleString('vi-VN')}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Loại</th>
+                        <th>Nội dung</th>
+                        <th>VĐV</th>
+                        <th>Đoàn</th>
+                        <th>Kết quả</th>
+                        <th>Điểm</th>
+                        <th>HC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${exportRows.map(row => `
+                        <tr>
+                            <td>${row.loai}</td>
+                            <td>${row.noi_dung}</td>
+                            <td>${row.vdv_ten}</td>
+                            <td>${row.doan}</td>
+                            <td>${row.ket_qua}</td>
+                            <td>${row.diem}</td>
+                            <td>${row.huy_chuong}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        if (!openPrintWindow({ title: 'Kết quả thi đấu', html })) {
+            showToast('Trình duyệt đang chặn popup in', 'error');
+            return;
+        }
+        showToast('Đã mở bản in kết quả');
     };
 
     return (
@@ -140,7 +185,9 @@ export const Page_results = () => {
                 <VCT_SearchInput value={search} onChange={setSearch} placeholder="Tìm VĐV, nội dung, đoàn..." />
                 <div style={{ flex: 1 }} />
                 <VCT_Button variant="secondary" icon={<VCT_Icons.Plus size={16} />} onClick={() => setShowManualModal(true)}>Nhập kết quả</VCT_Button>
-                <VCT_Button variant="secondary" icon={<VCT_Icons.Download size={16} />} onClick={handleExport}>Xuất CSV</VCT_Button>
+                <VCT_Button variant="secondary" icon={<VCT_Icons.Download size={16} />} onClick={handleExportCsv}>Xuất CSV</VCT_Button>
+                <VCT_Button variant="secondary" icon={<VCT_Icons.Download size={16} />} onClick={handleExportExcel}>Xuất Excel</VCT_Button>
+                <VCT_Button variant="secondary" icon={<VCT_Icons.Printer size={16} />} onClick={handleExportPdf}>In/PDF</VCT_Button>
             </VCT_Stack>
 
             {/* Summary by Đoàn */}

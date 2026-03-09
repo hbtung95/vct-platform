@@ -7,8 +7,10 @@ import {
     VCT_KpiCard, VCT_Modal, VCT_EmptyState, VCT_Select, VCT_Tabs
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
-import { HANG_CANS, VAN_DONG_VIENS, DANG_KYS, genId } from '../data/mock-data';
+import { HANG_CANS, genId } from '../data/mock-data';
 import type { VanDongVien } from '../data/types';
+import { repositories, useEntityCollection } from '../data/repository';
+import { useToast } from '../hooks/use-toast';
 
 // ════════════════════════════════════════
 // TYPES
@@ -127,28 +129,27 @@ function getTeamColor(doanId: string): string {
 // PAGE COMPONENT
 // ════════════════════════════════════════
 export const Page_boc_tham = () => {
+    const registrationStore = useEntityCollection(repositories.registration.mock);
+    const athleteStore = useEntityCollection(repositories.athletes.mock);
+    const registrations = registrationStore.items;
+    const athletes = athleteStore.items;
     const [selectedContent, setSelectedContent] = useState(CONTENT_OPTIONS[0]?.value || '');
     const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
     const [isDrawing, setIsDrawing] = useState(false);
     const [animPhase, setAnimPhase] = useState<'idle' | 'shuffle' | 'reveal'>('idle');
     const [tempSlots, setTempSlots] = useState<DrawSlot[]>([]);
-    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' as string });
-
-    const showToast = useCallback((msg: string, type = 'success') => {
-        setToast({ show: true, msg, type });
-        setTimeout(() => setToast(p => ({ ...p, show: false })), 3000);
-    }, []);
+    const { toast, showToast, hideToast } = useToast(3000);
 
     // Get eligible VDVs for selected content
     const eligibleVDVs = useMemo(() => {
         const content = CONTENT_OPTIONS.find(c => c.value === selectedContent);
         if (!content) return [];
         // Find registrations for this content
-        const regIds = DANG_KYS
+        const regIds = registrations
             .filter(d => d.nd_id === selectedContent && d.trang_thai === 'da_duyet')
             .map(d => d.vdv_id);
-        return VAN_DONG_VIENS.filter(v => regIds.includes(v.id) && v.trang_thai === 'du_dieu_kien');
-    }, [selectedContent]);
+        return athletes.filter(v => regIds.includes(v.id) && v.trang_thai === 'du_dieu_kien');
+    }, [selectedContent, athletes, registrations]);
 
     // Check if already drawn
     const existingDraw = useMemo(() => drawResults.find(d => d.nd_id === selectedContent), [drawResults, selectedContent]);
@@ -217,7 +218,13 @@ export const Page_boc_tham = () => {
 
     return (
         <div style={{ maxWidth: 1400, margin: '0 auto', paddingBottom: 100 }}>
-            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={hideToast} />
+
+            {(registrationStore.uiState.error || athleteStore.uiState.error) && (
+                <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
+                    Không thể tải đủ dữ liệu để bốc thăm.
+                </div>
+            )}
 
             {/* ── HERO HEADER ── */}
             <motion.div

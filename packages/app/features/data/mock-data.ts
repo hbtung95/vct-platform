@@ -151,9 +151,9 @@ export const CAN_KYS: CanKy[] = [
 
 // ── Trận đấu Đối kháng ───────────────────────────────────────
 export const TRAN_DAUS: TranDauDK[] = [
-    { id: 'TD01', san_id: 'S01', vdv_do: { id: 'V001', ten: 'Nguyễn Văn Hùng', doan: 'HCM' }, vdv_xanh: { id: 'V003', ten: 'Lê Minh Kha', doan: 'BĐ' }, hang_can: '48-52kg Nam', vong: 'ban_ket', trang_thai: 'dang_dau', diem_do: 3, diem_xanh: 1, hiep: 2, thoi_gian: '1:45', ket_qua: '', trong_tai: ['TT01', 'TT03'] },
-    { id: 'TD02', san_id: 'S01', vdv_do: { id: 'V005', ten: 'Hoàng Đức Anh', doan: 'HCM' }, vdv_xanh: { id: 'V008', ten: 'Võ Đình Tài', doan: 'KH' }, hang_can: '52-56kg Nam', vong: 'tu_ket', trang_thai: 'chua_dau', diem_do: 0, diem_xanh: 0, hiep: 0, thoi_gian: '', ket_qua: '', trong_tai: ['TT01', 'TT04'] },
-    { id: 'TD03', san_id: 'S03', vdv_do: { id: 'V010', ten: 'Trần Minh Phúc', doan: 'HCM' }, vdv_xanh: { id: 'V007', ten: 'Bùi Quang Huy', doan: 'HN' }, hang_can: '60-65kg Nam', vong: 'vong_loai', trang_thai: 'ket_thuc', diem_do: 5, diem_xanh: 2, hiep: 3, thoi_gian: '0:00', ket_qua: 'Thắng điểm Đỏ', trong_tai: ['TT03', 'TT04'] },
+    { id: 'TD01', san_id: 'S01', vdv_do: { id: 'V001', ten: 'Nguyễn Văn Hùng', doan: 'HCM' }, vdv_xanh: { id: 'V003', ten: 'Lê Minh Kha', doan: 'BĐ' }, hang_can: '48-52kg Nam', vong: 'ban_ket', trang_thai: 'dang_dau', diem_do: 3, diem_xanh: 1, diem_hiep_do: [2, 1, 0], diem_hiep_xanh: [0, 1, 0], hiep: 2, thoi_gian: '1:45', ket_qua: '', trong_tai: ['TT01', 'TT03'] },
+    { id: 'TD02', san_id: 'S01', vdv_do: { id: 'V005', ten: 'Hoàng Đức Anh', doan: 'HCM' }, vdv_xanh: { id: 'V008', ten: 'Võ Đình Tài', doan: 'KH' }, hang_can: '52-56kg Nam', vong: 'tu_ket', trang_thai: 'chua_dau', diem_do: 0, diem_xanh: 0, diem_hiep_do: [0, 0, 0], diem_hiep_xanh: [0, 0, 0], hiep: 0, thoi_gian: '', ket_qua: '', trong_tai: ['TT01', 'TT04'] },
+    { id: 'TD03', san_id: 'S03', vdv_do: { id: 'V010', ten: 'Trần Minh Phúc', doan: 'HCM' }, vdv_xanh: { id: 'V007', ten: 'Bùi Quang Huy', doan: 'HN' }, hang_can: '60-65kg Nam', vong: 'vong_loai', trang_thai: 'ket_thuc', diem_do: 5, diem_xanh: 2, diem_hiep_do: [2, 2, 1], diem_hiep_xanh: [1, 0, 1], hiep: 3, thoi_gian: '0:00', ket_qua: 'Thắng điểm Đỏ', trong_tai: ['TT03', 'TT04'] },
 ];
 
 // ── Lượt thi Quyền ────────────────────────────────────────────

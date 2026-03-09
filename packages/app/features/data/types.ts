@@ -283,6 +283,8 @@ export interface TranDauDK {
     trang_thai: TrangThaiTranDau;
     diem_do: number;
     diem_xanh: number;
+    diem_hiep_do: number[];
+    diem_hiep_xanh: number[];
     hiep: number;
     thoi_gian: string;
     ket_qua: string;

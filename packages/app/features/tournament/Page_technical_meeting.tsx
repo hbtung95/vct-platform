@@ -7,25 +7,27 @@ import {
     VCT_Toast, VCT_SearchInput, VCT_Table, VCT_EmptyState, VCT_ConfirmDialog, VCT_Modal
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
-import { DANG_KYS, VAN_DONG_VIENS, DON_VIS, HANG_CANS, NOI_DUNG_QUYENS } from '../data/mock-data';
+import { HANG_CANS, NOI_DUNG_QUYENS } from '../data/mock-data';
 import type { DangKy, VanDongVien, TrangThaiDK } from '../data/types';
+import { repositories, useEntityCollection } from '../data/repository';
+import { useToast } from '../hooks/use-toast';
 
 export const Page_technical_meeting = () => {
-    const [data, setData] = useState<DangKy[]>([...DANG_KYS]);
+    const registrationStore = useEntityCollection(repositories.registration.mock);
+    const athleteStore = useEntityCollection(repositories.athletes.mock);
+    const teamStore = useEntityCollection(repositories.teams.mock);
+    const data = registrationStore.items;
+    const athletes = athleteStore.items;
+    const teams = teamStore.items;
     const [search, setSearch] = useState('');
     const [filterDoan, setFilterDoan] = useState('');
-    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
-
-    const showToast = useCallback((msg: string, type = 'success') => {
-        setToast({ show: true, msg, type });
-        setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3500);
-    }, []);
+    const { toast, hideToast } = useToast();
 
     // Derived states
     const enrichedData = useMemo(() => {
         return data.filter(r => r.trang_thai === 'da_duyet').map(r => {
-            const vdv = VAN_DONG_VIENS.find(v => v.id === r.vdv_id) || { ho_ten: 'Không rõ', ngay_sinh: '', can_nang: 0, gioi: 'nam' } as VanDongVien;
-            const doan = DON_VIS.find(d => d.id === r.doan_id) || { ten: 'Không rõ' };
+            const vdv = athletes.find(v => v.id === r.vdv_id) || { ho_ten: 'Không rõ', ngay_sinh: '', can_nang: 0, gioi: 'nam' } as VanDongVien;
+            const doan = teams.find(d => d.id === r.doan_id) || { ten: 'Không rõ' };
             const tuoi = vdv.ngay_sinh ? new Date().getFullYear() - parseInt(vdv.ngay_sinh.substring(0, 4)) : 0;
 
             let ndTen = r.nd_id;
@@ -53,7 +55,7 @@ export const Page_technical_meeting = () => {
             const mD = !filterDoan || r.doan_id === filterDoan;
             return mS && mD;
         }).sort((a, b) => a.doan_ten.localeCompare(b.doan_ten));
-    }, [data, search, filterDoan]);
+    }, [data, athletes, teams, search, filterDoan]);
 
     const stats = useMemo(() => {
         const approved = data.filter(r => r.trang_thai === 'da_duyet');
@@ -66,7 +68,13 @@ export const Page_technical_meeting = () => {
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
-            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={hideToast} />
+
+            {(registrationStore.uiState.error || athleteStore.uiState.error || teamStore.uiState.error) && (
+                <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
+                    Không thể tải đủ dữ liệu họp chuyên môn.
+                </div>
+            )}
 
             {/* HEADER ALERT */}
             <div style={{ padding: '20px', background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(167, 139, 250, 0.1))', border: '1px solid var(--vct-accent-cyan)', borderRadius: '16px', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
@@ -101,7 +109,7 @@ export const Page_technical_meeting = () => {
                         style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--vct-bg-input)', border: '1px solid var(--vct-border-subtle)', color: 'var(--vct-text-primary)', outline: 'none', appearance: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
                     >
                         <option value="">Lọc theo Đoàn / Đơn vị</option>
-                        {DON_VIS.map(d => <option key={d.id} value={d.id}>{d.ten}</option>)}
+                        {teams.map(d => <option key={d.id} value={d.id}>{d.ten}</option>)}
                     </select>
                 </div>
             </VCT_Stack>

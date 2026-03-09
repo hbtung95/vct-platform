@@ -7,8 +7,9 @@ import {
     VCT_Modal, VCT_StatusPipeline, VCT_EmptyState, VCT_SegmentedControl, VCT_Card
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
-import { TRAN_DAUS } from '../data/mock-data';
 import type { TranDauDK, TrangThaiTranDau, VongDau } from '../data/types';
+import { repositories, useEntityCollection } from '../data/repository';
+import { useToast } from '../hooks/use-toast';
 
 const ST_MAP: Record<TrangThaiTranDau, { label: string; color: string; type: string }> = {
     dang_dau: { label: '🔴 LIVE', color: '#ef4444', type: 'warning' },
@@ -51,23 +52,18 @@ function useTimer(running: boolean, initialSec: number = 120) {
 // ════════════════════════════════════════
 // SCORE ACTIONS
 // ════════════════════════════════════════
-const SCORE_ACTIONS = [
-    { label: 'Đấm thân', points: 1, icon: '👊' },
-    { label: 'Đá giữa', points: 2, icon: '🦶' },
-    { label: 'Đá đầu', points: 3, icon: '🎯' },
-    { label: 'Quay đá giữa', points: 3, icon: '🔄' },
-    { label: 'Quay đá đầu', points: 4, icon: '⚡' },
-];
+const ROUNDS = [1, 2, 3];
+
 const PENALTY_ACTIONS = [
     { label: 'Cảnh cáo (Gamjeom)', points: -1, icon: '🟡' },
     { label: 'Hạ đo ván', points: 0, icon: '💥', special: 'knockout' },
 ];
 
 export const Page_combat = () => {
-    const [matches, setMatches] = useState<TranDauDK[]>([...TRAN_DAUS]);
+    const { items: matches, setItems: setMatchesState, uiState } = useEntityCollection(repositories.combatMatches.mock);
     const [filter, setFilter] = useState('all');
     const [vongFilter, setVongFilter] = useState('all');
-    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+    const { toast, showToast, hideToast } = useToast();
 
     // Scoring state
     const [activeMatch, setActiveMatch] = useState<string | null>(null);
@@ -79,7 +75,15 @@ export const Page_combat = () => {
     const isTimerRunning = !!activeMatchData && activeMatchData.trang_thai === 'dang_dau';
     const timer = useTimer(isTimerRunning);
 
-    const showToast = useCallback((msg: string, type = 'success') => { setToast({ show: true, msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); }, []);
+    const setMatches = useCallback((updater: React.SetStateAction<TranDauDK[]>) => {
+        setMatchesState(prev => {
+            const next = typeof updater === 'function'
+                ? (updater as (value: TranDauDK[]) => TranDauDK[])(prev)
+                : updater;
+            void repositories.combatMatches.mock.replaceAll(next);
+            return next;
+        });
+    }, [setMatchesState]);
 
     const filtered = useMemo(() => {
         let d = matches;
@@ -95,29 +99,23 @@ export const Page_combat = () => {
     ], [matches]);
 
     // ── SCORING ──
-    const addScore = useCallback((matchId: string, side: 'do' | 'xanh', action: string, points: number) => {
-        const match = matches.find(m => m.id === matchId);
-        if (!match || match.trang_thai !== 'dang_dau') return;
+    const updateRoundScore = useCallback((matchId: string, side: 'do' | 'xanh', round: number, score: number) => {
+        setMatches(p => p.map(m => {
+            if (m.id !== matchId) return m;
+            const roundIdx = round - 1;
+            const currentScores = (side === 'do' ? m.diem_hiep_do : m.diem_hiep_xanh) || [0, 0, 0];
+            const newRoundScores = [...currentScores];
+            newRoundScores[roundIdx] = score;
 
-        // Update points
-        setMatches(p => p.map(m => m.id === matchId ? {
-            ...m,
-            diem_do: m.diem_do + (side === 'do' ? points : 0),
-            diem_xanh: m.diem_xanh + (side === 'xanh' ? points : 0),
-        } : m));
+            const total = newRoundScores.reduce((a, b) => a + b, 0);
 
-        // Log event
-        const event: MatchEvent = {
-            hiep: match.hiep || 1,
-            time: timer.formatted,
-            side,
-            action,
-            points,
-            color: side === 'do' ? '#ef4444' : '#3b82f6',
-        };
-        setEventLogs(p => ({ ...p, [matchId]: [...(p[matchId] || []), event] }));
-        showToast(`${side === 'do' ? '🔴' : '🔵'} ${action} +${points}`, 'success');
-    }, [matches, timer.formatted, showToast]);
+            return {
+                ...m,
+                [side === 'do' ? 'diem_hiep_do' : 'diem_hiep_xanh']: newRoundScores,
+                [side === 'do' ? 'diem_do' : 'diem_xanh']: total
+            };
+        }));
+    }, [setMatches]);
 
     const addWarning = useCallback((matchId: string, side: 'do' | 'xanh') => {
         const match = matches.find(m => m.id === matchId);
@@ -140,20 +138,20 @@ export const Page_combat = () => {
         };
         setEventLogs(p => ({ ...p, [matchId]: [...(p[matchId] || []), event] }));
         showToast(`🟡 Cảnh cáo ${side === 'do' ? 'Đỏ' : 'Xanh'} (${newW[side]})`, 'warning');
-    }, [matches, warnings, timer.formatted, showToast]);
+    }, [matches, warnings, setMatches, timer.formatted, showToast]);
 
     const startMatch = useCallback((matchId: string) => {
         setMatches(p => p.map(m => m.id === matchId ? { ...m, trang_thai: 'dang_dau' as TrangThaiTranDau, hiep: 1, thoi_gian: '2:00' } : m));
         setActiveMatch(matchId);
         timer.reset(120);
         showToast('▶ Trận đấu bắt đầu!');
-    }, [showToast, timer]);
+    }, [setMatches, showToast, timer]);
 
     const nextHiep = useCallback((matchId: string) => {
         setMatches(p => p.map(m => m.id === matchId ? { ...m, hiep: (m.hiep || 1) + 1 } : m));
         timer.reset(120);
         showToast('⏭ Bắt đầu hiệp mới!');
-    }, [showToast, timer]);
+    }, [setMatches, showToast, timer]);
 
     const endMatch = useCallback((matchId: string, reason?: string) => {
         const match = matches.find(m => m.id === matchId);
@@ -163,7 +161,7 @@ export const Page_combat = () => {
         setMatches(p => p.map(m => m.id === matchId ? { ...m, trang_thai: 'ket_thuc' as TrangThaiTranDau, ket_qua: ketQua } : m));
         if (activeMatch === matchId) setActiveMatch(null);
         showToast(`🏁 ${ketQua}!`);
-    }, [matches, activeMatch, showToast]);
+    }, [matches, activeMatch, setMatches, showToast]);
 
     const knockout = useCallback((matchId: string, side: 'do' | 'xanh') => {
         endMatch(matchId, `Hạ đo ván — ${side === 'do' ? '🔴 Đỏ' : '🔵 Xanh'} thắng`);
@@ -231,46 +229,54 @@ export const Page_combat = () => {
                     {isLive && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: 16 }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, padding: 16, borderRadius: 14, background: 'rgba(59,130,246,0.03)', border: '1px solid var(--vct-border-subtle)' }}>
-                                {/* Xanh buttons */}
+                                {/* Xanh round scores */}
                                 <div>
                                     <div style={{ fontSize: 11, fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>🔵 {m.vdv_xanh.ten}</div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                        {SCORE_ACTIONS.map(a => (
-                                            <button key={a.label} onClick={() => addScore(m.id, 'xanh', a.label, a.points)}
-                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(59,130,246,0.15)', background: 'rgba(59,130,246,0.05)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-                                            >
-                                                <span>{a.icon} {a.label}</span>
-                                                <span style={{ fontWeight: 900, color: '#3b82f6' }}>+{a.points}</span>
-                                            </button>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {ROUNDS.map(r => (
+                                            <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: 11, width: 40, opacity: 0.6 }}>Hiệp {r}</span>
+                                                <input
+                                                    type="number"
+                                                    value={m.diem_hiep_xanh?.[r - 1] || 0}
+                                                    onChange={(e) => updateRoundScore(m.id, 'xanh', r, parseInt(e.target.value) || 0)}
+                                                    style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(59,130,246,0.2)', background: 'white', fontSize: 13, fontWeight: 700, color: '#3b82f6' }}
+                                                />
+                                            </div>
                                         ))}
                                         <button onClick={() => addWarning(m.id, 'xanh')}
-                                            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.05)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#f59e0b' }}
+                                            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.05)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#f59e0b', marginTop: 4 }}
                                         >🟡 Cảnh cáo</button>
                                     </div>
                                 </div>
 
                                 {/* Center controls */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', alignItems: 'center', minWidth: 100 }}>
-                                    <VCT_Button variant="secondary" onClick={() => nextHiep(m.id)} style={{ fontSize: 11 }}>⏭ Hiệp tiếp</VCT_Button>
-                                    <VCT_Button variant="secondary" onClick={() => knockout(m.id, 'xanh')} style={{ fontSize: 11, color: '#3b82f6' }}>💥 KO Xanh</VCT_Button>
-                                    <VCT_Button variant="secondary" onClick={() => knockout(m.id, 'do')} style={{ fontSize: 11, color: '#ef4444' }}>💥 KO Đỏ</VCT_Button>
-                                    <VCT_Button variant="danger" onClick={() => endMatch(m.id)} style={{ fontSize: 11 }}>🏁 Kết thúc</VCT_Button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center', alignItems: 'center', minWidth: 100 }}>
+                                    <VCT_Button variant="secondary" onClick={() => nextHiep(m.id)} style={{ fontSize: 11, width: '100%' }}>⏭ Hiệp tiếp</VCT_Button>
+                                    <div style={{ borderTop: '1px solid var(--vct-border-subtle)', width: '100%', margin: '4px 0' }} />
+                                    <VCT_Button variant="secondary" onClick={() => knockout(m.id, 'xanh')} style={{ fontSize: 11, color: '#3b82f6', width: '100%' }}>💥 KO Xanh</VCT_Button>
+                                    <VCT_Button variant="secondary" onClick={() => knockout(m.id, 'do')} style={{ fontSize: 11, color: '#ef4444', width: '100%' }}>💥 KO Đỏ</VCT_Button>
+                                    <div style={{ borderTop: '1px solid var(--vct-border-subtle)', width: '100%', margin: '4px 0' }} />
+                                    <VCT_Button variant="danger" onClick={() => endMatch(m.id)} style={{ fontSize: 11, width: '100%' }}>🏁 Kết thúc</VCT_Button>
                                 </div>
 
-                                {/* Do buttons */}
+                                {/* Do round scores */}
                                 <div>
                                     <div style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>🔴 {m.vdv_do.ten}</div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                        {SCORE_ACTIONS.map(a => (
-                                            <button key={a.label} onClick={() => addScore(m.id, 'do', a.label, a.points)}
-                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.15)', background: 'rgba(239,68,68,0.05)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-                                            >
-                                                <span>{a.icon} {a.label}</span>
-                                                <span style={{ fontWeight: 900, color: '#ef4444' }}>+{a.points}</span>
-                                            </button>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {ROUNDS.map(r => (
+                                            <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: 11, width: 40, opacity: 0.6 }}>Hiệp {r}</span>
+                                                <input
+                                                    type="number"
+                                                    value={m.diem_hiep_do?.[r - 1] || 0}
+                                                    onChange={(e) => updateRoundScore(m.id, 'do', r, parseInt(e.target.value) || 0)}
+                                                    style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)', background: 'white', fontSize: 13, fontWeight: 700, color: '#ef4444' }}
+                                                />
+                                            </div>
                                         ))}
                                         <button onClick={() => addWarning(m.id, 'do')}
-                                            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.05)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#f59e0b' }}
+                                            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.05)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#f59e0b', marginTop: 4 }}
                                         >🟡 Cảnh cáo</button>
                                     </div>
                                 </div>
@@ -320,7 +326,13 @@ export const Page_combat = () => {
 
     return (
         <div style={{ maxWidth: 1400, margin: '0 auto', paddingBottom: 100 }}>
-            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={hideToast} />
+
+            {uiState.error && (
+                <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
+                    Không thể tải dữ liệu đối kháng: {uiState.error}
+                </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
                 <VCT_KpiCard label="Tổng trận" value={matches.length} icon={<VCT_Icons.Swords size={24} />} color="#0ea5e9" />

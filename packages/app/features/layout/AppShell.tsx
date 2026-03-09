@@ -17,6 +17,7 @@ import {
 } from './route-registry'
 
 const MOBILE_BREAKPOINT = 1024
+const PUBLIC_ROUTES = ['/login']
 
 const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme()
@@ -151,10 +152,27 @@ const AccessDenied = ({
 const ShellLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname()
   const router = useRouter()
-  const { currentUser, setRole, canAccessRoute } = useAuth()
+  const {
+    currentUser,
+    setRole,
+    canAccessRoute,
+    isAuthenticated,
+    isHydrating,
+    logout,
+    tournamentCode,
+    operationShift,
+  } = useAuth()
   const [isMobile, setIsMobile] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
+  const isPublicRoute = useMemo(
+    () =>
+      PUBLIC_ROUTES.some(
+        (route) => pathname === route || pathname?.startsWith(`${route}/`)
+      ),
+    [pathname]
+  )
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -168,6 +186,14 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     setMobileNavOpen(false)
   }, [pathname])
+
+  useEffect(() => {
+    if (isHydrating || isPublicRoute) return
+    if (isAuthenticated) return
+    const redirectPath =
+      pathname && pathname !== '/' ? `?redirect=${encodeURIComponent(pathname)}` : ''
+    router.replace(`/login${redirectPath}`)
+  }, [isAuthenticated, isHydrating, isPublicRoute, pathname, router])
 
   const roleLabel = useMemo(
     () =>
@@ -194,6 +220,33 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
     .slice(0, 2)
     .map((token) => token[0]?.toUpperCase() ?? '')
     .join('') || 'U'
+
+  if (isPublicRoute) {
+    return <>{children}</>
+  }
+
+  if (isHydrating || !isAuthenticated) {
+    return (
+      <VCT_Provider>
+        <div
+          style={{
+            minHeight: '100dvh',
+            display: 'grid',
+            placeItems: 'center',
+            background: 'var(--vct-bg-base)',
+            color: 'var(--vct-text-secondary)',
+          }}
+        >
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 6 }}>
+              Đang xác thực phiên làm việc
+            </div>
+            <div style={{ fontSize: 13, opacity: 0.7 }}>Vui lòng chờ trong giây lát...</div>
+          </div>
+        </div>
+      </VCT_Provider>
+    )
+  }
 
   return (
     <VCT_Provider>
@@ -308,24 +361,58 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
                   {pageTitle}
                 </h1>
                 {!isMobile && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginTop: 2,
-                      color: 'var(--vct-text-tertiary)',
-                      fontSize: 11,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {breadcrumbs.map((crumb, idx) => (
-                      <React.Fragment key={`${crumb}-${idx}`}>
-                        {idx > 0 && <span style={{ opacity: 0.5 }}>/</span>}
-                        <span>{crumb}</span>
-                      </React.Fragment>
-                    ))}
-                  </div>
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginTop: 2,
+                        color: 'var(--vct-text-tertiary)',
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {breadcrumbs.map((crumb, idx) => (
+                        <React.Fragment key={`${crumb}-${idx}`}>
+                          {idx > 0 && <span style={{ opacity: 0.5 }}>/</span>}
+                          <span>{crumb}</span>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginTop: 6,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: 'var(--vct-text-tertiary)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          borderRadius: 999,
+                          border: '1px solid var(--vct-border-subtle)',
+                          background: 'var(--vct-bg-input)',
+                          padding: '2px 8px',
+                        }}
+                      >
+                        Mã giải: {tournamentCode}
+                      </span>
+                      <span
+                        style={{
+                          borderRadius: 999,
+                          border: '1px solid var(--vct-border-subtle)',
+                          background: 'var(--vct-bg-input)',
+                          padding: '2px 8px',
+                        }}
+                      >
+                        Ca: {operationShift}
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -397,7 +484,7 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
                   height: 36,
                   borderRadius: '50%',
                   border: 'none',
-                  background: '#7e22ce',
+                  background: 'linear-gradient(135deg, #b91c1c, #166534)',
                   color: '#fff',
                   fontSize: 13,
                   fontWeight: 800,
@@ -405,11 +492,34 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(126, 34, 206, 0.3)',
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)',
                 }}
               >
                 {userInitials}
               </button>
+              {!isMobile && (
+                <button
+                  type="button"
+                  aria-label="Đăng xuất"
+                  onClick={() => {
+                    void logout().then(() => {
+                      router.replace('/login')
+                    })
+                  }}
+                  style={{
+                    borderRadius: 10,
+                    border: '1px solid var(--vct-border-subtle)',
+                    background: 'transparent',
+                    color: 'var(--vct-text-secondary)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '8px 10px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Đăng xuất
+                </button>
+              )}
             </div>
           </header>
 
@@ -453,4 +563,3 @@ export const VCT_AppShell = ({ children }: { children: React.ReactNode }) => (
     </AuthProvider>
   </ThemeProvider>
 )
-

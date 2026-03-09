@@ -8,9 +8,9 @@ import {
     VCT_ConfirmDialog, VCT_EmptyState
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
-import { VAN_DONG_VIENS, DON_VIS, NOI_DUNG_QUYENS, HANG_CANS, genId } from '../data/mock-data';
+import { NOI_DUNG_QUYENS, HANG_CANS, genId } from '../data/mock-data';
 import { TOURNAMENT_CONFIG } from '../data/tournament-config';
-import type { DangKy, TrangThaiDK, VanDongVien, NoiDungQuyen, HangCan } from '../data/types';
+import type { DangKy, TrangThaiDK, VanDongVien, HangCan, DonVi } from '../data/types';
 import { repositories, useEntityCollection } from '../data/repository';
 
 const RST_MAP: Record<TrangThaiDK, { l: string; t: string }> = {
@@ -41,7 +41,23 @@ const bestDK = (dkList: HangCan[], can: number) => {
 // ════════════════════════════════════════
 // MODAL ĐĂNG KÝ (Nội dung Đa Cột)
 // ════════════════════════════════════════
-const RegistrationModal = ({ isOpen, onClose, vdvId, existingRegs, onSave, isEdit }: { isOpen: boolean, onClose: () => void, vdvId: string, existingRegs: DangKy[], onSave: (vId: string, regs: any[]) => void, isEdit: boolean }) => {
+const RegistrationModal = ({
+    isOpen,
+    onClose,
+    vdvId,
+    existingRegs,
+    onSave,
+    isEdit,
+    athletes,
+}: {
+    isOpen: boolean,
+    onClose: () => void,
+    vdvId: string,
+    existingRegs: DangKy[],
+    onSave: (vId: string, regs: any[]) => void,
+    isEdit: boolean,
+    athletes: VanDongVien[],
+}) => {
     const [checkedQ, setCheckedQ] = useState<Record<string, boolean>>({});
     const [checkedDK, setCheckedDK] = useState<string>('');
 
@@ -58,7 +74,7 @@ const RegistrationModal = ({ isOpen, onClose, vdvId, existingRegs, onSave, isEdi
         setCheckedDK(dk);
     }, [isOpen, vdvId, existingRegs]);
 
-    const vdv = VAN_DONG_VIENS.find(v => v.id === vdvId);
+    const vdv = athletes.find(v => v.id === vdvId);
     if (!vdv) return null;
 
     const tuoi = new Date().getFullYear() - parseInt(vdv.ngay_sinh.substring(0, 4));
@@ -182,6 +198,10 @@ const distToBest = (can: number, d: HangCan) => can >= d.can_tu && (d.can_den ==
 // ════════════════════════════════════════
 export const Page_registration = () => {
     const { items: data, setItems: setDataState } = useEntityCollection(repositories.registration.mock);
+    const athleteStore = useEntityCollection(repositories.athletes.mock);
+    const teamStore = useEntityCollection(repositories.teams.mock);
+    const athletes = athleteStore.items;
+    const teams = teamStore.items;
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState(''); // '' | 'quyen' | 'doi_khang' | 'cho_duyet' | 'da_duyet'
     const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
@@ -207,8 +227,8 @@ export const Page_registration = () => {
     // Enrich Data with Names
     const enrichedData = useMemo(() => {
         return data.map(r => {
-            const vdv = VAN_DONG_VIENS.find(v => v.id === r.vdv_id) || { ho_ten: 'Không rõ', doan_id: '' };
-            const doan = DON_VIS.find(d => d.id === r.doan_id) || { ten: 'Không rõ' };
+            const vdv = athletes.find(v => v.id === r.vdv_id) || { ho_ten: 'Không rõ', doan_id: '' };
+            const doan = teams.find(d => d.id === r.doan_id) || { ten: 'Không rõ' };
             const ndTen = r.loai === 'quyen'
                 ? (NOI_DUNG_QUYENS.find(q => q.id === r.nd_id)?.ten || r.nd_id)
                 : (HANG_CANS.find(h => h.id === r.nd_id) ? `ĐK ${fmtDK(HANG_CANS.find(h => h.id === r.nd_id)!)}` : r.nd_id);
@@ -224,7 +244,7 @@ export const Page_registration = () => {
             const mF = !filter || (filter === 'quyen' || filter === 'doi_khang' ? r.loai === filter : r.trang_thai === filter);
             return mS && mF;
         }).sort((a, b) => new Date(b.ngay).getTime() - new Date(a.ngay).getTime());
-    }, [data, search, filter]);
+    }, [data, athletes, teams, search, filter]);
 
     // Bulk / Quick Actions
     const approveAll = () => {
@@ -235,7 +255,7 @@ export const Page_registration = () => {
     };
 
     const handleSaveRegs = (vdvId: string, newRegs: any[]) => {
-        const vdv = VAN_DONG_VIENS.find(v => v.id === vdvId);
+        const vdv = athletes.find(v => v.id === vdvId);
         if (!vdv) return;
 
         setData(prev => {
@@ -247,7 +267,7 @@ export const Page_registration = () => {
                     vdv_id: vdvId,
                     vdv_ten: vdv.ho_ten,
                     doan_id: vdv.doan_id,
-                    doan_ten: DON_VIS.find(d => d.id === vdv.doan_id)?.ten || '',
+                    doan_ten: teams.find(d => d.id === vdv.doan_id)?.ten || '',
                     loai: nr.loai,
                     nd_id: nr.nd_id,
                     nd_ten: '',
@@ -277,7 +297,7 @@ export const Page_registration = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 <VCT_KpiCard label="Tổng Lượt Đăng Ký" value={data.length} icon={<VCT_Icons.List size={24} />} color="#22d3ee" sub={`${data.filter(r => r.loai === 'quyen').length} Quyền - ${data.filter(r => r.loai === 'doi_khang').length} Đối kháng`} />
                 <VCT_KpiCard label="Số VĐV có thẻ" value={new Set(data.map(d => d.vdv_id)).size} icon={<VCT_Icons.Users size={24} />} color="#a78bfa" sub={`Max ${TOURNAMENT_CONFIG.quota.max_nd_per_vdv} thẻ / VĐV`} />
-                <VCT_KpiCard label="Tỷ lệ lấp đầy Quota" value={`${Math.round((new Set(data.map(d => d.doan_id)).size / DON_VIS.length) * 100)}%`} icon={<VCT_Icons.Activity size={24} />} color="#f59e0b" sub="Đoàn đã đăng ký thi đấu" />
+                <VCT_KpiCard label="Tỷ lệ lấp đầy Quota" value={`${Math.round((new Set(data.map(d => d.doan_id)).size / Math.max(1, teams.length)) * 100)}%`} icon={<VCT_Icons.Activity size={24} />} color="#f59e0b" sub="Đoàn đã đăng ký thi đấu" />
                 <VCT_KpiCard label="Tỷ lệ phê duyệt" value={`${Math.round((data.filter(r => r.trang_thai === 'da_duyet').length / Math.max(1, data.length)) * 100)}%`} icon={<VCT_Icons.Check size={24} />} color="#10b981" sub={`${data.filter(r => r.trang_thai === 'cho_duyet').length} chờ duyệt`} />
             </div>
 
@@ -350,8 +370,8 @@ export const Page_registration = () => {
             {/* VĐV PICKER MODAL (Chọn VĐV để đăng ký) */}
             <VCT_Modal isOpen={modalMode === 'picker'} onClose={() => setModalMode(null)} title="Danh sách VĐV ghi danh" width="600px">
                 <VCT_Stack gap={10} style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 4, paddingBottom: 12 }} className="vct-hide-scrollbar">
-                    {VAN_DONG_VIENS.length === 0 ? <VCT_EmptyState title="Chưa có VĐV nào trong hệ thống" icon="👥" /> :
-                        VAN_DONG_VIENS.map(v => {
+                    {athletes.length === 0 ? <VCT_EmptyState title="Chưa có VĐV nào trong hệ thống" icon="👥" /> :
+                        athletes.map(v => {
                             const curCount = data.filter(r => r.vdv_id === v.id).length;
                             const isMax = curCount >= TOURNAMENT_CONFIG.quota.max_nd_per_vdv;
                             return (
@@ -366,7 +386,7 @@ export const Page_registration = () => {
                                         <VCT_AvatarLetter name={v.ho_ten} size={44} color={v.gioi === 'nam' ? '#60a5fa' : '#f472b6'} />
                                         <div>
                                             <VCT_Text style={{ fontWeight: 800, fontSize: 15 }}>{v.ho_ten}</VCT_Text>
-                                            <VCT_Text variant="small" style={{ marginTop: 4 }}>{v.gioi === 'nam' ? 'Nam' : 'Nữ'} • {v.can_nang}kg • {DON_VIS.find(d => d.id === v.doan_id)?.ten}</VCT_Text>
+                                            <VCT_Text variant="small" style={{ marginTop: 4 }}>{v.gioi === 'nam' ? 'Nam' : 'Nữ'} • {v.can_nang}kg • {teams.find(d => d.id === v.doan_id)?.ten}</VCT_Text>
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -390,6 +410,7 @@ export const Page_registration = () => {
                 existingRegs={data}
                 onSave={handleSaveRegs}
                 isEdit={!!data.find(r => r.vdv_id === selectedVdv)}
+                athletes={athletes}
             />
         </div>
     );

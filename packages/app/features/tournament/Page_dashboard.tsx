@@ -9,10 +9,27 @@ import {
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
 import { TOURNAMENT_CONFIG } from '../data/tournament-config';
-import { DON_VIS, VAN_DONG_VIENS, TRAN_DAUS, LUOT_THI_QUYENS, TRONG_TAIS, CAN_KYS, KHIEU_NAIS, SAN_DAUS } from '../data/mock-data';
+import { repositories, useEntityCollection } from '../data/repository';
 
 export const Page_dashboard = () => {
     const router = useRouter();
+    const teamsStore = useEntityCollection(repositories.teams.mock);
+    const athletesStore = useEntityCollection(repositories.athletes.mock);
+    const refereesStore = useEntityCollection(repositories.referees.mock);
+    const combatStore = useEntityCollection(repositories.combatMatches.mock);
+    const formsStore = useEntityCollection(repositories.formPerformances.mock);
+    const weighStore = useEntityCollection(repositories.weighIns.mock);
+    const appealsStore = useEntityCollection(repositories.appeals.mock);
+    const arenasStore = useEntityCollection(repositories.arenas.mock);
+
+    const DON_VIS = teamsStore.items;
+    const VAN_DONG_VIENS = athletesStore.items;
+    const TRONG_TAIS = refereesStore.items;
+    const TRAN_DAUS = combatStore.items;
+    const LUOT_THI_QUYENS = formsStore.items;
+    const CAN_KYS = weighStore.items;
+    const KHIEU_NAIS = appealsStore.items;
+    const SAN_DAUS = arenasStore.items;
 
     // Data Aggregation
     const kpis = useMemo(() => {
@@ -46,7 +63,7 @@ export const Page_dashboard = () => {
             }),
             top_huy_chuong: medalsByDoan
         };
-    }, []);
+    }, [CAN_KYS, DON_VIS, KHIEU_NAIS, SAN_DAUS, TRAN_DAUS, TRONG_TAIS, VAN_DONG_VIENS]);
 
     // Live Blinker
     const [tick, setTick] = useState(false);
@@ -54,6 +71,11 @@ export const Page_dashboard = () => {
 
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '80px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {(teamsStore.uiState.error || athletesStore.uiState.error || refereesStore.uiState.error || combatStore.uiState.error || formsStore.uiState.error || weighStore.uiState.error || appealsStore.uiState.error || arenasStore.uiState.error) && (
+                <div style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
+                    Một số nguồn dữ liệu dashboard chưa tải được. Số liệu có thể chưa đầy đủ.
+                </div>
+            )}
 
             {/* 1. HERO BANNER */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}

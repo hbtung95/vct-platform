@@ -8,11 +8,11 @@ const csvEscape = (value: unknown) => {
 
 const xmlEscape = (value: unknown) =>
   String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
 
 export const rowsToCsv = <T extends Record<string, unknown>>(rows: T[]) => {
   if (rows.length === 0) return ''
@@ -53,7 +53,7 @@ const splitCsvLine = (line: string) => {
 }
 
 export const parseCsvRows = (rawText: string) => {
-  const text = rawText.replace(/^\uFEFF/, '').replaceAll('\r', '')
+  const text = rawText.replace(/^\uFEFF/, '').replace(/\r/g, '')
   const lines = text
     .split('\n')
     .map((line) => line.trim())

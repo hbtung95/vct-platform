@@ -8,8 +8,9 @@ import {
     VCT_StatusPipeline, VCT_EmptyState, VCT_AvatarLetter, VCT_Card
 } from '../components/vct-ui';
 import { VCT_Icons } from '../components/vct-icons';
-import { LUOT_THI_QUYENS } from '../data/mock-data';
 import type { LuotThiQuyen, TrangThaiQuyen } from '../data/types';
+import { repositories, useEntityCollection } from '../data/repository';
+import { useToast } from '../hooks/use-toast';
 
 const ST_MAP: Record<TrangThaiQuyen, { label: string; color: string; type: string }> = {
     cho_thi: { label: 'Chờ thi', color: '#f59e0b', type: 'warning' },
@@ -43,17 +44,25 @@ const calcQuyenScore = (diem: number[]) => {
 };
 
 export const Page_forms = () => {
-    const [entries, setEntries] = useState<LuotThiQuyen[]>([...LUOT_THI_QUYENS]);
+    const { items: entries, setItems: setEntriesState, uiState } = useEntityCollection(repositories.formPerformances.mock);
     const [filter, setFilter] = useState<string | null>(null);
     const [noiDungFilter, setNoiDungFilter] = useState<string>('all');
     const [gioiTinhFilter, setGioiTinhFilter] = useState<string>('all');
     const [luaTuoiFilter, setLuaTuoiFilter] = useState<string>('all');
-    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+    const { toast, showToast, hideToast } = useToast();
     const [scoreModal, setScoreModal] = useState<LuotThiQuyen | null>(null);
     const [judgeCount, setJudgeCount] = useState<5 | 7>(5);
     const [scores, setScores] = useState<string[]>(['', '', '', '', '']);
 
-    const showToast = useCallback((msg: string, type = 'success') => { setToast({ show: true, msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); }, []);
+    const setEntries = useCallback((updater: React.SetStateAction<LuotThiQuyen[]>) => {
+        setEntriesState(prev => {
+            const next = typeof updater === 'function'
+                ? (updater as (value: LuotThiQuyen[]) => LuotThiQuyen[])(prev)
+                : updater;
+            void repositories.formPerformances.mock.replaceAll(next);
+            return next;
+        });
+    }, [setEntriesState]);
 
     const noiDungs = useMemo(() => Array.from(new Set(entries.map(e => e.noi_dung))).filter(Boolean), [entries]);
     const gioiTinhs = useMemo(() => Array.from(new Set(entries.map(e => e.gioi_tinh))).filter(Boolean), [entries]);
@@ -178,7 +187,13 @@ export const Page_forms = () => {
     const liveAvg = liveScoreResult?.avg ?? null;
     return (
         <div style={{ maxWidth: 1400, margin: '0 auto', paddingBottom: 100 }}>
-            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={hideToast} />
+
+            {uiState.error && (
+                <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
+                    Không thể tải dữ liệu thi quyền: {uiState.error}
+                </div>
+            )}
 
             {/* KPI */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>

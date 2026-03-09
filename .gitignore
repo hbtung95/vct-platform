@@ -71,6 +71,8 @@ apps/expo/android
 
 .turbo
 build/**
+backend/bin/
+test-results/
 
 .pnp.*
 .yarn/*
