@@ -112,6 +112,42 @@ type MasterAgeGroup struct {
 }
 
 // -------------------------------------------------------------
+// COMPETITION CONTENT TYPES (NỘI DUNG THI ĐẤU)
+// Theo Quy chế 2021-QC01, Chương III
+// -------------------------------------------------------------
+
+type CompetitionContentType string
+
+const (
+	ContentDoiKhang      CompetitionContentType = "doi_khang"            // Đối kháng (1 vs 1, có hạng cân)
+	ContentQuyen         CompetitionContentType = "quyen"                // Quyền (bài quyền cá nhân)
+	ContentQuyenDongDoi  CompetitionContentType = "quyen_dong_doi"       // Quyền đồng đội (3-5 người)
+	ContentSongLuyen     CompetitionContentType = "song_luyen"           // Song luyện (2 người đấu mẫu)
+	ContentNhieuLuyen    CompetitionContentType = "nhieu_luyen"          // Nhiều luyện (3+ người đấu mẫu)
+	ContentBinhKhi       CompetitionContentType = "binh_khi"             // Binh khí (quyền binh khí)
+	ContentVuKhiDoiLuyen CompetitionContentType = "vu_khi_doi_luyen"    // Vũ khí đối luyện
+	ContentBieuDien      CompetitionContentType = "bieu_dien_chien_luoc" // Biểu diễn chiến lược
+	ContentTuVe          CompetitionContentType = "tu_ve"                // Tự vệ
+)
+
+// MasterCompetitionContent represents a standardized competition event type.
+type MasterCompetitionContent struct {
+	ID             string                 `json:"id"`
+	Code           CompetitionContentType `json:"code"`
+	Name           string                 `json:"name"`
+	Description    string                 `json:"description"`
+	RequiresWeight bool                   `json:"requires_weight"`  // Đối kháng cần hạng cân
+	IsTeamEvent    bool                   `json:"is_team_event"`    // Nội dung đồng đội
+	MinAthletes    int                    `json:"min_athletes"`     // Số VĐV tối thiểu
+	MaxAthletes    int                    `json:"max_athletes"`     // Số VĐV tối đa
+	HasWeapon      bool                   `json:"has_weapon"`       // Có sử dụng binh khí
+	Scope          BeltSystemScope        `json:"scope"`            // NATIONAL, PROVINCIAL, SCHOOL
+	ScopeID        string                 `json:"scope_id,omitempty"`
+	CreatedAt      time.Time              `json:"created_at"`
+	UpdatedAt      time.Time              `json:"updated_at"`
+}
+
+// -------------------------------------------------------------
 // APPROVAL WORKFLOWS
 // -------------------------------------------------------------
 

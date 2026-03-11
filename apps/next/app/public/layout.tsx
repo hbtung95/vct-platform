@@ -1,13 +1,14 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { VCT_Icons } from 'app/features/components/vct-icons'
+import { UI_Logo } from 'app/features/components/ui-logo'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#0b1120] text-slate-200 flex flex-col font-sans">
       <header className="sticky top-0 z-50 bg-[#0f172a]/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-xl">
         <Link href="/" className="flex items-center gap-3">
-          <img src="/logo-vct.png" alt="VCT Logo" className="w-8 h-8 rounded-md object-contain" />
+          <UI_Logo size={32} />
           <span className="font-black text-lg tracking-tight text-white">VCT PORTAL</span>
         </Link>
         <div className="flex items-center gap-6">

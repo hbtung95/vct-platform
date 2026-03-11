@@ -341,6 +341,9 @@ export const en: Record<string, string> = {
     'ws.fed.approvals': 'Approvals',
     'ws.fed.provinces': 'Provinces',
     'ws.fed.orgChart': 'Org Chart',
+    'ws.fed.regulations': 'Regulations',
+    'ws.fed.regulationsOverview': 'Regulations Overview',
+    'ws.fed.masterData': 'Master Data',
 
     // Provincial
     'ws.prov.overview': 'Overview',

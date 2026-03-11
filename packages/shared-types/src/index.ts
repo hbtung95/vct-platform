@@ -12,6 +12,7 @@ export * from './training';
 export * from './heritage';
 export * from './community';
 export * from './finance';
+export * from './federation/common';
 
 // V7.0 Types
 export * from './v7_security';

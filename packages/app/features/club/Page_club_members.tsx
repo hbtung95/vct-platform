@@ -287,8 +287,7 @@ export const Page_club_members = () => {
     if (key === 'search') setSearch('')
   }
 
-  const columns = React.useMemo(
-    () => [
+  const columns = [
       {
         key: 'select',
         label: (
@@ -409,9 +408,7 @@ export const Page_club_members = () => {
           </div>
         ),
       },
-    ],
-    [can, classNameById, filteredMembers, selectedIds]
-  )
+    ]
 
   const stats: StatItem[] = [
     {
@@ -733,4 +730,3 @@ export const Page_club_members = () => {
     </VCT_PageContainer>
   )
 }
-

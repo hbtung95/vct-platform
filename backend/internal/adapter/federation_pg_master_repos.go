@@ -15,6 +15,7 @@ type pgMasterDataStore struct {
 	beltStore     *StoreAdapter[federation.MasterBelt]
 	weightStore   *StoreAdapter[federation.MasterWeightClass]
 	ageStore      *StoreAdapter[federation.MasterAgeGroup]
+	contentStore  *StoreAdapter[federation.MasterCompetitionContent]
 	approvalStore *StoreAdapter[federation.ApprovalRequest]
 }
 
@@ -23,6 +24,7 @@ func NewPgMasterDataStore(ds store.DataStore) federation.MasterDataStore {
 		beltStore:     NewStoreAdapter[federation.MasterBelt](ds, "federation_master_belts"),
 		weightStore:   NewStoreAdapter[federation.MasterWeightClass](ds, "federation_master_weights"),
 		ageStore:      NewStoreAdapter[federation.MasterAgeGroup](ds, "federation_master_ages"),
+		contentStore:  NewStoreAdapter[federation.MasterCompetitionContent](ds, "federation_master_contents"),
 		approvalStore: NewStoreAdapter[federation.ApprovalRequest](ds, "federation_approvals"),
 	}
 }
@@ -133,6 +135,42 @@ func (s *pgMasterDataStore) UpdateMasterAge(ctx context.Context, age federation.
 
 func (s *pgMasterDataStore) DeleteMasterAge(ctx context.Context, id string) error {
 	return s.ageStore.Delete(id)
+}
+
+// ── Competition Contents ──
+
+func (s *pgMasterDataStore) ListMasterContents(ctx context.Context) ([]federation.MasterCompetitionContent, error) {
+	return s.contentStore.List()
+}
+
+func (s *pgMasterDataStore) GetMasterContent(ctx context.Context, id string) (*federation.MasterCompetitionContent, error) {
+	return s.contentStore.GetByID(id)
+}
+
+func (s *pgMasterDataStore) CreateMasterContent(ctx context.Context, content federation.MasterCompetitionContent) error {
+	content.CreatedAt = time.Now()
+	_, err := s.contentStore.Create(content)
+	return err
+}
+
+func (s *pgMasterDataStore) UpdateMasterContent(ctx context.Context, content federation.MasterCompetitionContent) error {
+	_, err := s.contentStore.Update(content.ID, map[string]interface{}{
+		"code":            content.Code,
+		"name":            content.Name,
+		"description":     content.Description,
+		"requires_weight": content.RequiresWeight,
+		"is_team_event":   content.IsTeamEvent,
+		"min_athletes":    content.MinAthletes,
+		"max_athletes":    content.MaxAthletes,
+		"has_weapon":      content.HasWeapon,
+		"scope":           content.Scope,
+		"scope_id":        content.ScopeID,
+	})
+	return err
+}
+
+func (s *pgMasterDataStore) DeleteMasterContent(ctx context.Context, id string) error {
+	return s.contentStore.Delete(id)
 }
 
 // ── Approvals ──

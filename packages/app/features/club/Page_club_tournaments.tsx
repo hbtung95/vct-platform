@@ -257,8 +257,7 @@ export const Page_club_tournaments = () => {
     setSelectedIds(new Set())
   }
 
-  const columns = React.useMemo(
-    () => [
+  const columns = [
       {
         key: 'select',
         label: (
@@ -386,9 +385,7 @@ export const Page_club_tournaments = () => {
           </div>
         ),
       },
-    ],
-    [can, filteredTournaments, selectedIds]
-  )
+    ]
 
   const totalRegisteredAthletes = tournaments.reduce(
     (sum, item) => sum + item.registeredAthletes,

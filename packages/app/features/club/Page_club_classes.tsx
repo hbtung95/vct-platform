@@ -359,8 +359,7 @@ export const Page_club_classes = () => {
     if (key === 'status') setStatusFilter('')
   }
 
-  const columns = React.useMemo(
-    () => [
+  const columns = [
       {
         key: 'select',
         label: (
@@ -499,9 +498,7 @@ export const Page_club_classes = () => {
           </div>
         ),
       },
-    ],
-    [can, filteredClasses, selectedIds]
-  )
+    ]
 
   const totalStudents = classes.reduce((sum, item) => sum + item.currentStudents, 0)
   const totalCapacity = classes.reduce((sum, item) => sum + item.maxStudents, 0)

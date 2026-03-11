@@ -276,8 +276,7 @@ export const Page_club_finance = () => {
     setSelectedIds(new Set())
   }
 
-  const columns = React.useMemo(
-    () => [
+  const columns = [
       {
         key: 'select',
         label: (
@@ -402,9 +401,7 @@ export const Page_club_finance = () => {
           </div>
         ),
       },
-    ],
-    [can, filteredEntries, selectedIds]
-  )
+    ]
 
   const stats: StatItem[] = [
     {

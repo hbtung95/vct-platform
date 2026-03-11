@@ -432,8 +432,7 @@ export const Page_club_training = () => {
     showToast('Da cap nhat trang thai ky thi')
   }
 
-  const moduleColumns = React.useMemo(
-    () => [
+  const moduleColumns = [
       {
         key: 'select',
         label: (
@@ -561,12 +560,9 @@ export const Page_club_training = () => {
           </div>
         ),
       },
-    ],
-    [can, filteredModules, selectedModuleIds]
-  )
+    ]
 
-  const examColumns = React.useMemo(
-    () => [
+  const examColumns = [
       {
         key: 'exam',
         label: 'Ky thi dai',
@@ -655,9 +651,7 @@ export const Page_club_training = () => {
           </div>
         ),
       },
-    ],
-    [can]
-  )
+    ]
 
   const avgModuleProgress =
     modules.length > 0

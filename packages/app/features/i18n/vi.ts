@@ -341,6 +341,9 @@ export const vi: Record<string, string> = {
     'ws.fed.approvals': 'Phê duyệt',
     'ws.fed.provinces': 'Tỉnh thành',
     'ws.fed.orgChart': 'Sơ đồ tổ chức',
+    'ws.fed.regulations': 'Quy chế Chuyên môn',
+    'ws.fed.regulationsOverview': 'Tổng quan Quy chế',
+    'ws.fed.masterData': 'Danh mục Chuẩn',
 
     // Provincial
     'ws.prov.overview': 'Tổng quan',

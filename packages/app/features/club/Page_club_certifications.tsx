@@ -81,6 +81,12 @@ const toFormState = (record: ClubCertificationRecord): CertificationFormState =>
 
 const beltLabel = (rank: BeltRank) => `${BELT_EMOJI[rank]} ${BELT_LABEL[rank]}`
 
+const getNextBeltRank = (rank: BeltRank): BeltRank => {
+  const index = BELT_ORDER.indexOf(rank)
+  if (index < 0) return rank
+  return BELT_ORDER[Math.min(index + 1, BELT_ORDER.length - 1)] ?? rank
+}
+
 export const Page_club_certifications = () => {
   const [records, setRecords] = useClubStoredState('certifications', CERTIFICATION_SEED)
   const [members, setMembers] = useClubStoredState('members', MEMBER_SEED)
@@ -183,9 +189,7 @@ export const Page_club_certifications = () => {
       memberId,
       memberName: member?.fullName ?? prev.memberName,
       fromRank: member?.beltRank ?? prev.fromRank,
-      toRank: member
-        ? BELT_ORDER[Math.min(BELT_ORDER.indexOf(member.beltRank) + 1, BELT_ORDER.length - 1)]
-        : prev.toRank,
+      toRank: member ? getNextBeltRank(member.beltRank) : prev.toRank,
     }))
   }
 
@@ -277,8 +281,7 @@ export const Page_club_certifications = () => {
     setSelectedIds(new Set())
   }
 
-  const columns = React.useMemo(
-    () => [
+  const columns = [
       {
         key: 'select',
         label: (
@@ -362,9 +365,7 @@ export const Page_club_certifications = () => {
           </div>
         ),
       },
-    ],
-    [can, filteredRecords, selectedIds]
-  )
+    ]
 
   const beltDistribution = React.useMemo(() => {
     const map = new Map<BeltRank, number>()

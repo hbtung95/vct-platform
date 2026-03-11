@@ -35,6 +35,13 @@ type MasterDataStore interface {
 	UpdateMasterAge(ctx context.Context, age MasterAgeGroup) error
 	DeleteMasterAge(ctx context.Context, id string) error
 
+	// Master Competition Contents (Nội dung thi đấu)
+	ListMasterContents(ctx context.Context) ([]MasterCompetitionContent, error)
+	GetMasterContent(ctx context.Context, id string) (*MasterCompetitionContent, error)
+	CreateMasterContent(ctx context.Context, content MasterCompetitionContent) error
+	UpdateMasterContent(ctx context.Context, content MasterCompetitionContent) error
+	DeleteMasterContent(ctx context.Context, id string) error
+
 	// Approval Workflows
 	ListApprovals(ctx context.Context, status string) ([]ApprovalRequest, error)
 	GetApproval(ctx context.Context, id string) (ApprovalRequest, error)
@@ -47,6 +54,7 @@ type MemoryMasterDataStore struct {
 	belts     []MasterBelt
 	weights   []MasterWeightClass
 	ages      []MasterAgeGroup
+	contents  []MasterCompetitionContent
 	approvals map[string]ApprovalRequest
 }
 
@@ -55,48 +63,30 @@ func NewMemoryMasterDataStore() *MemoryMasterDataStore {
 		belts:     make([]MasterBelt, 0),
 		weights:   make([]MasterWeightClass, 0),
 		ages:      make([]MasterAgeGroup, 0),
+		contents:  make([]MasterCompetitionContent, 0),
 		approvals: make(map[string]ApprovalRequest),
 	}
 	store.seedData()
 	return store
 }
 
+// seedData loads effective regulation data (2021 base + 2024 amendment).
+// Đai & Nội dung thi đấu: giữ nguyên 2021 (không thay đổi trong Luật 128/2024)
+// Hạng cân & Nhóm tuổi: theo Luật 128/2024 (thay thế hoàn toàn 2021)
 func (s *MemoryMasterDataStore) seedData() {
 	now := time.Now()
-	scope := BeltScopeNational
 
-	// Seed Belts — Chuẩn quốc gia
-	s.belts = []MasterBelt{
-		{Level: 1, Name: "Đai Trắng (Cấp 8)", ColorHex: "#ffffff", RequiredTimeMin: 3, IsDanLevel: false, Description: "Cấp khởi đầu — nhập môn", Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{Level: 2, Name: "Đai Vàng (Cấp 7)", ColorHex: "#fbbf24", RequiredTimeMin: 3, IsDanLevel: false, Description: "Cấp cơ bản — nắm vững tấn pháp", Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{Level: 3, Name: "Đai Xanh Lá (Cấp 6)", ColorHex: "#4ade80", RequiredTimeMin: 3, IsDanLevel: false, Description: "Cấp trung — quyền cước kết hợp", Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{Level: 4, Name: "Đai Xanh Dương (Cấp 5)", ColorHex: "#3b82f6", RequiredTimeMin: 3, IsDanLevel: false, Description: "Cấp khá — bài quyền hoàn chỉnh", Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{Level: 5, Name: "Đai Đỏ (Cấp 4)", ColorHex: "#ef4444", RequiredTimeMin: 3, IsDanLevel: false, Description: "Cấp giỏi — thực chiến cơ bản", Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{Level: 6, Name: "Đai Nâu (Cấp 1)", ColorHex: "#92400e", RequiredTimeMin: 6, IsDanLevel: false, Description: "Cấp xuất sắc — chuẩn bị đẳng cấp", Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{Level: 7, Name: "Đai Đen 1 Đẳng (1 Dan)", ColorHex: "#1e293b", RequiredTimeMin: 12, IsDanLevel: true, Description: "Đẳng 1 — Sơ đẳng", Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{Level: 8, Name: "Đai Đen 2 Đẳng (2 Dan)", ColorHex: "#0f172a", RequiredTimeMin: 12, IsDanLevel: true, Description: "Đẳng 2 — Trung đẳng", Scope: scope, CreatedAt: now, UpdatedAt: now},
-	}
+	// Đai: giữ nguyên 2021 (Chương II không thay đổi)
+	s.belts = NationalBelts()
 
-	// Seed Weights — Chuẩn quốc gia
-	s.weights = []MasterWeightClass{
-		{ID: "m-u45", Gender: "MALE", Category: "Kyorugi", MaxWeight: 45.0, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "m-u48", Gender: "MALE", Category: "Kyorugi", MaxWeight: 48.0, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "m-u51", Gender: "MALE", Category: "Kyorugi", MaxWeight: 51.0, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "f-u42", Gender: "FEMALE", Category: "Kyorugi", MaxWeight: 42.0, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "f-u44", Gender: "FEMALE", Category: "Kyorugi", MaxWeight: 44.0, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "f-u46", Gender: "FEMALE", Category: "Kyorugi", MaxWeight: 46.0, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "m-heavy", Gender: "MALE", Category: "Kyorugi", IsHeavy: true, Scope: scope, CreatedAt: now, UpdatedAt: now},
-	}
+	// Hạng cân: theo 2024 (Điều 4 sửa đổi)
+	s.weights = EffectiveWeightClasses()
 
-	// Seed Ages — Chuẩn quốc gia
-	s.ages = []MasterAgeGroup{
-		{ID: "u12", Name: "Nhi đồng (U12)", MinAge: 6, MaxAge: 11, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "u15", Name: "Thiếu niên (U15)", MinAge: 12, MaxAge: 14, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "u18", Name: "Trẻ (U18)", MinAge: 15, MaxAge: 17, Scope: scope, CreatedAt: now, UpdatedAt: now},
-		{ID: "u35", Name: "Vô địch (18-35)", MinAge: 18, MaxAge: 35, Scope: scope, CreatedAt: now, UpdatedAt: now},
-	}
+	// Nhóm tuổi: theo 2024 (Điều 4 & 25 sửa đổi)
+	s.ages = EffectiveAgeGroups()
+	s.contents = NationalCompetitionContents()
 
-	// Seed Approvals
+	// Seed Approvals — Dữ liệu mẫu
 	req := ApprovalRequest{
 		ID:            "RQ-001",
 		WorkflowCode:  "club_registration",
@@ -268,6 +258,62 @@ func (s *MemoryMasterDataStore) DeleteMasterAge(ctx context.Context, id string) 
 	for i := range s.ages {
 		if s.ages[i].ID == id {
 			s.ages = append(s.ages[:i], s.ages[i+1:]...)
+			return nil
+		}
+	}
+	return ErrNotFound
+}
+
+// ── Competition Contents ─────────────────────────────────────
+
+func (s *MemoryMasterDataStore) ListMasterContents(ctx context.Context) ([]MasterCompetitionContent, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return append([]MasterCompetitionContent{}, s.contents...), nil
+}
+
+func (s *MemoryMasterDataStore) GetMasterContent(ctx context.Context, id string) (*MasterCompetitionContent, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for i := range s.contents {
+		if s.contents[i].ID == id {
+			c := s.contents[i]
+			return &c, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (s *MemoryMasterDataStore) CreateMasterContent(ctx context.Context, content MasterCompetitionContent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if content.ID == "" {
+		content.ID = fmt.Sprintf("nd-%d", time.Now().UnixNano())
+	}
+	content.CreatedAt = time.Now()
+	s.contents = append(s.contents, content)
+	return nil
+}
+
+func (s *MemoryMasterDataStore) UpdateMasterContent(ctx context.Context, content MasterCompetitionContent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.contents {
+		if s.contents[i].ID == content.ID {
+			content.CreatedAt = s.contents[i].CreatedAt
+			s.contents[i] = content
+			return nil
+		}
+	}
+	return ErrNotFound
+}
+
+func (s *MemoryMasterDataStore) DeleteMasterContent(ctx context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.contents {
+		if s.contents[i].ID == id {
+			s.contents = append(s.contents[:i], s.contents[i+1:]...)
 			return nil
 		}
 	}

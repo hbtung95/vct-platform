@@ -31,6 +31,12 @@ const FEDERATION_SIDEBAR: WorkspaceSidebarConfig = {
             ],
         },
         {
+            id: 'regulations', label: 'ws.fed.regulations', items: [
+                { id: 'fed-regulations', path: '/fed/regulations', label: 'ws.fed.regulationsOverview', icon: 'ScrollText' },
+                { id: 'fed-masterdata', path: '/fed/master-data', label: 'ws.fed.masterData', icon: 'Database' },
+            ],
+        },
+        {
             id: 'ranking', label: 'ws.fed.ranking', items: [
                 { id: 'fed-rankings', path: '/rankings', label: 'ws.fed.rankings', icon: 'BarChart2' },
                 { id: 'fed-heritage', path: '/heritage', label: 'ws.fed.heritage', icon: 'Network' },
@@ -171,34 +177,42 @@ const CLUB_SIDEBAR: WorkspaceSidebarConfig = {
     groups: [
         {
             id: 'overview', label: 'ws.club.overview', items: [
-                { id: 'club-dashboard', path: '/club', label: 'ws.club.dashboard', icon: 'Dashboard' },
+                { id: 'club-dashboard', path: '/', label: 'ws.club.dashboard', icon: 'Dashboard' },
             ],
         },
         {
             id: 'members', label: 'ws.club.members', items: [
-                { id: 'club-members', path: '/club/members', label: 'ws.club.students', icon: 'Users' },
+                { id: 'club-students', path: '/people', label: 'ws.club.students', icon: 'Users' },
+                { id: 'club-coaches', path: '/coaches', label: 'ws.club.coaches', icon: 'UserCheck' },
             ],
         },
         {
             id: 'training', label: 'ws.club.training', items: [
-                { id: 'club-classes', path: '/club/classes', label: 'ws.club.classes', icon: 'Book' },
-                { id: 'club-training', path: '/club/training', label: 'ws.club.curriculum', icon: 'Award' },
-                { id: 'club-certifications', path: '/club/certifications', label: 'ws.club.beltExams', icon: 'FileText' },
+                { id: 'club-curriculum', path: '/training/curriculum', label: 'ws.club.curriculum', icon: 'Book' },
+                { id: 'club-techniques', path: '/training/techniques', label: 'ws.club.techniques', icon: 'Video' },
+                { id: 'club-plans', path: '/training/plans', label: 'ws.club.plans', icon: 'Calendar' },
+                { id: 'club-classes', path: '/clubs/classes', label: 'ws.club.classes', icon: 'Clock' },
+                { id: 'club-attendance', path: '/training/attendance', label: 'ws.club.attendance', icon: 'CheckSquare' },
+                { id: 'club-beltexams', path: '/training/belt-exams', label: 'ws.club.beltExams', icon: 'Award' },
+                { id: 'club-elearning', path: '/training/elearning', label: 'ws.club.elearning', icon: 'Laptop' },
+            ],
+        },
+        {
+            id: 'facilities', label: 'ws.club.facilities', items: [
+                { id: 'club-facilities', path: '/clubs/facilities', label: 'ws.club.facilityList', icon: 'Home' },
             ],
         },
         {
             id: 'finance', label: 'ws.club.finance', items: [
-                { id: 'club-finance', path: '/club/finance', label: 'ws.club.financeOverview', icon: 'DollarSign' },
+                { id: 'club-finance', path: '/finance', label: 'ws.club.financeOverview', icon: 'DollarSign' },
+                { id: 'club-invoices', path: '/finance/invoices', label: 'ws.club.invoices', icon: 'FileText' },
+                { id: 'club-fees', path: '/finance/fees', label: 'ws.club.fees', icon: 'CreditCard' },
             ],
         },
         {
             id: 'tournaments', label: 'ws.club.tournaments', items: [
-                { id: 'club-tournaments', path: '/club/tournaments', label: 'ws.club.tournamentList', icon: 'Trophy' },
-            ],
-        },
-        {
-            id: 'settings', label: 'route.club-settings.label', items: [
-                { id: 'club-settings', path: '/club/settings', label: 'route.club-settings.label', icon: 'Settings' },
+                { id: 'club-tournaments', path: '/giai-dau', label: 'ws.club.tournamentList', icon: 'Trophy' },
+                { id: 'club-registration', path: '/registration', label: 'ws.club.registration', icon: 'ClipboardCheck' },
             ],
         },
     ],
