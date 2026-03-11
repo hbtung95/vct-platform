@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, type ReactNode, type CSSProperties } from 'react'
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
 
 /* ────────────────────────────────────────────
  *  VCT_Dropdown
  *  Action menu with keyboard navigation (↑↓ Enter Esc).
- *  Click-outside dismiss, framer-motion animation.
+ *  Click-outside dismiss, Tailwind-styled.
  * ──────────────────────────────────────────── */
 
 export interface DropdownItem {
@@ -80,27 +80,10 @@ export function VCT_Dropdown({ trigger, items, align = 'right', className }: VCT
         [open, focusedIdx, items]
     )
 
-    const menuStyle: CSSProperties = {
-        position: 'absolute',
-        top: '100%',
-        [align === 'right' ? 'right' : 'left']: 0,
-        marginTop: 6,
-        minWidth: 180,
-        zIndex: 'var(--vct-z-dropdown, 100)' as any,
-        borderRadius: 'var(--vct-radius-md)',
-        background: 'var(--vct-bg-elevated)',
-        border: '1px solid var(--vct-border-subtle)',
-        boxShadow: 'var(--vct-shadow-xl)',
-        padding: '4px 0',
-        animation: 'vct-scale-in 0.15s var(--vct-ease-out) both',
-        transformOrigin: align === 'right' ? 'top right' : 'top left',
-    }
-
     return (
         <div
             ref={wrapperRef}
-            className={className}
-            style={{ position: 'relative', display: 'inline-flex' }}
+            className={`relative inline-flex ${className ?? ''}`}
             onKeyDown={handleKeyDown}
         >
             <span
@@ -109,13 +92,16 @@ export function VCT_Dropdown({ trigger, items, align = 'right', className }: VCT
                 tabIndex={0}
                 aria-haspopup="menu"
                 aria-expanded={open}
-                style={{ cursor: 'pointer', display: 'inline-flex' }}
+                className="inline-flex cursor-pointer"
             >
                 {trigger}
             </span>
 
             {open && (
-                <div role="menu" style={menuStyle}>
+                <div
+                    role="menu"
+                    className={`absolute top-full z-[100] mt-1.5 min-w-[200px] rounded-xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-elevated)] py-1 shadow-[var(--vct-shadow-xl)] animate-[vct-scale-in_0.15s_var(--vct-ease-out)_both] ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}
+                >
                     {items.map((item, i) => (
                         <button
                             key={item.label}
@@ -128,26 +114,17 @@ export function VCT_Dropdown({ trigger, items, align = 'right', className }: VCT
                                     setOpen(false)
                                 }
                             }}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                width: '100%',
-                                padding: '8px 12px',
-                                border: 'none',
-                                background: i === focusedIdx ? 'var(--vct-bg-hover)' : 'transparent',
-                                color: item.danger ? 'var(--vct-danger)' : 'var(--vct-text-primary)',
-                                fontSize: 'var(--vct-font-sm)',
-                                fontWeight: 500,
-                                textAlign: 'left',
-                                cursor: item.disabled ? 'not-allowed' : 'pointer',
-                                opacity: item.disabled ? 0.5 : 1,
-                                transition: 'background var(--vct-duration-fast) ease',
-                            }}
+                            className={`flex w-full items-center gap-2.5 border-none px-3 py-2.5 text-left text-sm transition ${item.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                                } ${item.danger
+                                    ? 'text-[var(--vct-danger)] hover:bg-red-500/10'
+                                    : 'text-[var(--vct-text-primary)] hover:bg-[var(--vct-bg-hover)]'
+                                } ${i === focusedIdx ? 'bg-[var(--vct-bg-hover)]' : 'bg-transparent'
+                                } ${i === 0 ? 'border-b border-[var(--vct-border-subtle)] pb-2.5 mb-1 font-semibold text-xs' : 'font-medium'
+                                }`}
                             onMouseEnter={() => setFocusedIdx(i)}
                             onMouseLeave={() => setFocusedIdx(-1)}
                         >
-                            {item.icon && <span style={{ display: 'inline-flex', flexShrink: 0, width: 18, height: 18 }}>{item.icon}</span>}
+                            {item.icon && <span className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center opacity-70">{item.icon}</span>}
                             {item.label}
                         </button>
                     ))}

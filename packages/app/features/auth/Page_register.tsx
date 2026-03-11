@@ -215,6 +215,7 @@ export function Page_register() {
                         <input id="rg-pw" type={showPw ? 'text' : 'password'} value={form.matKhau}
                           onChange={e => handleField('matKhau', e.target.value)}
                           onFocus={() => setFocusField('pw')} onBlur={() => setFocusField(null)}
+                          autoComplete="new-password"
                           placeholder={t('passwordPh')} />
                         <button type="button" tabIndex={-1} onClick={() => setShowPw(!showPw)} className="v-inp__eye">
                           {showPw ? <VCT_Icons.EyeOff size={13} /> : <VCT_Icons.Eye size={13} />}
@@ -229,6 +230,7 @@ export function Page_register() {
                         <input id="rg-pw2" type={showPw2 ? 'text' : 'password'} value={form.xacNhanMatKhau}
                           onChange={e => handleField('xacNhanMatKhau', e.target.value)}
                           onFocus={() => setFocusField('pw2')} onBlur={() => setFocusField(null)}
+                          autoComplete="new-password"
                           placeholder={t('confirmPwPh')} />
                         <button type="button" tabIndex={-1} onClick={() => setShowPw2(!showPw2)} className="v-inp__eye">
                           {showPw2 ? <VCT_Icons.EyeOff size={13} /> : <VCT_Icons.Eye size={13} />}
@@ -300,11 +302,11 @@ export function Page_register() {
 
           {/* Stats */}
           <div className="v-stats">
-            <div className="v-st"><strong>{tAuth('stat1v')}</strong><span>{tAuth('stat1l')}</span></div>
+            <a href="/public/provinces" className="v-st" style={{ textDecoration: 'none' }}><strong>{tAuth('stat1v')}</strong><span>{tAuth('stat1l')}</span></a>
             <div className="v-st__d" />
-            <div className="v-st"><strong>{tAuth('stat2v')}</strong><span>{tAuth('stat2l')}</span></div>
+            <a href="/public/clubs" className="v-st" style={{ textDecoration: 'none' }}><strong>{tAuth('stat2v')}</strong><span>{tAuth('stat2l')}</span></a>
             <div className="v-st__d" />
-            <div className="v-st"><strong>{tAuth('stat3v')}</strong><span>{tAuth('stat3l')}</span></div>
+            <a href="/public/members" className="v-st" style={{ textDecoration: 'none' }}><strong>{tAuth('stat3v')}</strong><span>{tAuth('stat3l')}</span></a>
           </div>
         </main>
 
@@ -387,8 +389,10 @@ const CSS = `
 .v-card__border { position: absolute; inset: -1px; border-radius: 25px; background: conic-gradient(from 0deg, transparent 0%, rgba(16,185,129,0.3) 10%, transparent 20%, rgba(56,189,248,0.2) 40%, transparent 50%, rgba(168,85,247,0.2) 70%, transparent 80%, rgba(16,185,129,0.3) 100%); animation: bSpin 8s linear infinite; opacity: 0.5; mask-image: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000); mask-composite: xor; -webkit-mask-composite: xor; padding: 1px; }
 .v--l .v-card__border { opacity: 0.35; }
 @keyframes bSpin { to { transform: rotate(360deg); } }
-.v-card { position: relative; display: flex; flex-direction: column; gap: 0; border-radius: 24px; background: var(--card-bg); backdrop-filter: blur(40px) saturate(1.5); -webkit-backdrop-filter: blur(40px) saturate(1.5); box-shadow: 0 0 60px -20px var(--card-glow), 0 25px 60px -15px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06); overflow: hidden; }
+.v-card { position: relative; display: flex; flex-direction: column; gap: 0; border-radius: 24px; background: var(--card-bg); backdrop-filter: blur(40px) saturate(1.5); -webkit-backdrop-filter: blur(40px) saturate(1.5); box-shadow: 0 0 60px -20px var(--card-glow), 0 25px 60px -15px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06); overflow: hidden; transition: box-shadow 0.4s ease, transform 0.4s ease; }
+.v-card:hover { box-shadow: 0 0 80px -10px rgba(16,185,129,0.15), 0 30px 80px -15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08); transform: translateY(-2px); }
 .v--l .v-card { box-shadow: 0 0 60px -20px var(--card-glow), 0 25px 60px -15px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.5); }
+.v--l .v-card:hover { box-shadow: 0 0 80px -10px rgba(16,185,129,0.1), 0 30px 80px -15px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6); }
 @keyframes cardIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 /* Card header */
@@ -477,8 +481,9 @@ const CSS = `
 
 /* ══════ STATS ══════ */
 .v-stats { display: flex; align-items: center; gap: 20px; padding: 12px 24px; border-radius: 14px; background: var(--glass); border: 1px solid var(--brd); backdrop-filter: blur(12px); animation: up 0.5s ease-out 0.3s both; }
-.v-st { text-align: center; }
-.v-st strong { display: block; font-size: 16px; font-weight: 900; color: var(--tx-s); letter-spacing: -0.03em; }
+.v-st { text-align: center; color: var(--tx-s); transition: transform 0.2s; display: block; }
+.v-st:hover { transform: scale(1.05); }
+.v-st strong { display: block; font-size: 16px; font-weight: 900; color: inherit; letter-spacing: -0.03em; }
 .v-st span { display: block; font-size: 9px; color: var(--tx-m); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; font-weight: 600; }
 .v-st__d { width: 1px; height: 20px; background: var(--brd); }
 

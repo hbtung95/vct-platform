@@ -17,6 +17,8 @@ export interface VCTStackProps extends React.HTMLAttributes<HTMLDivElement> {
   gap?: number
   align?: CSSProperties['alignItems']
   justify?: CSSProperties['justifyContent']
+  /** Enable flex-wrap */
+  wrap?: boolean
 }
 
 export interface VCTDividerProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -177,6 +179,7 @@ export const VCT_Stack = ({
   gap = 16,
   align = 'stretch',
   justify = 'flex-start',
+  wrap,
   className,
   style,
   ...rest
@@ -188,6 +191,7 @@ export const VCT_Stack = ({
       gap: `${gap}px`,
       alignItems: align,
       justifyContent: justify,
+      ...(wrap ? { flexWrap: 'wrap' } : {}),
       ...style,
     }}
     {...rest}

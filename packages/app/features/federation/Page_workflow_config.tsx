@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
 // VCT PLATFORM — WORKFLOW CONFIGURATION PAGE
 // Admin page for viewing and managing 15 predefined approval
-// workflow templates with step details.
+// workflow templates with animated step-chain visualization.
 // ═══════════════════════════════════════════════════════════════
 'use client';
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { VCT_PageContainer } from '../components/vct-ui';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -154,6 +156,12 @@ const ROLE_LABELS: Record<string, string> = {
     discipline_board: 'Ban Kỷ luật',
 };
 
+// ── Animation Variants ───────────────────────────────────────
+const fadeUp = {
+    hidden: { opacity: 0, y: 12 },
+    visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } }),
+};
+
 // ── Component ────────────────────────────────────────────────
 
 export function Page_workflow_config() {
@@ -169,156 +177,160 @@ export function Page_workflow_config() {
     }, {} as Record<string, WorkflowDefinition[]>);
 
     return (
-        <div style={{ padding: '32px', maxWidth: 960, margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
+        <VCT_PageContainer size="wide" animated>
             {/* Header */}
-            <div style={{ marginBottom: 28 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-7">
+                <h1 className="text-[22px] font-bold text-vct-text m-0">
                     ⚙️ Cấu hình Luồng phê duyệt
                 </h1>
-                <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 6 }}>
+                <p className="text-sm text-vct-text-muted mt-1.5">
                     {WORKFLOW_DEFS.length} luồng phê duyệt đã được cấu hình • Tổng cộng {WORKFLOW_DEFS.reduce((s, w) => s + w.steps.length, 0)} bước duyệt
                 </p>
-            </div>
+            </motion.div>
 
             {/* Filter Tabs */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-                <button
-                    onClick={() => setFilterGroup('all')}
-                    style={{
-                        padding: '6px 14px', borderRadius: 8, border: 'none',
-                        background: filterGroup === 'all' ? 'rgba(59,130,246,0.2)' : 'rgba(148,163,184,0.08)',
-                        color: filterGroup === 'all' ? '#60a5fa' : '#94a3b8',
-                        fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                    }}
-                >
+            <div className="relative flex gap-2 mb-6 flex-wrap">
+                <FilterPill active={filterGroup === 'all'} onClick={() => setFilterGroup('all')} color="#60a5fa">
                     Tất cả ({WORKFLOW_DEFS.length})
-                </button>
+                </FilterPill>
                 {groups.map(g => {
-                    const meta = GROUP_META[g];
+                    const meta = GROUP_META[g]!;
                     const count = WORKFLOW_DEFS.filter(w => w.group === g).length;
                     return (
-                        <button
-                            key={g}
-                            onClick={() => setFilterGroup(g)}
-                            style={{
-                                padding: '6px 14px', borderRadius: 8, border: 'none',
-                                background: filterGroup === g ? `${meta.color}20` : 'rgba(148,163,184,0.08)',
-                                color: filterGroup === g ? meta.color : '#94a3b8',
-                                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                            }}
-                        >
+                        <FilterPill key={g} active={filterGroup === g} color={meta.color} onClick={() => setFilterGroup(g)}>
                             {meta.icon} {meta.label} ({count})
-                        </button>
+                        </FilterPill>
                     );
                 })}
             </div>
 
             {/* Workflow Cards */}
-            {groups.map(g => {
-                const items = groupedWorkflows[g];
-                if (!items || items.length === 0) return null;
-                const meta = GROUP_META[g];
+            <AnimatePresence mode="wait">
+                <motion.div key={filterGroup} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    {groups.map(g => {
+                        const items = groupedWorkflows[g];
+                        if (!items || items.length === 0) return null;
+                        const meta = GROUP_META[g]!;
 
-                return (
-                    <div key={g} style={{ marginBottom: 28 }}>
-                        <h2 style={{ fontSize: 15, fontWeight: 600, color: meta.color, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span>{meta.icon}</span> {meta.label}
-                        </h2>
+                        return (
+                            <div key={g} className="mb-7">
+                                <h2 className="text-[15px] font-semibold mb-3 flex items-center gap-2" style={{ color: meta.color }}>
+                                    <span>{meta.icon}</span> {meta.label}
+                                </h2>
 
-                        {items.map(wf => {
-                            const isExpanded = expandedCode === wf.code;
-                            return (
-                                <div key={wf.code} style={{
-                                    background: 'rgba(30,41,59,0.5)', border: `1px solid ${isExpanded ? `${meta.color}40` : 'rgba(148,163,184,0.1)'}`,
-                                    borderRadius: 12, marginBottom: 10, overflow: 'hidden',
-                                    transition: 'border-color 0.2s',
-                                }}>
-                                    <button
-                                        onClick={() => setExpandedCode(isExpanded ? null : wf.code)}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                                            padding: '14px 18px', background: 'none', border: 'none',
-                                            color: '#e2e8f0', cursor: 'pointer', textAlign: 'left',
-                                        }}
-                                    >
-                                        <span style={{
-                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                            width: 28, height: 28, borderRadius: 8,
-                                            background: `${meta.color}15`, color: meta.color,
-                                            fontSize: 13, fontWeight: 700, flexShrink: 0,
-                                        }}>
-                                            {wf.steps.length}
-                                        </span>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: 14, fontWeight: 600 }}>{wf.display_name}</div>
-                                            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                                                {wf.code} • {wf.entity_type}
-                                            </div>
-                                        </div>
-                                        <span style={{ fontSize: 12, color: '#64748b', marginRight: 4 }}>
-                                            {wf.steps.length} bước
-                                        </span>
-                                        <span style={{ fontSize: 14, color: '#64748b' }}>{isExpanded ? '▲' : '▼'}</span>
-                                    </button>
+                                {items.map((wf, wi) => {
+                                    const isExpanded = expandedCode === wf.code;
+                                    return (
+                                        <motion.div
+                                            key={wf.code}
+                                            custom={wi} variants={fadeUp} initial="hidden" animate="visible"
+                                            className="mb-2.5 rounded-xl border overflow-hidden transition-colors"
+                                            style={{
+                                                background: 'var(--vct-elevated, rgba(30,41,59,0.5))',
+                                                borderColor: isExpanded ? `${meta.color}40` : 'var(--vct-border, rgba(148,163,184,0.1))',
+                                            }}
+                                        >
+                                            <button
+                                                onClick={() => setExpandedCode(isExpanded ? null : wf.code)}
+                                                className="flex items-center gap-3 w-full px-4 py-3.5 bg-transparent border-none text-left cursor-pointer text-vct-text hover:bg-white/[0.02] transition-colors"
+                                            >
+                                                <span
+                                                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold flex-shrink-0"
+                                                    style={{ background: `${meta.color}15`, color: meta.color }}
+                                                >{wf.steps.length}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-semibold truncate">{wf.display_name}</div>
+                                                    <div className="text-xs text-vct-text-muted mt-0.5">{wf.code} • {wf.entity_type}</div>
+                                                </div>
+                                                <span className="text-xs text-vct-text-muted mr-1">{wf.steps.length} bước</span>
+                                                <motion.span
+                                                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="text-sm text-vct-text-muted"
+                                                >▼</motion.span>
+                                            </button>
 
-                                    {isExpanded && (
-                                        <div style={{
-                                            padding: '0 18px 16px', borderTop: '1px solid rgba(148,163,184,0.08)',
-                                        }}>
-                                            {/* Step chain visualization */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 0, padding: '16px 0', overflowX: 'auto' }}>
-                                                {wf.steps.map((s, si) => (
-                                                    <React.Fragment key={s.step}>
-                                                        <div style={{
-                                                            display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                                            minWidth: 140, padding: '12px 14px',
-                                                            background: `${meta.color}08`, border: `1px solid ${meta.color}30`,
-                                                            borderRadius: 10, textAlign: 'center',
-                                                        }}>
-                                                            <div style={{
-                                                                width: 24, height: 24, borderRadius: '50%',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                background: `${meta.color}20`, color: meta.color,
-                                                                fontSize: 12, fontWeight: 700, marginBottom: 8,
-                                                            }}>{s.step}</div>
-                                                            <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>
-                                                                {s.name}
+                                            <AnimatePresence initial={false}>
+                                                {isExpanded && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                                                        className="overflow-hidden"
+                                                    >
+                                                        <div className="px-4 pb-4 border-t border-white/[0.06]">
+                                                            {/* ── Step Chain SVG ── */}
+                                                            <div className="flex items-center gap-0 py-4 overflow-x-auto">
+                                                                {wf.steps.map((s, si) => (
+                                                                    <React.Fragment key={s.step}>
+                                                                        <motion.div
+                                                                            initial={{ opacity: 0, scale: 0.8 }}
+                                                                            animate={{ opacity: 1, scale: 1 }}
+                                                                            transition={{ delay: si * 0.12 }}
+                                                                            className="flex flex-col items-center min-w-[140px] p-3 rounded-xl text-center border"
+                                                                            style={{
+                                                                                background: `${meta.color}08`,
+                                                                                borderColor: `${meta.color}30`,
+                                                                            }}
+                                                                        >
+                                                                            <div
+                                                                                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mb-2"
+                                                                                style={{ background: `${meta.color}20`, color: meta.color }}
+                                                                            >{s.step}</div>
+                                                                            <div className="text-[13px] font-semibold text-vct-text mb-1">{s.name}</div>
+                                                                            <div className="text-[11px] px-2 py-0.5 rounded-md bg-white/[0.06] text-vct-text-muted">
+                                                                                {ROLE_LABELS[s.role] || s.role}
+                                                                            </div>
+                                                                            {s.requires_all !== undefined && (
+                                                                                <div className="text-[11px] text-amber-500 mt-1">⚠️ Cần {s.min_approvals || 1} phiếu</div>
+                                                                            )}
+                                                                        </motion.div>
+                                                                        {si < wf.steps.length - 1 && (
+                                                                            <div className="relative flex-shrink-0 w-10 h-0.5 mx-0">
+                                                                                {/* SVG animated connector */}
+                                                                                <svg width="40" height="12" viewBox="0 0 40 12" className="absolute top-1/2 -translate-y-1/2">
+                                                                                    <line x1="0" y1="6" x2="30" y2="6" stroke={meta.color} strokeWidth="2" strokeDasharray="4 3" opacity="0.5" />
+                                                                                    <motion.circle
+                                                                                        cx="0" cy="6" r="2.5" fill={meta.color}
+                                                                                        animate={{ cx: [0, 30, 0] }}
+                                                                                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                                                                                    />
+                                                                                    <polygon points="30,2 38,6 30,10" fill={meta.color} opacity="0.7" />
+                                                                                </svg>
+                                                                            </div>
+                                                                        )}
+                                                                    </React.Fragment>
+                                                                ))}
                                                             </div>
-                                                            <div style={{
-                                                                fontSize: 11, padding: '2px 8px', borderRadius: 6,
-                                                                background: 'rgba(148,163,184,0.1)', color: '#94a3b8',
-                                                            }}>
-                                                                {ROLE_LABELS[s.role] || s.role}
-                                                            </div>
-                                                            {s.requires_all !== undefined && (
-                                                                <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
-                                                                    ⚠️ Cần {s.min_approvals || 1} phiếu
-                                                                </div>
-                                                            )}
                                                         </div>
-                                                        {si < wf.steps.length - 1 && (
-                                                            <div style={{
-                                                                width: 32, height: 2, background: `${meta.color}40`,
-                                                                flexShrink: 0, position: 'relative',
-                                                            }}>
-                                                                <span style={{
-                                                                    position: 'absolute', right: -4, top: -6,
-                                                                    color: meta.color, fontSize: 14,
-                                                                }}>→</span>
-                                                            </div>
-                                                        )}
-                                                    </React.Fragment>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                );
-            })}
-        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })}
+                </motion.div>
+            </AnimatePresence>
+        </VCT_PageContainer>
+    );
+}
+
+/* ── Filter Pill Sub-Component ────────────────────────────── */
+function FilterPill({ active, color, onClick, children }: { active: boolean; color: string; onClick: () => void; children: React.ReactNode }) {
+    return (
+        <motion.button
+            whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+            onClick={onClick}
+            className="px-3.5 py-1.5 rounded-lg text-[13px] font-medium border-none cursor-pointer transition-colors"
+            style={{
+                background: active ? `${color}20` : 'rgba(148,163,184,0.08)',
+                color: active ? color : '#94a3b8',
+            }}
+        >{children}</motion.button>
     );
 }
 

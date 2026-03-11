@@ -157,7 +157,7 @@ func TestEntityAuthorizationMatrix(t *testing.T) {
 	btcToken := loginAccessToken(t, handler, "btc", "Btc@123", "btc")
 	delegateToken := loginAccessToken(t, handler, "delegate", "Delegate@123", "delegate")
 
-	createTeam := requestJSON(t, handler, http.MethodPost, "/api/v1/teams", map[string]any{
+	createTeam := requestJSON(t, handler, http.MethodPost, "/api/v1/teams/", map[string]any{
 		"id":   "TEAM-T01",
 		"ten":  "Team Test",
 		"ma":   "TT-01",

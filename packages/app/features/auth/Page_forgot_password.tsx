@@ -146,11 +146,13 @@ export function Page_forgot_password() {
                             <div className="grid gap-1.5">
                                 <label htmlFor="fp-new-pw" className="text-sm font-bold">Mật khẩu mới</label>
                                 <input id="fp-new-pw" type="password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setError('') }}
+                                    autoComplete="new-password"
                                     placeholder="Tối thiểu 8 ký tự" className={INPUT_CLASS} />
                             </div>
                             <div className="grid gap-1.5">
                                 <label htmlFor="fp-confirm-pw" className="text-sm font-bold">Xác nhận mật khẩu</label>
                                 <input id="fp-confirm-pw" type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
+                                    autoComplete="new-password"
                                     placeholder="Nhập lại mật khẩu" className={INPUT_CLASS} />
                             </div>
                             {error && <span className="text-xs text-red-500">{error}</span>}

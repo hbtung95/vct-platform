@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
-// VCT PLATFORM — APPROVAL DETAIL PAGE
-// Full approval request detail with step timeline, actions,
-// attachments, and audit history.
+// VCT PLATFORM — APPROVAL DETAIL PAGE (API-DRIVEN)
+// Full approval request detail with live step timeline, actions,
+// attachments, and audit history. Fetches from backend API.
 // ═══════════════════════════════════════════════════════════════
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { useApiQuery, useApiMutation } from '../hooks/useApiQuery';
+import { VCT_PageContainer } from '../components/VCT_PageContainer';
+import { VCT_Icons } from '../components/vct-icons';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -36,57 +39,14 @@ interface ApprovalRequest {
     entity_id: string;
     title: string;
     description: string;
-    status: 'pending' | 'in_review' | 'approved' | 'rejected' | 'returned' | 'cancelled';
+    status: string;
     current_step: number;
     total_steps: number;
     requested_by: string;
     requested_at: string;
     deadline?: string;
-    attachments: { name: string; url: string; type: string }[];
-    steps: ApprovalStep[];
-    history: HistoryEntry[];
+    attachments?: { name: string; url: string; type: string }[];
 }
-
-// ── Mock Data ────────────────────────────────────────────────
-
-const MOCK_REQUEST: ApprovalRequest = {
-    id: 'apr-001',
-    workflow_code: 'club_registration',
-    entity_type: 'club',
-    entity_id: 'club-abc',
-    title: 'Đăng ký thành lập CLB Tân Khánh Bà Trà - Quận 7',
-    description: 'CLB chuyên đào tạo võ cổ truyền cho lứa tuổi 8-18. Cơ sở tại 123 Nguyễn Hữu Thọ, Quận 7, TP.HCM. HLV trưởng: Nguyễn Văn B (Huyền đai nhị đẳng).',
-    status: 'in_review',
-    current_step: 2,
-    total_steps: 2,
-    requested_by: 'Nguyễn Văn B',
-    requested_at: '2026-03-05T10:30:00Z',
-    deadline: '2026-03-20T23:59:59Z',
-    attachments: [
-        { name: 'Đơn đăng ký CLB.pdf', url: '#', type: 'pdf' },
-        { name: 'Bằng cấp HLV.jpg', url: '#', type: 'image' },
-        { name: 'Ảnh cơ sở (1).jpg', url: '#', type: 'image' },
-        { name: 'Ảnh cơ sở (2).jpg', url: '#', type: 'image' },
-        { name: 'Kế hoạch đào tạo.docx', url: '#', type: 'document' },
-    ],
-    steps: [
-        {
-            id: 'step-1', step_number: 1, step_name: 'LĐ Tỉnh TP.HCM xem xét',
-            approver_role: 'provincial_admin', decision: 'approved',
-            decision_by: 'Trần Thị C', decision_at: '2026-03-08T14:20:00Z',
-            comment: 'Hồ sơ đầy đủ, cơ sở vật chất đạt yêu cầu.',
-        },
-        {
-            id: 'step-2', step_number: 2, step_name: 'LĐ Quốc gia xác nhận',
-            approver_role: 'federation_secretary', decision: '',
-            decision_by: '', decision_at: '', comment: '',
-        },
-    ],
-    history: [
-        { id: 'h1', action: 'submitted', action_by: 'Nguyễn Văn B', action_at: '2026-03-05T10:30:00Z', comment: 'Nộp hồ sơ đăng ký CLB', from_step: 0, to_step: 1 },
-        { id: 'h2', action: 'approved', action_by: 'Trần Thị C', action_at: '2026-03-08T14:20:00Z', comment: 'Hồ sơ đầy đủ, cơ sở vật chất đạt yêu cầu.', from_step: 1, to_step: 2 },
-    ],
-};
 
 // ── Status Helpers ───────────────────────────────────────────
 
@@ -105,6 +65,13 @@ const DECISION_MAP: Record<string, { label: string; color: string }> = {
     returned: { label: 'Trả lại', color: '#f97316' },
 };
 
+const ROLE_LABELS: Record<string, string> = {
+    provincial_admin: 'Admin Tỉnh', federation_secretary: 'Thư ký LĐ',
+    coach: 'HLV', technical_director: 'GĐ Kỹ thuật', president: 'Chủ tịch LĐ',
+    tournament_director: 'Giám đốc giải', chief_referee: 'Trọng tài chính',
+    accountant: 'Kế toán', executive_board: 'Ban thường vụ', discipline_board: 'Ban Kỷ luật',
+};
+
 function formatDate(iso: string) {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -114,144 +81,165 @@ function formatDate(iso: string) {
 function daysRemaining(deadline: string) {
     const now = new Date();
     const dl = new Date(deadline);
-    const diff = Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 // ── Component ────────────────────────────────────────────────
 
-export function Page_approval_detail() {
-    const [request] = useState<ApprovalRequest>(MOCK_REQUEST);
+interface Props {
+    requestId?: string;
+}
+
+export function Page_approval_detail({ requestId }: Props) {
+    // Default to a demo ID if none provided (for fallback/demo)
+    const id = requestId || 'apr-001';
+
+    const { data: request, isLoading, refetch } = useApiQuery<ApprovalRequest>(`/api/v1/approvals/${id}`, { enabled: !!id });
+    const { data: stepsData } = useApiQuery<{ request_id: string; steps: ApprovalStep[] }>(`/api/v1/approvals/${id}/steps`, { enabled: !!id });
+    const { data: historyData } = useApiQuery<{ request_id: string; history: HistoryEntry[] }>(`/api/v1/approvals/${id}/history`, { enabled: !!id });
+
     const [actionComment, setActionComment] = useState('');
     const [showHistory, setShowHistory] = useState(false);
+    const [actionInFlight, setActionInFlight] = useState('');
 
-    const statusInfo = STATUS_MAP[request.status] ?? STATUS_MAP.pending;
+    const { mutate: doApprove } = useApiMutation<{ comment: string }, { status: string }>('POST', `/api/v1/approvals/${id}/approve`);
+    const { mutate: doReject } = useApiMutation<{ reason: string }, { status: string }>('POST', `/api/v1/approvals/${id}/reject`);
+    const { mutate: doReturn } = useApiMutation<{ reason: string }, { status: string }>('POST', `/api/v1/approvals/${id}/return`);
+
+    const steps = stepsData?.steps || [];
+    const history = historyData?.history || [];
+
+    const handleAction = async (action: 'approve' | 'reject' | 'return') => {
+        setActionInFlight(action);
+        try {
+            if (action === 'approve') await doApprove({ comment: actionComment });
+            else if (action === 'reject') await doReject({ reason: actionComment });
+            else await doReturn({ reason: actionComment });
+            setActionComment('');
+            refetch();
+        } catch { /* displayed by mutation state */ }
+        setActionInFlight('');
+    };
+
+    if (isLoading) {
+        return (
+            <VCT_PageContainer size="narrow">
+                <div className="space-y-4 py-12">
+                    {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl bg-vct-elevated border border-vct-border animate-pulse" />)}
+                </div>
+            </VCT_PageContainer>
+        );
+    }
+
+    if (!request) {
+        return (
+            <VCT_PageContainer size="narrow">
+                <div className="text-center py-20">
+                    <VCT_Icons.Alert size={48} className="text-vct-text-muted mx-auto mb-4" />
+                    <h2 className="text-lg font-bold text-vct-text mb-2">Không tìm thấy yêu cầu</h2>
+                    <p className="text-sm text-vct-text-muted">Yêu cầu #{id} không tồn tại hoặc bạn không có quyền xem.</p>
+                    <a href="/appeals/phe-duyet" className="mt-4 inline-block px-5 py-2.5 rounded-xl bg-vct-accent text-white text-sm font-bold">
+                        ← Về danh sách
+                    </a>
+                </div>
+            </VCT_PageContainer>
+        );
+    }
+
+    const statusFallback = { label: 'Chờ xử lý', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', icon: '⏳' };
+    const statusInfo = STATUS_MAP[request.status] ?? statusFallback;
     const isActionable = request.status === 'pending' || request.status === 'in_review';
     const deadlineDays = request.deadline ? daysRemaining(request.deadline) : null;
+    const approvedCount = steps.filter(s => s.decision === 'approved').length;
 
     return (
-        <div style={{ padding: '32px', maxWidth: 960, margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
+        <VCT_PageContainer size="narrow">
+            {/* Back Link */}
+            <a href="/appeals/phe-duyet" className="inline-flex items-center gap-1.5 text-xs text-vct-text-muted hover:text-vct-accent mb-4 transition-colors">
+                <VCT_Icons.ArrowRight size={14} className="rotate-180" /> Về danh sách phê duyệt
+            </a>
+
             {/* Header */}
-            <div style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                    <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600,
-                        color: statusInfo.color, background: statusInfo.bg,
-                    }}>
+            <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
+                        style={{ background: statusInfo.bg, color: statusInfo.color, borderColor: `${statusInfo.color}30` }}>
                         {statusInfo.icon} {statusInfo.label}
                     </span>
-                    <span style={{ fontSize: 13, color: '#94a3b8' }}>#{request.id}</span>
+                    <span className="text-xs text-vct-text-muted">#{request.id}</span>
                     {deadlineDays !== null && (
-                        <span style={{
-                            fontSize: 12, padding: '2px 8px', borderRadius: 12,
-                            background: deadlineDays <= 3 ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.1)',
-                            color: deadlineDays <= 3 ? '#ef4444' : '#60a5fa',
-                            fontWeight: 500,
-                        }}>
+                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${deadlineDays <= 3 ? 'bg-red-500/10 text-red-400' : 'bg-blue-500/10 text-blue-400'}`}>
                             ⏰ {deadlineDays > 0 ? `Còn ${deadlineDays} ngày` : 'Quá hạn'}
                         </span>
                     )}
                 </div>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{request.title}</h1>
-                <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 6, lineHeight: 1.5 }}>{request.description}</p>
-                <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: 13, color: '#64748b' }}>
-                    <span>📝 Người gửi: <strong style={{ color: '#cbd5e1' }}>{request.requested_by}</strong></span>
+                <h1 className="text-xl font-black text-vct-text tracking-tight mb-1">{request.title}</h1>
+                {request.description && <p className="text-sm text-vct-text-muted leading-relaxed">{request.description}</p>}
+                <div className="flex gap-4 mt-2 text-xs text-vct-text-muted flex-wrap">
+                    <span>📝 {request.requested_by}</span>
                     <span>📅 {formatDate(request.requested_at)}</span>
                     <span>📋 {request.workflow_code.replace(/_/g, ' ').toUpperCase()}</span>
                 </div>
             </div>
 
             {/* Step Timeline */}
-            <div style={{
-                background: 'rgba(30,41,59,0.5)', border: '1px solid rgba(148,163,184,0.1)',
-                borderRadius: 16, padding: 24, marginBottom: 24,
-            }}>
-                <h2 style={{ fontSize: 16, fontWeight: 600, color: '#e2e8f0', marginBottom: 20, margin: 0 }}>
-                    📊 Tiến trình phê duyệt ({request.current_step}/{request.total_steps})
+            <div className="rounded-2xl border border-vct-border bg-vct-elevated p-6 mb-6">
+                <h2 className="text-sm font-bold text-vct-text mb-4">
+                    📊 Tiến trình ({approvedCount}/{request.total_steps || steps.length})
                 </h2>
 
                 {/* Progress Bar */}
-                <div style={{
-                    height: 6, background: 'rgba(148,163,184,0.1)', borderRadius: 3, marginBottom: 24, overflow: 'hidden',
-                }}>
-                    <div style={{
-                        height: '100%', borderRadius: 3,
-                        background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-                        width: `${(request.steps.filter(s => s.decision === 'approved').length / request.total_steps) * 100}%`,
-                        transition: 'width 0.5s ease',
-                    }} />
+                <div className="h-1.5 bg-vct-bg rounded-full mb-6 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500"
+                        style={{
+                            background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+                            width: `${request.total_steps ? (approvedCount / request.total_steps) * 100 : 0}%`,
+                        }} />
                 </div>
 
                 {/* Steps */}
-                <div style={{ position: 'relative' }}>
-                    {request.steps.map((step, i) => {
+                <div className="relative">
+                    {steps.map((step, i) => {
                         const isActive = step.step_number === request.current_step && !step.decision;
                         const isDone = step.decision === 'approved';
                         const isRejected = step.decision === 'rejected' || step.decision === 'returned';
 
                         return (
-                            <div key={step.id} style={{
-                                display: 'flex', gap: 16, marginBottom: i < request.steps.length - 1 ? 20 : 0,
-                                position: 'relative',
-                            }}>
-                                {/* Connector Line */}
-                                {i < request.steps.length - 1 && (
-                                    <div style={{
-                                        position: 'absolute', left: 18, top: 40, bottom: -20,
-                                        width: 2, background: isDone ? '#10b981' : 'rgba(148,163,184,0.15)',
-                                    }} />
+                            <div key={step.id} className="flex gap-4 relative" style={{ marginBottom: i < steps.length - 1 ? 20 : 0 }}>
+                                {i < steps.length - 1 && (
+                                    <div className="absolute left-[18px] top-10 bottom-[-20px] w-0.5"
+                                        style={{ background: isDone ? '#10b981' : 'rgba(148,163,184,0.15)' }} />
                                 )}
-
-                                {/* Step Icon */}
-                                <div style={{
-                                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 16, fontWeight: 700, zIndex: 1,
-                                    background: isDone ? 'rgba(16,185,129,0.2)' : isRejected ? 'rgba(239,68,68,0.2)' : isActive ? 'rgba(59,130,246,0.2)' : 'rgba(148,163,184,0.1)',
-                                    border: `2px solid ${isDone ? '#10b981' : isRejected ? '#ef4444' : isActive ? '#3b82f6' : 'rgba(148,163,184,0.2)'}`,
-                                    color: isDone ? '#10b981' : isRejected ? '#ef4444' : isActive ? '#3b82f6' : '#64748b',
-                                    boxShadow: isActive ? '0 0 12px rgba(59,130,246,0.3)' : 'none',
-                                }}>
+                                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold z-10 shrink-0 border-2"
+                                    style={{
+                                        background: isDone ? 'rgba(16,185,129,0.15)' : isRejected ? 'rgba(239,68,68,0.15)' : isActive ? 'rgba(59,130,246,0.15)' : 'rgba(148,163,184,0.05)',
+                                        borderColor: isDone ? '#10b981' : isRejected ? '#ef4444' : isActive ? '#3b82f6' : 'rgba(148,163,184,0.15)',
+                                        color: isDone ? '#10b981' : isRejected ? '#ef4444' : isActive ? '#3b82f6' : '#64748b',
+                                        boxShadow: isActive ? '0 0 12px rgba(59,130,246,0.2)' : 'none',
+                                    }}>
                                     {isDone ? '✓' : isRejected ? '✗' : step.step_number}
                                 </div>
 
-                                {/* Step Content */}
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                        <span style={{
-                                            fontSize: 15, fontWeight: 600,
-                                            color: isActive ? '#f1f5f9' : isDone ? '#10b981' : '#94a3b8',
-                                        }}>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                        <span className={`text-sm font-semibold ${isActive ? 'text-vct-text' : isDone ? 'text-emerald-500' : 'text-vct-text-muted'}`}>
                                             {step.step_name}
                                         </span>
-                                        {isActive && (
-                                            <span style={{
-                                                fontSize: 11, padding: '2px 8px', borderRadius: 8,
-                                                background: 'rgba(59,130,246,0.2)', color: '#60a5fa',
-                                                fontWeight: 600, letterSpacing: 0.5,
-                                            }}>ĐANG CHỜ</span>
-                                        )}
+                                        {isActive && <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 font-bold">ĐANG CHỜ</span>}
                                         {step.decision && DECISION_MAP[step.decision] && (
-                                            <span style={{
-                                                fontSize: 11, padding: '2px 8px', borderRadius: 8,
-                                                background: `${DECISION_MAP[step.decision]!.color}20`,
-                                                color: DECISION_MAP[step.decision]!.color,
-                                                fontWeight: 600,
-                                            }}>{DECISION_MAP[step.decision]!.label}</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded font-bold"
+                                                style={{ background: `${DECISION_MAP[step.decision]!.color}20`, color: DECISION_MAP[step.decision]!.color }}>
+                                                {DECISION_MAP[step.decision]!.label}
+                                            </span>
                                         )}
                                     </div>
-                                    <div style={{ fontSize: 12, color: '#64748b' }}>
-                                        Vai trò: {step.approver_role}
+                                    <div className="text-xs text-vct-text-muted">
+                                        {ROLE_LABELS[step.approver_role] || step.approver_role}
                                         {step.decision_by && ` • ${step.decision_by}`}
                                         {step.decision_at && ` • ${formatDate(step.decision_at)}`}
                                     </div>
                                     {step.comment && (
-                                        <div style={{
-                                            marginTop: 8, padding: '8px 12px', borderRadius: 8,
-                                            background: 'rgba(148,163,184,0.05)', borderLeft: '3px solid rgba(148,163,184,0.2)',
-                                            fontSize: 13, color: '#94a3b8', lineHeight: 1.5,
-                                        }}>
+                                        <div className="mt-2 px-3 py-2 rounded-lg bg-vct-bg border-l-2 border-vct-border/50 text-xs text-vct-text-muted">
                                             💬 {step.comment}
                                         </div>
                                     )}
@@ -263,28 +251,15 @@ export function Page_approval_detail() {
             </div>
 
             {/* Attachments */}
-            {request.attachments.length > 0 && (
-                <div style={{
-                    background: 'rgba(30,41,59,0.5)', border: '1px solid rgba(148,163,184,0.1)',
-                    borderRadius: 16, padding: 24, marginBottom: 24,
-                }}>
-                    <h2 style={{ fontSize: 16, fontWeight: 600, color: '#e2e8f0', marginBottom: 16, margin: 0 }}>
-                        📎 Hồ sơ đính kèm ({request.attachments.length})
-                    </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+            {request.attachments && request.attachments.length > 0 && (
+                <div className="rounded-2xl border border-vct-border bg-vct-elevated p-6 mb-6">
+                    <h2 className="text-sm font-bold text-vct-text mb-3">📎 Hồ sơ đính kèm ({request.attachments.length})</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {request.attachments.map((att, i) => (
-                            <a key={i} href={att.url} style={{
-                                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                                borderRadius: 10, background: 'rgba(148,163,184,0.05)',
-                                border: '1px solid rgba(148,163,184,0.1)', textDecoration: 'none',
-                                color: '#cbd5e1', fontSize: 13, transition: 'all 0.2s',
-                            }}>
-                                <span style={{ fontSize: 18 }}>
-                                    {att.type === 'pdf' ? '📄' : att.type === 'image' ? '🖼️' : '📝'}
-                                </span>
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {att.name}
-                                </span>
+                            <a key={i} href={att.url}
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-vct-bg border border-vct-border/50 text-xs text-vct-text hover:border-vct-accent/30 transition-colors no-underline">
+                                <span>{att.type === 'pdf' ? '📄' : att.type === 'image' ? '🖼️' : '📝'}</span>
+                                <span className="truncate">{att.name}</span>
                             </a>
                         ))}
                     </div>
@@ -293,107 +268,73 @@ export function Page_approval_detail() {
 
             {/* Action Panel */}
             {isActionable && (
-                <div style={{
-                    background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))',
-                    border: '1px solid rgba(59,130,246,0.2)', borderRadius: 16, padding: 24, marginBottom: 24,
-                }}>
-                    <h2 style={{ fontSize: 16, fontWeight: 600, color: '#e2e8f0', marginBottom: 16, margin: 0 }}>
-                        ⚡ Hành động
-                    </h2>
+                <div className="rounded-2xl border border-blue-500/20 bg-vct-elevated p-6 mb-6"
+                    style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))' }}>
+                    <h2 className="text-sm font-bold text-vct-text mb-3">⚡ Hành động</h2>
                     <textarea
                         value={actionComment}
                         onChange={e => setActionComment(e.target.value)}
                         placeholder="Nhập nhận xét (tuỳ chọn)..."
-                        style={{
-                            width: '100%', minHeight: 80, padding: '12px 16px', borderRadius: 10,
-                            background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.15)',
-                            color: '#e2e8f0', fontSize: 14, resize: 'vertical', outline: 'none',
-                            marginBottom: 16, boxSizing: 'border-box',
-                            fontFamily: "'Inter', sans-serif",
-                        }}
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-xl bg-vct-bg/50 border border-vct-border text-vct-text text-sm resize-none focus:outline-none focus:border-vct-accent/50 mb-3"
                     />
-                    <div style={{ display: 'flex', gap: 12 }}>
-                        <button style={{
-                            flex: 1, padding: '12px', borderRadius: 10, border: 'none',
-                            background: 'linear-gradient(135deg, #10b981, #059669)',
-                            color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            ✅ Phê duyệt
+                    <div className="flex gap-3">
+                        <button onClick={() => handleAction('approve')} disabled={!!actionInFlight}
+                            className="flex-1 py-3 rounded-xl text-white text-sm font-bold transition-all disabled:opacity-50"
+                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                            {actionInFlight === 'approve' ? '...' : '✅ Phê duyệt'}
                         </button>
-                        <button style={{
-                            flex: 1, padding: '12px', borderRadius: 10, border: 'none',
-                            background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                            color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            ↩️ Trả lại (yêu cầu bổ sung)
+                        <button onClick={() => handleAction('return')} disabled={!!actionInFlight}
+                            className="flex-1 py-3 rounded-xl text-white text-sm font-bold transition-all disabled:opacity-50"
+                            style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>
+                            {actionInFlight === 'return' ? '...' : '↩️ Trả lại'}
                         </button>
-                        <button style={{
-                            flex: 1, padding: '12px', borderRadius: 10, border: 'none',
-                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                            color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            ❌ Từ chối
+                        <button onClick={() => handleAction('reject')} disabled={!!actionInFlight}
+                            className="flex-1 py-3 rounded-xl text-white text-sm font-bold transition-all disabled:opacity-50"
+                            style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>
+                            {actionInFlight === 'reject' ? '...' : '❌ Từ chối'}
                         </button>
                     </div>
                 </div>
             )}
 
             {/* Audit History */}
-            <div style={{
-                background: 'rgba(30,41,59,0.5)', border: '1px solid rgba(148,163,184,0.1)',
-                borderRadius: 16, padding: 24,
-            }}>
-                <button
-                    onClick={() => setShowHistory(!showHistory)}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                        background: 'none', border: 'none', color: '#e2e8f0',
-                        fontSize: 16, fontWeight: 600, cursor: 'pointer', padding: 0,
-                    }}
-                >
-                    📜 Lịch sử xử lý ({request.history.length})
-                    <span style={{ marginLeft: 'auto', fontSize: 14, color: '#64748b' }}>
-                        {showHistory ? '▲' : '▼'}
-                    </span>
+            <div className="rounded-2xl border border-vct-border bg-vct-elevated p-6">
+                <button onClick={() => setShowHistory(!showHistory)}
+                    className="flex items-center gap-2 w-full text-left bg-transparent border-0 text-sm font-bold text-vct-text cursor-pointer p-0">
+                    📜 Lịch sử xử lý ({history.length})
+                    <span className="ml-auto text-xs text-vct-text-muted">{showHistory ? '▲' : '▼'}</span>
                 </button>
 
                 {showHistory && (
-                    <div style={{ marginTop: 16 }}>
-                        {request.history.map((h, i) => (
-                            <div key={h.id} style={{
-                                display: 'flex', gap: 12, padding: '12px 0',
-                                borderTop: i > 0 ? '1px solid rgba(148,163,184,0.1)' : 'none',
-                            }}>
-                                <div style={{
-                                    width: 28, height: 28, borderRadius: '50%',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 12, flexShrink: 0,
-                                    background: h.action === 'approved' ? 'rgba(16,185,129,0.15)' :
-                                        h.action === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
-                                    color: h.action === 'approved' ? '#10b981' :
-                                        h.action === 'rejected' ? '#ef4444' : '#3b82f6',
-                                }}>
+                    <div className="mt-4 space-y-0">
+                        {history.map((h, i) => (
+                            <div key={h.id} className="flex gap-3 py-3"
+                                style={{ borderTop: i > 0 ? '1px solid var(--vct-border)' : 'none' }}>
+                                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0"
+                                    style={{
+                                        background: h.action === 'approved' ? 'rgba(16,185,129,0.15)' :
+                                            h.action === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+                                        color: h.action === 'approved' ? '#10b981' :
+                                            h.action === 'rejected' ? '#ef4444' : '#3b82f6',
+                                    }}>
                                     {h.action === 'submitted' ? '📝' : h.action === 'approved' ? '✓' : h.action === 'rejected' ? '✗' : '↩'}
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-xs text-vct-text">
                                         <strong>{h.action_by}</strong>
-                                        <span style={{ color: '#64748b' }}> — {h.action}</span>
-                                        {h.from_step > 0 && (
-                                            <span style={{ color: '#64748b' }}> (bước {h.from_step} → {h.to_step})</span>
-                                        )}
+                                        <span className="text-vct-text-muted"> — {h.action}</span>
+                                        {h.from_step > 0 && <span className="text-vct-text-muted"> (bước {h.from_step} → {h.to_step})</span>}
                                     </div>
-                                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{formatDate(h.action_at)}</div>
-                                    {h.comment && (
-                                        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>💬 {h.comment}</div>
-                                    )}
+                                    <div className="text-[11px] text-vct-text-muted mt-0.5">{formatDate(h.action_at)}</div>
+                                    {h.comment && <div className="text-xs text-vct-text-muted mt-1">💬 {h.comment}</div>}
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
             </div>
-        </div>
+        </VCT_PageContainer>
     );
 }
 

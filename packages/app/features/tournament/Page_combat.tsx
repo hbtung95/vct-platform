@@ -170,7 +170,7 @@ export const Page_combat = () => {
     }, [endMatch]);
 
     // ── Render Match Card ──
-    const renderMatchCard = (m: TranDauDK) => {
+    const renderMatchCard = (m: TranDauDK, isSidePanel: boolean = false) => {
         const st = ST_MAP[m.trang_thai];
         const isLive = m.trang_thai === 'dang_dau';
         const isActive = activeMatch === m.id;
@@ -199,11 +199,11 @@ export const Page_combat = () => {
                     </VCT_Stack>
 
                     {/* Scoreboard */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, padding: '24px 16px', borderRadius: 16, background: 'var(--vct-bg-elevated)', position: 'relative', overflow: 'hidden' }}>
-                        {isLive && <motion.div animate={{ opacity: [0.03, 0.08, 0.03] }} transition={{ duration: 2, repeat: Infinity }} style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(59,130,246,0.1), transparent, rgba(239,68,68,0.1))' }} />}
+                    <div className="relative overflow-hidden rounded-2xl p-6 bg-[var(--vct-bg-elevated)] border-2 border-[var(--vct-border-subtle)] bg-white/5 backdrop-blur-md shadow-inner flex items-center justify-center gap-8">
+                        {isLive && <motion.div animate={{ opacity: [0.03, 0.08, 0.03] }} transition={{ duration: 2, repeat: Infinity }} className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-transparent to-red-500/10" />}
                         {/* Blue */}
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#3b82f6', margin: '0 auto 8px', boxShadow: isLive ? '0 0 12px rgba(59,130,246,0.5)' : 'none' }} />
+                            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#3b82f6', margin: '0 auto 8px', boxShadow: isLive ? '0 0 16px rgba(59,130,246,0.6)' : 'none' }} />
                             <VCT_Text style={{ fontWeight: 900, fontSize: 16 }}>{m.vdv_xanh.ten}</VCT_Text>
                             <VCT_Text variant="small" style={{ opacity: 0.5 }}>{m.vdv_xanh.doan}</VCT_Text>
                             {w.xanh > 0 && <div style={{ marginTop: 4 }}>{Array.from({ length: w.xanh }).map((_, i) => <span key={i} style={{ fontSize: 14 }}>🟡</span>)}</div>}
@@ -220,15 +220,19 @@ export const Page_combat = () => {
                         </div>
                         {/* Red */}
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#ef4444', margin: '0 auto 8px', boxShadow: isLive ? '0 0 12px rgba(239,68,68,0.5)' : 'none' }} />
+                            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#ef4444', margin: '0 auto 8px', boxShadow: isLive ? '0 0 16px rgba(239,68,68,0.6)' : 'none' }} />
                             <VCT_Text style={{ fontWeight: 900, fontSize: 16 }}>{m.vdv_do.ten}</VCT_Text>
                             <VCT_Text variant="small" style={{ opacity: 0.5 }}>{m.vdv_do.doan}</VCT_Text>
                             {w.do > 0 && <div style={{ marginTop: 4 }}>{Array.from({ length: w.do }).map((_, i) => <span key={i} style={{ fontSize: 14 }}>🟡</span>)}</div>}
                         </div>
                     </div>
 
-                    {/* Quick Score Panel — visible when LIVE */}
-                    {isLive && (
+                    {/* Quick Score Panel — visible when LIVE, but ONLY in Side Panel if active */}
+                    {isLive && isActive && !isSidePanel ? (
+                        <div className="mt-4 text-center p-4 bg-blue-500/10 rounded-xl text-blue-600 font-bold border border-blue-500/20">
+                            👉 Đang điều khiển ở bảng bên phải
+                        </div>
+                    ) : isLive && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4">
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, padding: 16, borderRadius: 14, background: 'rgba(59,130,246,0.03)', border: '1px solid var(--vct-border-subtle)' }}>
                                 {/* Xanh round scores */}
@@ -352,9 +356,42 @@ export const Page_combat = () => {
             {filtered.length === 0 ? (
                 <VCT_EmptyState title="Không có trận đấu" description="Thử thay đổi bộ lọc." icon="🥊" />
             ) : (
-                <VCT_Stack gap={20}>
-                    {filtered.map(m => renderMatchCard(m))}
-                </VCT_Stack>
+                <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Danh sách trận đấu (Left side) */}
+                    <div className="flex-1">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-sm font-bold uppercase text-[var(--vct-text-tertiary)] tracking-wider">Danh sách trận đấu ({filtered.length})</h2>
+                        </div>
+                        <VCT_Stack gap={16}>
+                            {filtered.map(m => (
+                                <div key={m.id} onClick={() => m.trang_thai === 'dang_dau' ? setActiveMatch(m.id) : null} className={`cursor-pointer transition-transform hover:-translate-y-1 ${activeMatch === m.id ? 'ring-2 ring-blue-500 rounded-2xl' : ''}`}>
+                                    {renderMatchCard(m, false)}
+                                </div>
+                            ))}
+                        </VCT_Stack>
+                    </div>
+
+                    {/* Live Control Panel (Right side - Sticky) */}
+                    {activeMatchData && activeMatchData.trang_thai === 'dang_dau' && (
+                        <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0">
+                            <div className="sticky top-24">
+                                <div className="flex items-center justify-between mb-4 mt-8 lg:mt-0">
+                                    <h2 className="text-sm font-bold uppercase text-red-500 tracking-wider flex items-center gap-2">
+                                        <span className="relative flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                        </span>
+                                        Live Control Panel
+                                    </h2>
+                                    <VCT_Button variant="secondary" onClick={() => setActiveMatch(null)} style={{ padding: '4px 12px', fontSize: 11 }}>Đóng</VCT_Button>
+                                </div>
+                                <div className="rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)] shadow-xl overflow-hidden backdrop-blur-xl">
+                                    {renderMatchCard(activeMatchData, true)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
         </VCT_PageContainer>
     );

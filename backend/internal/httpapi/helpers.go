@@ -71,15 +71,15 @@ func forbidden(w http.ResponseWriter, message string) {
 }
 
 // requireRole checks if the principal has one of the allowed roles.
-// Returns true if access is denied (caller should return immediately).
-func requireRole(w http.ResponseWriter, p auth.Principal, roles ...string) bool {
+// Returns true if access is granted (caller should continue). Returns false and writes 403 if denied.
+func requireRole(w http.ResponseWriter, p auth.Principal, roles ...auth.UserRole) bool {
 	for _, r := range roles {
-		if string(p.User.Role) == r {
-			return false // access granted
+		if p.User.Role == r {
+			return true // access granted
 		}
 	}
 	forbidden(w, "Bạn không có quyền thực hiện thao tác này")
-	return true // access denied
+	return false // access denied
 }
 
 func writeAuthError(w http.ResponseWriter, err error) {

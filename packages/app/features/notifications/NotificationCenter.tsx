@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { VCT_NotificationBell } from '../components/VCT_NotificationBell'
 import { VCT_Timeline, type TimelineEvent } from '../components/VCT_Timeline'
+import { useI18n } from '../i18n'
 
 /* ────────────────────────────────────────────
  *  NotificationCenter
@@ -12,12 +13,7 @@ import { VCT_Timeline, type TimelineEvent } from '../components/VCT_Timeline'
 
 type NotifTab = 'all' | 'match' | 'registration' | 'system'
 
-const TABS: { key: NotifTab; label: string }[] = [
-    { key: 'all', label: 'Tất cả' },
-    { key: 'match', label: 'Thi đấu' },
-    { key: 'registration', label: 'Đăng ký' },
-    { key: 'system', label: 'Hệ thống' },
-]
+const TAB_KEYS: NotifTab[] = ['all', 'match', 'registration', 'system']
 
 interface Notification {
     id: string
@@ -47,6 +43,7 @@ export interface NotificationCenterProps {
 }
 
 export function NotificationCenter({ isOpen: externalOpen, onClose }: NotificationCenterProps) {
+    const { t } = useI18n()
     const [internalOpen, setInternalOpen] = useState(false)
     const [activeTab, setActiveTab] = useState<NotifTab>('all')
     const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS)
@@ -84,13 +81,7 @@ export function NotificationCenter({ isOpen: externalOpen, onClose }: Notificati
             {isOpen && (
                 <div
                     onClick={handleClose}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.35)',
-                        zIndex: 'var(--vct-z-drawer, 300)' as any,
-                        animation: 'vct-fade-in 0.2s ease both',
-                    }}
+                    className="fixed inset-0 z-[300] bg-slate-900/40 animate-[vct-fade-in_0.2s_ease_both]"
                     aria-hidden
                 />
             )}
@@ -98,75 +89,35 @@ export function NotificationCenter({ isOpen: externalOpen, onClose }: Notificati
             {/* Drawer panel */}
             <aside
                 role="dialog"
-                aria-label="Trung tâm thông báo"
+                aria-label={t('notifications.title')}
                 aria-modal="true"
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    width: 'min(420px, 90vw)',
-                    zIndex: 'var(--vct-z-drawer, 300)' as any,
-                    background: 'var(--vct-bg-elevated)',
-                    borderLeft: '1px solid var(--vct-border-subtle)',
-                    boxShadow: 'var(--vct-shadow-xl)',
-                    transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-                    transition: 'transform 0.3s var(--vct-ease-out)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
+                className={`fixed right-0 top-0 bottom-0 z-[300] flex w-[min(420px,90vw)] flex-col border-l border-[var(--vct-border-subtle)] bg-[var(--vct-bg-elevated)] shadow-[var(--vct-shadow-xl)] transition-transform duration-300 ease-[var(--vct-ease-out)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
             >
                 {/* Header */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '16px 20px',
-                        borderBottom: '1px solid var(--vct-border-subtle)',
-                    }}
-                >
+                <div className="flex items-center justify-between border-b border-[var(--vct-border-subtle)] px-5 py-4">
                     <div>
-                        <h3 style={{ margin: 0, fontSize: 'var(--vct-font-md)', fontWeight: 700, color: 'var(--vct-text-primary)' }}>
-                            Thông báo
+                        <h3 className="m-0 text-base font-bold text-[var(--vct-text-primary)]">
+                            {t('notifications.title')}
                         </h3>
                         {unreadCount > 0 && (
-                            <p style={{ margin: '2px 0 0', fontSize: 'var(--vct-font-xs)', color: 'var(--vct-text-tertiary)' }}>
-                                {unreadCount} chưa đọc
+                            <p className="mt-0.5 text-xs text-[var(--vct-text-tertiary)]">
+                                {unreadCount} {t('notifications.unread')}
                             </p>
                         )}
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="flex items-center gap-2">
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllRead}
-                                style={{
-                                    border: 'none',
-                                    background: 'transparent',
-                                    color: 'var(--vct-accent-cyan)',
-                                    fontSize: 'var(--vct-font-xs)',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    padding: '4px 8px',
-                                    borderRadius: 'var(--vct-radius-sm)',
-                                }}
+                                className="rounded-md border-none bg-transparent px-2 py-1 text-xs font-semibold text-[var(--vct-accent-cyan)] transition hover:bg-[var(--vct-bg-hover)]"
                             >
-                                Đọc tất cả
+                                {t('notifications.markAllRead')}
                             </button>
                         )}
                         <button
                             onClick={handleClose}
-                            aria-label="Đóng thông báo"
-                            style={{
-                                border: 'none',
-                                background: 'transparent',
-                                color: 'var(--vct-text-tertiary)',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                padding: 4,
-                                borderRadius: 'var(--vct-radius-sm)',
-                                fontSize: 20,
-                            }}
+                            aria-label={t('notifications.close')}
+                            className="inline-flex rounded-md border-none bg-transparent p-1 text-xl text-[var(--vct-text-tertiary)] transition hover:bg-[var(--vct-bg-hover)] hover:text-[var(--vct-text-primary)]"
                         >
                             ✕
                         </button>
@@ -174,49 +125,19 @@ export function NotificationCenter({ isOpen: externalOpen, onClose }: Notificati
                 </div>
 
                 {/* Tabs */}
-                <div
-                    style={{
-                        display: 'flex',
-                        gap: 2,
-                        padding: '8px 20px 0',
-                        borderBottom: '1px solid var(--vct-border-subtle)',
-                    }}
-                >
-                    {TABS.map((t) => (
+                <div className="flex gap-0.5 border-b border-[var(--vct-border-subtle)] px-5 pt-2">
+                    {TAB_KEYS.map((key) => (
                         <button
-                            key={t.key}
-                            onClick={() => setActiveTab(t.key)}
-                            style={{
-                                border: 'none',
-                                background: 'transparent',
-                                color: activeTab === t.key ? 'var(--vct-accent-cyan)' : 'var(--vct-text-tertiary)',
-                                fontSize: 'var(--vct-font-xs)',
-                                fontWeight: activeTab === t.key ? 700 : 500,
-                                cursor: 'pointer',
-                                padding: '8px 12px',
-                                borderBottom: activeTab === t.key ? '2px solid var(--vct-accent-cyan)' : '2px solid transparent',
-                                marginBottom: -1,
-                                transition: 'color var(--vct-duration-fast) ease',
-                            }}
+                            key={key}
+                            onClick={() => setActiveTab(key)}
+                            className={`-mb-px border-none bg-transparent px-3 py-2 text-xs font-medium transition ${activeTab === key
+                                ? 'border-b-2 border-[var(--vct-accent-cyan)] font-bold text-[var(--vct-accent-cyan)]'
+                                : 'border-b-2 border-transparent text-[var(--vct-text-tertiary)] hover:text-[var(--vct-text-primary)]'
+                                }`}
                         >
-                            {t.label}
-                            {t.key === 'all' && unreadCount > 0 && (
-                                <span
-                                    style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginLeft: 6,
-                                        minWidth: 16,
-                                        height: 16,
-                                        borderRadius: 'var(--vct-radius-full)',
-                                        background: 'var(--vct-danger)',
-                                        color: '#fff',
-                                        fontSize: 9,
-                                        fontWeight: 700,
-                                        padding: '0 3px',
-                                    }}
-                                >
+                            {t(`notifications.tab.${key}`)}
+                            {key === 'all' && unreadCount > 0 && (
+                                <span className="ml-1.5 inline-flex min-w-[16px] items-center justify-center rounded-full bg-[var(--vct-danger)] px-1 text-[9px] font-bold leading-none text-white">
                                     {unreadCount}
                                 </span>
                             )}
@@ -225,18 +146,11 @@ export function NotificationCenter({ isOpen: externalOpen, onClose }: Notificati
                 </div>
 
                 {/* Content */}
-                <div
-                    className="vct-hide-scrollbar"
-                    style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        padding: '16px 20px',
-                    }}
-                >
+                <div className="vct-hide-scrollbar flex-1 overflow-y-auto p-5">
                     {filtered.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--vct-text-tertiary)' }}>
-                            <div style={{ fontSize: 32, marginBottom: 8 }}>🔔</div>
-                            <div style={{ fontSize: 'var(--vct-font-sm)' }}>Không có thông báo</div>
+                        <div className="py-10 text-center text-[var(--vct-text-tertiary)]">
+                            <div className="mb-2 text-3xl">🔔</div>
+                            <div className="text-sm">{t('notifications.empty')}</div>
                         </div>
                     ) : (
                         <VCT_Timeline events={timelineEvents} />

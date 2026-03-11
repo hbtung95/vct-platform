@@ -62,7 +62,7 @@ export const Page_login = () => {
     if (!form.username.trim() || !form.password.trim()) return flash(t('errEmpty'), 'warning')
     setLoading(true)
     try {
-      await login({ username: form.username.trim(), password: form.password.trim(), role: 'admin', rememberMe: form.rememberMe })
+      await login({ username: form.username.trim(), password: form.password.trim(), role: '' as any, rememberMe: form.rememberMe })
       flash(t('ok'), 'success')
       router.replace(redirectTarget)
     } catch (err) {
@@ -73,10 +73,10 @@ export const Page_login = () => {
   }
 
   const features = [
-    { icon: <VCT_Icons.Building size={15} />, label: t('feat1'), c: '#10b981' },
-    { icon: <VCT_Icons.Trophy size={15} />, label: t('feat2'), c: '#3b82f6' },
-    { icon: <VCT_Icons.BarChart2 size={15} />, label: t('feat3'), c: '#a855f7' },
-    { icon: <VCT_Icons.Book size={15} />, label: t('feat4'), c: '#f59e0b' },
+    { icon: <VCT_Icons.Building size={15} />, label: t('feat1'), c: '#10b981', href: '/federation' },
+    { icon: <VCT_Icons.Trophy size={15} />, label: t('feat2'), c: '#3b82f6', href: '/tournament' },
+    { icon: <VCT_Icons.BarChart2 size={15} />, label: t('feat3'), c: '#a855f7', href: '/rankings' },
+    { icon: <VCT_Icons.Book size={15} />, label: t('feat4'), c: '#f59e0b', href: '/training' },
   ]
 
   return (
@@ -134,10 +134,10 @@ export const Page_login = () => {
             {/* Feature pills */}
             <div className="v-tags">
               {features.map((f, i) => (
-                <span key={i} className="v-tag" style={{ '--tag-c': f.c } as React.CSSProperties}>
+                <a href={f.href} key={i} className="v-tag" style={{ '--tag-c': f.c, textDecoration: 'none' } as React.CSSProperties}>
                   <span className="v-tag__ic">{f.icon}</span>
                   {f.label}
-                </span>
+                </a>
               ))}
             </div>
           </div>
@@ -217,11 +217,11 @@ export const Page_login = () => {
 
           {/* Stats bar */}
           <div className="v-stats">
-            <div className="v-st"><strong>{t('stat1v')}</strong><span>{t('stat1l')}</span></div>
+            <a href="/public/provinces" className="v-st" style={{ textDecoration: 'none' }}><strong>{t('stat1v')}</strong><span>{t('stat1l')}</span></a>
             <div className="v-st__d" />
-            <div className="v-st"><strong>{t('stat2v')}</strong><span>{t('stat2l')}</span></div>
+            <a href="/public/clubs" className="v-st" style={{ textDecoration: 'none' }}><strong>{t('stat2v')}</strong><span>{t('stat2l')}</span></a>
             <div className="v-st__d" />
-            <div className="v-st"><strong>{t('stat3v')}</strong><span>{t('stat3l')}</span></div>
+            <a href="/public/members" className="v-st" style={{ textDecoration: 'none' }}><strong>{t('stat3v')}</strong><span>{t('stat3l')}</span></a>
           </div>
         </main>
 
@@ -499,12 +499,26 @@ const CSS = `
     0 0 60px -20px var(--card-glow),
     0 25px 60px -15px rgba(0,0,0,0.2),
     inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: box-shadow 0.4s ease, transform 0.4s ease;
+}
+.v-card:hover {
+  box-shadow:
+    0 0 80px -10px rgba(16,185,129,0.15),
+    0 30px 80px -15px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  transform: translateY(-2px);
 }
 .v--l .v-card {
   box-shadow:
     0 0 60px -20px var(--card-glow),
     0 25px 60px -15px rgba(0,0,0,0.05),
     inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.v--l .v-card:hover {
+  box-shadow:
+    0 0 80px -10px rgba(16,185,129,0.1),
+    0 30px 80px -15px rgba(0,0,0,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
 .v-card__head h2 { margin: 0; font-size: 22px; font-weight: 800; color: var(--tx-s); letter-spacing: -0.03em; }
@@ -626,8 +640,9 @@ const CSS = `
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   animation: up 0.5s ease-out 0.35s both;
 }
-.v-st { text-align: center; }
-.v-st strong { display: block; font-size: 17px; font-weight: 900; color: var(--tx-s); letter-spacing: -0.03em; }
+.v-st { text-align: center; color: var(--tx-s); transition: transform 0.2s; display: block; }
+.v-st:hover { transform: scale(1.05); }
+.v-st strong { display: block; font-size: 17px; font-weight: 900; color: inherit; letter-spacing: -0.03em; }
 .v-st span { display: block; font-size: 9px; color: var(--tx-m); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; font-weight: 600; }
 .v-st__d { width: 1px; height: 22px; background: var(--brd); }
 

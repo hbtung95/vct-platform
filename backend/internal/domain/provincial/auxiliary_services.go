@@ -137,8 +137,8 @@ func (s *InMemFinanceStore) Create(_ context.Context, e FinanceEntry) (*FinanceE
 	return &e, nil
 }
 
-func (s *InMemFinanceStore) Summary(_ context.Context, provinceID string) (*FinanceSummary, error) {
-	entries, err := s.List(nil, provinceID)
+func (s *InMemFinanceStore) Summary(ctx context.Context, provinceID string) (*FinanceSummary, error) {
+	entries, err := s.List(ctx, provinceID)
 	if err != nil {
 		return nil, err
 	}

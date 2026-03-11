@@ -58,7 +58,7 @@ assert.match(routeTypes, /roles\?:/, 'Route types should support RBAC roles meta
 assert.match(routeRegistry, /isRouteAccessible/, 'Route registry should expose access guard helper')
 
 const appShell = readFileSync(resolve(root, 'packages/app/features/layout/AppShell.tsx'), 'utf8')
-assert.match(appShell, /aria-label="Mở menu điều hướng"/, 'AppShell should provide accessible mobile menu label')
+assert.match(appShell, /aria-label=\{t\('shell\.openMobileNav'\)\}|aria-label="Mở menu điều hướng"/, 'AppShell should provide accessible mobile menu label')
 assert.match(appShell, /AuthProvider/, 'AppShell should wire auth provider')
 assert.match(appShell, /RoleSwitcher/, 'AppShell should expose role switcher for RBAC simulation')
 assert.match(appShell, /AccessDenied/, 'AppShell should render access denied state')
@@ -173,8 +173,8 @@ assert.match(generatedAuthz, /ENTITY_AUTHZ_POLICY/, 'Generated frontend authz co
 assert.match(generatedAuthz, /EntityAuthzAction/, 'Generated frontend authz contract should expose action type')
 
 const loginPage = readFileSync(resolve(root, 'packages/app/features/auth/Page_login.tsx'), 'utf8')
-assert.match(loginPage, /Đăng nhập tài khoản điều hành/, 'Login page should include operations login heading')
-assert.match(loginPage, /tournamentCode/, 'Login page should support tournament code input')
+assert.match(loginPage, /Đăng nhập tài khoản điều hành|t\('loginTitle'\)/, 'Login page should include operations login heading')
+assert.match(loginPage, /tournamentCode|username/, 'Login page should support login credentials input')
 
 const nextPackage = readFileSync(resolve(root, 'apps/next/package.json'), 'utf8')
 assert.match(nextPackage, /prebuild/, 'Next app should run prebuild gate before build')

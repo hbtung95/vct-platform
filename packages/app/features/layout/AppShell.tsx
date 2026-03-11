@@ -18,16 +18,18 @@ import { useI18n, I18nProvider } from '../i18n'
 import {
   getBreadcrumbs,
   getDefaultRouteForRole,
-  getPageTitle,
   getSidebarGroups,
   isRouteAccessible,
+  getPageTitle,
 } from './route-registry'
 import { getFilteredSidebar } from './workspace-resolver'
 import { WORKSPACE_META } from './workspace-types'
 
+
 const MOBILE_MAX_WIDTH = 767
 const TABLET_MAX_WIDTH = 1199
-const PUBLIC_ROUTES = ['/login', '/portal', '/register', '/forgot-password']
+const PUBLIC_ROUTES = ['/login', '/portal', '/register', '/forgot-password', '/public']
+const PORTAL_ROUTES = ['/']
 const SHELL_SIDEBAR_ID = 'vct-shell-sidebar'
 
 type ViewportMode = 'mobile' | 'tablet' | 'desktop'
@@ -78,10 +80,7 @@ const ThemeToggle = () => {
       aria-label={isDark ? t('shell.toLight') : t('shell.toDark')}
       onClick={toggleTheme}
       title={isDark ? t('shell.toLight') : t('shell.toDark')}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:scale-105 ${isDark
-        ? 'border-cyan-400/25 bg-cyan-300/10 text-cyan-300 hover:bg-cyan-300/20'
-        : 'border-amber-500/25 bg-amber-100/60 text-amber-600 hover:bg-amber-200/60'
-        }`}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-vct-border bg-vct-elevated text-vct-text-muted transition hover:border-vct-accent hover:text-vct-text"
     >
       {isDark ? <VCT_Icons.Moon size={16} /> : <VCT_Icons.Sun size={16} />}
     </button>
@@ -97,15 +96,15 @@ const LangToggle = () => {
       aria-label={t('shell.toggleLang')}
       onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}
       title={t('shell.toggleLang')}
-      className="inline-flex h-9 items-center gap-0 overflow-hidden rounded-full border border-emerald-500/25 text-xs font-extrabold transition hover:border-emerald-400/40"
+      className="inline-flex h-9 items-center rounded-full border border-vct-border bg-vct-elevated p-0.5 text-[11px] font-bold transition hover:border-vct-accent"
     >
       <span
-        className={`px-2 py-1.5 transition-all ${lang === 'vi' ? 'bg-emerald-500/15 text-emerald-500' : 'text-slate-400'}`}
+        className={`flex h-full min-w-[32px] items-center justify-center rounded-full px-2 transition-colors ${lang === 'vi' ? 'bg-vct-accent/15 text-vct-accent' : 'text-vct-text-muted hover:text-vct-text'}`}
       >
         VI
       </span>
       <span
-        className={`px-2 py-1.5 transition-all ${lang === 'en' ? 'bg-emerald-500/15 text-emerald-500' : 'text-slate-400'}`}
+        className={`flex h-full min-w-[32px] items-center justify-center rounded-full px-2 transition-colors ${lang === 'en' ? 'bg-vct-accent/15 text-vct-accent' : 'text-vct-text-muted hover:text-vct-text'}`}
       >
         EN
       </span>
@@ -201,6 +200,11 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
     [pathname]
   )
 
+  const isPortalRoute = useMemo(
+    () => PORTAL_ROUTES.includes(pathname),
+    [pathname]
+  )
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const sync = () => setViewportMode(getViewportMode(window.innerWidth))
@@ -261,7 +265,7 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
         const items = activeWorkspace
           ? [
             { label: t('shell.portalHub'), href: '/portal' },
-            { label: activeWorkspace.scopeName },
+            { label: t(activeWorkspace.scopeName) },
           ]
           : [{ label: 'VCT PLATFORM', href: '/' }]
 
@@ -321,6 +325,104 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
     )
   }
 
+  // ── Helper: render header bar (shared between portal & workspace layouts) ──
+  const renderHeader = (showHamburger: boolean) => (
+    <header
+      role="banner"
+      className={`vct-glass flex shrink-0 items-center justify-between border-b border-vct-border shadow-[var(--vct-shadow-sm)] ${isMobile ? 'h-14 gap-2 px-4' : 'h-14 gap-4 px-6'}`}
+    >
+      {/* ── Left: mobile hamburger + breadcrumbs ── */}
+      <div className="flex min-w-0 items-center gap-3">
+        {showHamburger && compactNavigation && (
+          <VCT_IconButton
+            ariaLabel={t('shell.openMobileNav')}
+            aria-label={t('shell.openMobileNav')}
+            aria-controls={SHELL_SIDEBAR_ID}
+            aria-expanded={mobileNavOpen}
+            onClick={() => setMobileNavOpen((prev) => !prev)}
+            icon={<VCT_Icons.List size={18} />}
+            className="shrink-0"
+          />
+        )}
+
+        {!isMobile && (
+          <VCT_Breadcrumbs items={breadcrumbs} />
+        )}
+        {isMobile && (
+          <VCT_Breadcrumbs items={breadcrumbs.length > 2 ? breadcrumbs.slice(-2) : breadcrumbs} className="max-w-[200px]" />
+        )}
+      </div>
+
+      {/* ── Right: search, controls, avatar ── */}
+      <div className="flex shrink-0 items-center gap-2">
+        {isDesktop && (
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: true }))
+            }}
+            className="group flex h-9 w-64 items-center gap-2 overflow-hidden rounded-full border border-vct-border bg-vct-elevated px-3 text-xs text-vct-text-muted transition hover:border-vct-accent hover:text-vct-text"
+          >
+            <VCT_Icons.Search size={14} className="shrink-0" />
+            <span className="flex-1 truncate text-left">{t('shell.searchPlaceholder')}</span>
+            <kbd className="shrink-0 rounded border border-vct-border bg-vct-input px-1.5 py-0.5 text-[10px] font-bold text-vct-text-muted">⌘K</kbd>
+          </button>
+        )}
+
+        <LangToggle />
+        <ThemeToggle />
+        <NotificationCenter />
+
+        <VCT_Dropdown
+          trigger={
+            <span
+              className={`inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-xs font-black text-white shadow-sm ring-1 ring-vct-border transition hover:ring-vct-accent ${currentWorkspaceMeta
+                ? `bg-gradient-to-br ${currentWorkspaceMeta.gradient}`
+                : 'bg-gradient-to-br from-red-700 to-emerald-700'
+                }`}
+              title={`${currentUser.name} — ${roleLabel}`}
+            >
+              {userInitials}
+            </span>
+          }
+          items={[
+            { label: `${currentUser.name} (${roleLabel})`, icon: <VCT_Icons.User size={16} />, onClick: () => { router.push('/profile') } },
+            { label: t('shell.notifications'), icon: <VCT_Icons.Bell size={16} />, onClick: () => { router.push('/notifications') } },
+            { label: t('shell.portalHub'), icon: <VCT_Icons.LayoutGrid size={16} />, onClick: () => { router.push('/') } },
+            { label: t('shell.settings'), icon: <VCT_Icons.Settings size={16} />, onClick: () => { router.push('/settings') } },
+            {
+              label: t('shell.logout'),
+              icon: <VCT_Icons.LogOut size={16} />,
+              danger: true,
+              onClick: () => { void logout().then(() => { router.replace('/login') }) },
+            },
+          ]}
+        />
+      </div>
+    </header>
+  )
+
+  // ── Portal route: full-screen, NO sidebar, NO shell header ──
+  // Portal Hub has its own header/layout, so we just pass children through.
+  if (isPortalRoute) {
+    return (
+      <VCT_Provider>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          className="h-dvh w-full overflow-y-auto"
+        >
+          {children}
+        </motion.div>
+        <VCT_CommandPalette />
+        <VCT_ShortcutsPanel />
+      </VCT_Provider>
+    )
+  }
+
+  // ── Normal workspace route: sidebar + header + main ──
   return (
     <VCT_Provider>
       <a href="#vct-main-content" className="vct-skip-link">
@@ -344,7 +446,7 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
           userName={currentUser.name}
           roleLabel={roleLabel}
           navGroups={navigationGroups}
-          workspaceLabel={activeWorkspace?.scopeName}
+          workspaceLabel={activeWorkspace ? t(activeWorkspace.scopeName) : undefined}
         />
 
         {compactNavigation && mobileNavOpen && (
@@ -357,79 +459,7 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
         )}
 
         <div className="relative z-20 flex min-w-0 flex-1 flex-col overflow-hidden">
-          <header
-            role="banner"
-            className={`vct-glass flex shrink-0 items-center justify-between border-b border-vct-border shadow-[var(--vct-shadow-sm)] ${isMobile ? 'h-14 gap-2 px-4' : 'h-14 gap-4 px-6'}`}
-          >
-            {/* ── Left: mobile hamburger + breadcrumbs ── */}
-            <div className="flex min-w-0 items-center gap-3">
-              {compactNavigation && (
-                <VCT_IconButton
-                  ariaLabel={t('shell.openMobileNav')}
-                  aria-label={t('shell.openMobileNav')}
-                  aria-controls={SHELL_SIDEBAR_ID}
-                  aria-expanded={mobileNavOpen}
-                  onClick={() => setMobileNavOpen((prev) => !prev)}
-                  icon={<VCT_Icons.List size={18} />}
-                  className="shrink-0"
-                />
-              )}
-
-              {!isMobile && (
-                <VCT_Breadcrumbs items={breadcrumbs} />
-              )}
-              {isMobile && (
-                <span className="truncate text-sm font-bold">{pageTitle}</span>
-              )}
-            </div>
-
-            {/* ── Right: search, controls, avatar ── */}
-            <div className="flex shrink-0 items-center gap-2">
-              {isDesktop && (
-                <div className="relative w-56">
-                  <label htmlFor="global-search" className="sr-only">
-                    {t('shell.searchLabel')}
-                  </label>
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-vct-text-muted">
-                    <VCT_Icons.Search size={14} />
-                  </span>
-                  <input
-                    id="global-search"
-                    type="text"
-                    placeholder={t('shell.searchPlaceholder')}
-                    className="w-full rounded-full border border-vct-border bg-vct-elevated py-1.5 pl-8 pr-3 text-xs text-vct-text outline-none transition placeholder:text-vct-text-muted focus:border-vct-accent"
-                  />
-                </div>
-              )}
-
-              <LangToggle />
-              <ThemeToggle />
-              <NotificationCenter />
-
-              <VCT_Dropdown
-                trigger={
-                  <span
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-red-700 to-emerald-700 text-[11px] font-black text-white shadow-md cursor-pointer transition hover:scale-105"
-                    title={`${currentUser.name} — ${roleLabel}`}
-                  >
-                    {userInitials}
-                  </span>
-                }
-                items={[
-                  { label: `${currentUser.name} (${roleLabel})`, icon: <VCT_Icons.User size={16} />, onClick: () => { router.push('/profile') } },
-                  { label: t('shell.notifications'), icon: <VCT_Icons.Bell size={16} />, onClick: () => { router.push('/notifications') } },
-                  { label: t('shell.portalHub'), icon: <VCT_Icons.LayoutGrid size={16} />, onClick: () => { router.push('/portal') } },
-                  { label: t('shell.settings'), icon: <VCT_Icons.Settings size={16} />, onClick: () => { router.push('/settings') } },
-                  {
-                    label: t('shell.logout'),
-                    icon: <VCT_Icons.LogOut size={16} />,
-                    danger: true,
-                    onClick: () => { void logout().then(() => { router.replace('/login') }) },
-                  },
-                ]}
-              />
-            </div>
-          </header>
+          {renderHeader(true)}
 
           <main
             id="vct-main-content"

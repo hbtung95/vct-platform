@@ -81,6 +81,14 @@ const ROUTE_PERMISSION_MAP: Record<string, string[]> = {
     // Clubs
     '/clubs/classes': ['training.read'],
     '/clubs/facilities': ['training.read'],
+    '/club': ['clubs.view'],
+    '/club/members': ['members.view'],
+    '/club/classes': ['training.read'],
+    '/club/training': ['training.read'],
+    '/club/certifications': ['belts.view'],
+    '/club/finance': ['transactions.view'],
+    '/club/tournaments': ['tournaments.view'],
+    '/club/settings': ['clubs.update'],
 
     // Athlete portal
     '/athlete-portal': [],
@@ -112,7 +120,7 @@ const checkPermission = (
 
 /**
  * Resolve which workspace types a user can access based on their role assignments.
- * Uses role-to-workspace mapping.
+ * Scope names use i18n keys — consumers should call t(scopeName) to localize.
  */
 export function resolveWorkspacesForUser(user: AuthUser): WorkspaceAccess[] {
     // If backend already provides workspaces, use those
@@ -143,7 +151,7 @@ export function resolveWorkspacesForUser(user: AuthUser): WorkspaceAccess[] {
     }
 
     // Everyone gets public spectator
-    addWorkspace('public_spectator', 'PUBLIC', 'Xem trực tiếp', 'viewer')
+    addWorkspace('public_spectator', 'PUBLIC', 'ws.scope.spectator', 'viewer')
 
     return workspaces
 }
@@ -157,7 +165,7 @@ function mapRoleToWorkspace(
     const scopeName = ra.scopeName ?? ra.roleName
 
     if (code === 'SYSTEM_ADMIN') {
-        add('system_admin', 'SYS', 'Quản trị hệ thống', 'admin')
+        add('system_admin', 'SYS', 'ws.scope.sysadmin', 'admin')
         add('federation_admin', scopeId, scopeName, 'admin')
         add('tournament_ops', scopeId, scopeName, 'admin')
         add('club_management', scopeId, scopeName, 'admin')
@@ -189,38 +197,42 @@ function mapSingleRoleToWorkspace(
 ) {
     switch (role) {
         case 'admin':
-            add('system_admin', 'SYS', 'Quản trị hệ thống', 'admin')
-            add('federation_admin', 'FED', 'Liên đoàn VCT', 'admin')
-            add('tournament_ops', 'TOURN', 'Giải đấu', 'admin')
-            add('club_management', 'CLUB', 'CLB', 'admin')
+            add('system_admin', 'SYS', 'ws.scope.sysadmin', 'admin')
+            add('federation_admin', 'FED', 'ws.scope.federation', 'admin')
+            add('tournament_ops', 'TOURN', 'ws.scope.tournament', 'admin')
+            add('club_management', 'CLUB', 'ws.scope.club', 'admin')
             break
         case 'federation_president':
         case 'federation_secretary':
         case 'provincial_admin':
-            add('federation_admin', 'FED', 'Liên đoàn VCT', role)
+            add('federation_admin', 'FED', 'ws.scope.federation', role)
             break
         case 'technical_director':
-            add('federation_admin', 'FED', 'Liên đoàn VCT', role)
-            add('tournament_ops', 'TOURN', 'Giải đấu', role)
+            add('federation_admin', 'FED', 'ws.scope.federation', role)
+            add('tournament_ops', 'TOURN', 'ws.scope.tournament', role)
             break
         case 'btc':
-            add('tournament_ops', 'TOURN', 'Giải đấu', 'btc')
+            add('tournament_ops', 'TOURN', 'ws.scope.tournament', 'btc')
             break
         case 'referee_manager':
         case 'referee':
-            add('referee_console', 'TOURN', 'Trọng tài', role)
+            add('referee_console', 'TOURN', 'ws.scope.referee', role)
             break
         case 'coach':
-            add('club_management', 'CLUB', 'CLB', 'coach')
+        case 'club_leader':
+        case 'club_vice_leader':
+        case 'club_secretary':
+        case 'club_accountant':
+            add('club_management', 'CLUB', 'ws.scope.club', 'coach')
             break
         case 'delegate':
-            add('tournament_ops', 'TOURN', 'Giải đấu', 'delegate')
+            add('tournament_ops', 'TOURN', 'ws.scope.tournament', 'delegate')
             break
         case 'athlete':
-            add('athlete_portal', 'SELF', 'Hồ sơ VĐV', 'athlete')
+            add('athlete_portal', 'SELF', 'ws.scope.athlete', 'athlete')
             break
         case 'medical_staff':
-            add('tournament_ops', 'TOURN', 'Y tế giải', 'medical_staff')
+            add('tournament_ops', 'TOURN', 'ws.scope.medical', 'medical_staff')
             break
     }
 }

@@ -41,6 +41,14 @@ func (s *Server) handlePublicRoutes(w http.ResponseWriter, r *http.Request) {
 		s.handlePublicMedals(w, r)
 	case "results":
 		s.handlePublicResults(w, r)
+	case "athletes":
+		if len(segments) > 1 && segments[1] == "search" {
+			s.handlePublicAthleteSearch(w, r)
+		} else {
+			notFound(w)
+		}
+	case "stats":
+		s.handlePublicStats(w, r)
 	default:
 		notFound(w)
 	}
@@ -146,5 +154,91 @@ func (s *Server) handlePublicResults(w http.ResponseWriter, r *http.Request) {
 	success(w, http.StatusOK, map[string]any{
 		"results": filtered,
 		"total":   len(filtered),
+	})
+}
+
+// ── Spectator: Athlete Search ────────────────────────────────
+
+func (s *Server) handlePublicAthleteSearch(w http.ResponseWriter, r *http.Request) {
+	query := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+	if query == "" {
+		success(w, http.StatusOK, map[string]any{"athletes": []any{}, "total": 0})
+		return
+	}
+
+	athletes := s.store.List("athletes")
+	var matched []map[string]any
+	for _, a := range athletes {
+		name, _ := a["ho_ten"].(string)
+		if name == "" {
+			name, _ = a["name"].(string)
+		}
+		if strings.Contains(strings.ToLower(name), query) {
+			matched = append(matched, a)
+		}
+	}
+
+	// Fallback demo data when store is empty
+	if len(athletes) == 0 {
+		demo := []map[string]any{
+			{"id": "ATH-001", "ho_ten": "Nguyễn Văn An", "club": "CLB Thanh Long", "belt": "Hoàng đai", "province": "TP.HCM"},
+			{"id": "ATH-002", "ho_ten": "Nguyễn Thị Bình", "club": "CLB Thanh Long", "belt": "Lam đai", "province": "TP.HCM"},
+			{"id": "ATH-003", "ho_ten": "Trần Minh Đức", "club": "CLB Bạch Hổ", "belt": "Vàng đai 1", "province": "Hà Nội"},
+			{"id": "ATH-004", "ho_ten": "Lê Thị Cẩm Tú", "club": "CLB Phượng Hoàng", "belt": "Hoàng đai", "province": "Đà Nẵng"},
+			{"id": "ATH-005", "ho_ten": "Phạm Quốc Anh", "club": "CLB Rồng Vàng", "belt": "Lam đai 2", "province": "Bình Dương"},
+		}
+		matched = nil
+		for _, d := range demo {
+			name, _ := d["ho_ten"].(string)
+			if strings.Contains(strings.ToLower(name), query) {
+				matched = append(matched, d)
+			}
+		}
+	}
+
+	success(w, http.StatusOK, map[string]any{
+		"athletes": matched,
+		"total":    len(matched),
+		"query":    query,
+	})
+}
+
+// ── Spectator: Tournament Statistics ─────────────────────────
+
+func (s *Server) handlePublicStats(w http.ResponseWriter, _ *http.Request) {
+	athletes := s.store.List("athletes")
+	matches := s.store.List("combat_matches")
+	medals := s.store.List("medals")
+	teams := s.store.List("teams")
+
+	totalAthletes := len(athletes)
+	totalMatches := len(matches)
+	totalMedals := len(medals)
+	totalTeams := len(teams)
+
+	// Fallback demo stats
+	if totalAthletes == 0 {
+		totalAthletes = 324
+	}
+	if totalMatches == 0 {
+		totalMatches = 186
+	}
+	if totalMedals == 0 {
+		totalMedals = 96
+	}
+	if totalTeams == 0 {
+		totalTeams = 42
+	}
+
+	success(w, http.StatusOK, map[string]any{
+		"total_athletes":  totalAthletes,
+		"total_matches":   totalMatches,
+		"total_medals":    totalMedals,
+		"total_teams":     totalTeams,
+		"categories":      12,
+		"arenas":          6,
+		"tournament_name": "Giải Vovinam Toàn Quốc 2026",
+		"tournament_date": "15-20/03/2026",
+		"location":        "Nhà thi đấu Phú Thọ, TP.HCM",
 	})
 }

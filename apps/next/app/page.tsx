@@ -1,5 +1,5 @@
-import { Page_command_center } from 'app/features/dashboard/Page_command_center'
+import { Page_portal_hub } from 'app/features/portals/Page_portal_hub'
 
 export default function Page() {
-  return <Page_command_center />
+  return <Page_portal_hub />
 }

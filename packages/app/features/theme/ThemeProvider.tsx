@@ -17,13 +17,10 @@ const ThemeContext = createContext<ThemeContextType>({
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-    // Khởi tạo state gốc là light để tránh lỗi Hydration Mismatch trên Server
     const [theme, setTheme] = useState<Theme>('light');
     const [mounted, setMounted] = useState(false);
 
-    // Kích hoạt đọc localStorage chỉ trên Client sau khi Component Mount
     useEffect(() => {
-        setMounted(true);
         const savedTheme = localStorage.getItem('vct-theme') as Theme;
         if (savedTheme) {
             setTheme(savedTheme);
@@ -39,6 +36,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
                 document.documentElement.classList.add('dark');
             }
         }
+        // Smooth fade-in after theme is resolved
+        requestAnimationFrame(() => setMounted(true));
     }, []);
 
     const toggleTheme = () => {
@@ -53,15 +52,20 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    // Nếu chưa mount xong, render children mà không cần logic dark/light 
-    // để đảm bảo giao diện Server và Client match 100% trong nhịp render đầu
-    if (!mounted) {
-        return <div style={{ visibility: 'hidden' }}>{children}</div>;
-    }
-
     return (
         <ThemeContext.Provider value={{ theme, toggleTheme }}>
-            {children}
+            <div
+                style={{
+                    opacity: mounted ? 1 : 0,
+                    transition: 'opacity 0.15s ease-in',
+                    width: '100%',
+                    minHeight: '100dvh',
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}
+            >
+                {children}
+            </div>
         </ThemeContext.Provider>
     );
 };

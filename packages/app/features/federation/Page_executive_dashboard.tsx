@@ -152,9 +152,9 @@ export function Page_executive_dashboard() {
                                 <div key={i} style={{
                                     display: 'flex', alignItems: 'flex-start', gap: 10,
                                     padding: '10px 14px', borderRadius: 10,
-                                    background: style.bg,
+                                    background: style?.bg,
                                 }}>
-                                    <span>{style.icon}</span>
+                                    <span>{style?.icon}</span>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: 13, color: '#e2e8f0' }}>{a.msg}</div>
                                         <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{a.time}</div>

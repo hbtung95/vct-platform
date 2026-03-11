@@ -37,9 +37,17 @@ interface SidebarProps {
   workspaceLabel?: string
 }
 
-const isItemActive = (currentPath: string, itemPath: string) => {
+const isItemActive = (currentPath: string, itemPath: string, allPaths: string[]) => {
   if (itemPath === '/') return currentPath === '/'
-  return currentPath === itemPath || currentPath.startsWith(`${itemPath}/`)
+  // Check if this itemPath matches the currentPath
+  const isMatch = currentPath === itemPath || currentPath.startsWith(`${itemPath}/`)
+  if (!isMatch) return false
+  // Among all matching paths, only the longest (most specific) one should be active
+  const longerMatchExists = allPaths.some(
+    (p) => p !== itemPath && p.length > itemPath.length &&
+      (currentPath === p || currentPath.startsWith(`${p}/`))
+  )
+  return !longerMatchExists
 }
 
 export const VCT_Sidebar = ({
@@ -68,6 +76,7 @@ export const VCT_Sidebar = ({
     .join('') || 'U'
 
   const compactMode = isMobile
+  const allPaths = groups.flatMap((g) => g.items.map((i) => i.path))
 
   return (
     <motion.aside
@@ -142,12 +151,12 @@ export const VCT_Sidebar = ({
 
       {workspaceLabel && (!isCollapsed || compactMode) && (
         <div className="border-b border-vct-border px-4 py-3">
-            <div className="rounded-xl border border-vct-border bg-vct-input px-3 py-2">
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-vct-text-muted">
-                {t('shell.currentWorkspace')}
-              </div>
-              <div className="mt-1 truncate text-sm font-bold text-vct-text">
-                {workspaceLabel}
+          <div className="rounded-xl border border-vct-border bg-vct-input px-3 py-2">
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-vct-text-muted">
+              {t('shell.currentWorkspace')}
+            </div>
+            <div className="mt-1 truncate text-sm font-bold text-vct-text">
+              {workspaceLabel}
             </div>
           </div>
         </div>
@@ -167,7 +176,7 @@ export const VCT_Sidebar = ({
 
             <div className="flex flex-col gap-1 px-3">
               {group.items.map((item) => {
-                const isActive = isItemActive(activeModule, item.path)
+                const isActive = isItemActive(activeModule, item.path, allPaths)
                 const iconMap = VCT_Icons as Record<string, React.ComponentType<any>>
                 const IconComponent = iconMap[item.icon] ?? VCT_Icons.Activity
                 const showTooltip = isCollapsed && !compactMode
@@ -226,8 +235,11 @@ export const VCT_Sidebar = ({
 
       <div className="border-t border-vct-border p-4">
         <div className="flex items-center gap-3 rounded-xl border border-vct-border bg-vct-input px-2 py-2">
-          <div className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xs font-black text-white">
-            {initials}
+          <div className="relative shrink-0">
+            <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-cyan-700 text-xs font-black text-white">
+              {initials}
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--vct-bg-elevated)] bg-emerald-400" title="Online" />
           </div>
           {(!isCollapsed || compactMode) && (
             <div className="min-w-0 flex-1">

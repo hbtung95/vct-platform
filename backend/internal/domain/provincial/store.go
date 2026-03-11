@@ -445,9 +445,14 @@ func NewInMemRefereeStore() *InMemRefereeStore {
 func (s *InMemRefereeStore) seed() {
 	now := time.Now().UTC()
 	for _, r := range []ProvincialReferee{
-		{ID: "TT-HCM-001", ProvinceID: "PROV-HCM", FullName: "Huỳnh Văn Khánh", Gender: "nam", DateOfBirth: "1982-02-14", RefereeRank: "Trọng tài cấp II", Expertise: "Đối kháng + Biểu diễn", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
-		{ID: "TT-HCM-002", ProvinceID: "PROV-HCM", FullName: "Cao Thị Linh", Gender: "nu", DateOfBirth: "1990-10-20", RefereeRank: "Trọng tài cấp I", Expertise: "Biểu diễn", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
-		{ID: "TT-HN-001", ProvinceID: "PROV-HN", FullName: "Dương Quang Minh", Gender: "nam", DateOfBirth: "1979-07-08", RefereeRank: "Trọng tài cấp III", Expertise: "Đối kháng", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HCM-001", ProvinceID: "PROV-HCM", FullName: "Huỳnh Văn Khánh", Gender: "nam", DateOfBirth: "1982-02-14", RefereeRank: "quoc_gia", CertNumber: "TT-QG-2018-045", Expertise: "ca_hai", ExperienceYears: 18, Phone: "0903111001", Email: "khanh.huynh@vct.vn", Address: "Q.1, TP.HCM", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HCM-002", ProvinceID: "PROV-HCM", FullName: "Cao Thị Linh", Gender: "nu", DateOfBirth: "1990-10-20", RefereeRank: "cap_1", CertNumber: "TT-C1-2020-112", Expertise: "quyen", ExperienceYears: 8, Phone: "0903111002", Email: "linh.cao@vct.vn", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HCM-003", ProvinceID: "PROV-HCM", FullName: "Trần Minh Đức", Gender: "nam", DateOfBirth: "1988-05-12", RefereeRank: "cap_2", CertNumber: "TT-C2-2022-078", Expertise: "doi_khang", ExperienceYears: 5, Phone: "0903111003", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HCM-004", ProvinceID: "PROV-HCM", FullName: "Nguyễn Thị Hồng", Gender: "nu", DateOfBirth: "1995-08-30", RefereeRank: "cap_3", Expertise: "quyen", ExperienceYears: 2, Phone: "0903111004", Status: MemberStatusPending, Notes: "Đang chờ duyệt chứng chỉ cấp III", CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HCM-005", ProvinceID: "PROV-HCM", FullName: "Lê Quang Vinh", Gender: "nam", DateOfBirth: "1975-03-18", RefereeRank: "quoc_gia", CertNumber: "TT-QG-2015-012", Expertise: "doi_khang", ExperienceYears: 25, Phone: "0903111005", Email: "vinh.le@vct.vn", Address: "Q.Bình Thạnh, TP.HCM", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HN-001", ProvinceID: "PROV-HN", FullName: "Dương Quang Minh", Gender: "nam", DateOfBirth: "1979-07-08", RefereeRank: "quoc_gia", CertNumber: "TT-QG-2016-023", Expertise: "ca_hai", ExperienceYears: 22, Phone: "0904222001", Email: "minh.duong@vct.vn", Address: "Q.Hoàn Kiếm, Hà Nội", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HN-002", ProvinceID: "PROV-HN", FullName: "Phạm Thị Thanh Hà", Gender: "nu", DateOfBirth: "1992-12-15", RefereeRank: "cap_1", CertNumber: "TT-C1-2021-056", Expertise: "quyen", ExperienceYears: 6, Phone: "0904222002", Email: "ha.pham@vct.vn", Status: MemberStatusActive, CreatedAt: now, UpdatedAt: now},
+		{ID: "TT-HN-003", ProvinceID: "PROV-HN", FullName: "Vũ Đình Trọng", Gender: "nam", DateOfBirth: "1998-04-22", RefereeRank: "cap_2", Expertise: "doi_khang", ExperienceYears: 3, Phone: "0904222003", Status: MemberStatusPending, Notes: "Mới tốt nghiệp lớp trọng tài 2025", CreatedAt: now, UpdatedAt: now},
 	} {
 		s.referees[r.ID] = r
 	}
@@ -492,8 +497,81 @@ func (s *InMemRefereeStore) Update(_ context.Context, id string, patch map[strin
 	if v, ok := patch["status"].(string); ok {
 		r.Status = MemberStatus(v)
 	}
+	if v, ok := patch["full_name"].(string); ok {
+		r.FullName = v
+	}
+	if v, ok := patch["referee_rank"].(string); ok {
+		r.RefereeRank = v
+	}
+	if v, ok := patch["expertise"].(string); ok {
+		r.Expertise = v
+	}
+	if v, ok := patch["phone"].(string); ok {
+		r.Phone = v
+	}
+	if v, ok := patch["email"].(string); ok {
+		r.Email = v
+	}
+	if v, ok := patch["notes"].(string); ok {
+		r.Notes = v
+	}
+	if v, ok := patch["updated_at"].(time.Time); ok {
+		r.UpdatedAt = v
+	}
 	s.referees[id] = r
 	return nil
+}
+
+func (s *InMemRefereeStore) Delete(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.referees, id)
+	return nil
+}
+
+// ── Referee Certificate Store ────────────────────────────────
+
+type InMemRefereeCertStore struct {
+	mu    sync.RWMutex
+	certs map[string]RefereeCertificate
+}
+
+func NewInMemRefereeCertStore() *InMemRefereeCertStore {
+	s := &InMemRefereeCertStore{certs: make(map[string]RefereeCertificate)}
+	s.seed()
+	return s
+}
+
+func (s *InMemRefereeCertStore) seed() {
+	for _, c := range []RefereeCertificate{
+		{ID: "CERT-TT-001", RefereeID: "TT-HCM-001", Name: "Chứng chỉ Trọng tài Quốc gia", Issuer: "Liên đoàn VCT Việt Nam", CertType: "referee_license", IssueDate: "2018-06-15", ExpiryDate: "2028-06-15", Status: "valid"},
+		{ID: "CERT-TT-002", RefereeID: "TT-HCM-001", Name: "Chứng chỉ Sơ cấp cứu", Issuer: "Hội Chữ thập đỏ VN", CertType: "first_aid", IssueDate: "2023-01-10", ExpiryDate: "2026-01-10", Status: "valid"},
+		{ID: "CERT-TT-003", RefereeID: "TT-HCM-002", Name: "Chứng chỉ Trọng tài cấp I", Issuer: "LĐ VCT TP.HCM", CertType: "referee_license", IssueDate: "2020-09-20", ExpiryDate: "2025-09-20", Status: "expiring"},
+		{ID: "CERT-TT-004", RefereeID: "TT-HN-001", Name: "Chứng chỉ Trọng tài Quốc gia", Issuer: "Liên đoàn VCT Việt Nam", CertType: "referee_license", IssueDate: "2016-03-01", ExpiryDate: "2026-03-01", Status: "expiring"},
+		{ID: "CERT-TT-005", RefereeID: "TT-HCM-005", Name: "Chứng chỉ Trọng tài Quốc gia", Issuer: "Liên đoàn VCT Việt Nam", CertType: "referee_license", IssueDate: "2015-11-20", ExpiryDate: "2025-11-20", Status: "expiring"},
+		{ID: "CERT-TT-006", RefereeID: "TT-HN-002", Name: "Chứng chỉ Trọng tài cấp I", Issuer: "LĐ VCT Hà Nội", CertType: "referee_license", IssueDate: "2021-07-15", ExpiryDate: "2026-07-15", Status: "valid"},
+	} {
+		s.certs[c.ID] = c
+	}
+}
+
+func (s *InMemRefereeCertStore) ListByReferee(_ context.Context, refereeID string) ([]RefereeCertificate, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []RefereeCertificate
+	for _, c := range s.certs {
+		if c.RefereeID == refereeID {
+			result = append(result, c)
+		}
+	}
+	return result, nil
+}
+
+func (s *InMemRefereeCertStore) Create(_ context.Context, c RefereeCertificate) (*RefereeCertificate, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.certs[c.ID] = c
+	return &c, nil
 }
 
 // ── Committee Store ──────────────────────────────────────────
@@ -716,6 +794,42 @@ func (s *InMemVoSinhStore) Update(_ context.Context, id string, patch map[string
 		v.BeltRank = BeltLevel(val)
 		v.BeltLabel = BeltLabelMap[v.BeltRank]
 	}
+	if val, ok := patch["belt_label"].(string); ok {
+		v.BeltLabel = val
+	}
+	if val, ok := patch["full_name"].(string); ok {
+		v.FullName = val
+	}
+	if val, ok := patch["gender"].(string); ok {
+		v.Gender = val
+	}
+	if val, ok := patch["date_of_birth"].(string); ok {
+		v.DateOfBirth = val
+	}
+	if val, ok := patch["phone"].(string); ok {
+		v.Phone = val
+	}
+	if val, ok := patch["email"].(string); ok {
+		v.Email = val
+	}
+	if val, ok := patch["address"].(string); ok {
+		v.Address = val
+	}
+	if val, ok := patch["weight"].(float64); ok {
+		v.Weight = val
+	}
+	if val, ok := patch["height"].(float64); ok {
+		v.Height = val
+	}
+	if val, ok := patch["parent_name"].(string); ok {
+		v.ParentName = val
+	}
+	if val, ok := patch["parent_phone"].(string); ok {
+		v.ParentPhone = val
+	}
+	if val, ok := patch["notes"].(string); ok {
+		v.Notes = val
+	}
 	if val, ok := patch["updated_at"].(time.Time); ok {
 		v.UpdatedAt = val
 	}
@@ -728,4 +842,59 @@ func (s *InMemVoSinhStore) Delete(_ context.Context, id string) error {
 	defer s.mu.Unlock()
 	delete(s.items, id)
 	return nil
+}
+
+// ── Belt History Store ───────────────────────────────────────
+
+type InMemBeltHistoryStore struct {
+	mu    sync.RWMutex
+	items map[string]BeltHistory
+}
+
+func NewInMemBeltHistoryStore() *InMemBeltHistoryStore {
+	s := &InMemBeltHistoryStore{items: make(map[string]BeltHistory)}
+	s.seed()
+	return s
+}
+
+func (s *InMemBeltHistoryStore) seed() {
+	now := time.Now().UTC()
+	for _, h := range []BeltHistory{
+		{ID: "BH-001", VoSinhID: "VS-HCM-001", VoSinhName: "Nguyễn Minh Tuấn", FromBelt: BeltNone, FromLabel: "Không đai", ToBelt: BeltYellow, ToLabel: "Đai vàng", ExamDate: "2022-09-15", Result: "pass", Score: 8.5, ExaminerName: "HLV Lê Minh", ExamLocation: "CLB Tân Khánh Bà Trà Q1", CertID: "CERT-DAI-001", CreatedAt: now},
+		{ID: "BH-002", VoSinhID: "VS-HCM-001", VoSinhName: "Nguyễn Minh Tuấn", FromBelt: BeltYellow, FromLabel: "Đai vàng", ToBelt: BeltGreen, ToLabel: "Đai xanh", ExamDate: "2023-06-20", Result: "pass", Score: 8.0, ExaminerName: "HLV Lê Minh", ExamLocation: "CLB Tân Khánh Bà Trà Q1", CertID: "CERT-DAI-002", CreatedAt: now},
+		{ID: "BH-003", VoSinhID: "VS-HCM-002", VoSinhName: "Trần Thị Bích Ngọc", FromBelt: BeltNone, FromLabel: "Không đai", ToBelt: BeltYellow, ToLabel: "Đai vàng", ExamDate: "2024-03-10", Result: "pass", Score: 9.5, ExaminerName: "HLV Lê Minh", ExamLocation: "CLB Tân Khánh Bà Trà Q1", CertID: "CERT-DAI-003", CreatedAt: now},
+		{ID: "BH-004", VoSinhID: "VS-HCM-003", VoSinhName: "Phạm Quốc Bảo", FromBelt: BeltNone, FromLabel: "Không đai", ToBelt: BeltYellow, ToLabel: "Đai vàng", ExamDate: "2015-06-10", Result: "pass", Score: 7.5, ExaminerName: "HLV Trần Hùng", ExamLocation: "CLB Tân Khánh Bà Trà Q1", CreatedAt: now},
+		{ID: "BH-005", VoSinhID: "VS-HCM-003", VoSinhName: "Phạm Quốc Bảo", FromBelt: BeltYellow, FromLabel: "Đai vàng", ToBelt: BeltGreen, ToLabel: "Đai xanh", ExamDate: "2016-03-18", Result: "pass", Score: 8.0, ExaminerName: "HLV Trần Hùng", ExamLocation: "CLB Tân Khánh Bà Trà Q1", CreatedAt: now},
+		{ID: "BH-006", VoSinhID: "VS-HCM-003", VoSinhName: "Phạm Quốc Bảo", FromBelt: BeltGreen, FromLabel: "Đai xanh", ToBelt: BeltBlue, ToLabel: "Đai lam", ExamDate: "2017-04-22", Result: "pass", Score: 8.5, ExaminerName: "HLV Trần Hùng", ExamLocation: "LĐ VCT TP.HCM", CreatedAt: now},
+		{ID: "BH-007", VoSinhID: "VS-HCM-003", VoSinhName: "Phạm Quốc Bảo", FromBelt: BeltBlue, FromLabel: "Đai lam", ToBelt: BeltRed, ToLabel: "Đai đỏ", ExamDate: "2018-09-14", Result: "pass", Score: 9.0, ExaminerName: "HLV Lê Minh", ExamLocation: "LĐ VCT TP.HCM", CertID: "CERT-DAI-007", CreatedAt: now},
+		{ID: "BH-008", VoSinhID: "VS-HCM-003", VoSinhName: "Phạm Quốc Bảo", FromBelt: BeltRed, FromLabel: "Đai đỏ", ToBelt: BeltBlack0, ToLabel: "Sơ đẳng", ExamDate: "2020-01-25", Result: "pass", Score: 9.0, ExaminerName: "Chủ tịch LĐ VCT HCM", ExamLocation: "LĐ VCT TP.HCM", CertID: "CERT-DAI-008", CreatedAt: now},
+		{ID: "BH-009", VoSinhID: "VS-HCM-003", VoSinhName: "Phạm Quốc Bảo", FromBelt: BeltBlack0, FromLabel: "Sơ đẳng", ToBelt: BeltBlack1, ToLabel: "Nhất đẳng", ExamDate: "2022-06-01", Result: "pass", Score: 9.5, ExaminerName: "Chủ tịch LĐ VCT HCM", ExamLocation: "LĐ VCT TP.HCM", CertID: "CERT-DAI-009", CreatedAt: now},
+		{ID: "BH-010", VoSinhID: "VS-HN-001", VoSinhName: "Hoàng Đức Mạnh", FromBelt: BeltNone, FromLabel: "Không đai", ToBelt: BeltYellow, ToLabel: "Đai vàng", ExamDate: "2022-03-12", Result: "pass", Score: 8.0, ExaminerName: "HLV Đặng Trọng", ExamLocation: "CLB Nhất Nam HK", CreatedAt: now},
+		{ID: "BH-011", VoSinhID: "VS-HN-001", VoSinhName: "Hoàng Đức Mạnh", FromBelt: BeltYellow, FromLabel: "Đai vàng", ToBelt: BeltGreen, ToLabel: "Đai xanh", ExamDate: "2023-06-20", Result: "pass", Score: 8.5, ExaminerName: "HLV Đặng Trọng", ExamLocation: "CLB Nhất Nam HK", CertID: "CERT-DAI-011", CreatedAt: now},
+		{ID: "BH-012", VoSinhID: "VS-HCM-005", VoSinhName: "Võ Thanh Thảo", FromBelt: BeltNone, FromLabel: "Không đai", ToBelt: BeltYellow, ToLabel: "Đai vàng", ExamDate: "2018-09-08", Result: "pass", Score: 9.0, ExaminerName: "HLV Trần Hùng", ExamLocation: "CLB Bình Định Sa Long Cương TD", CreatedAt: now},
+		{ID: "BH-013", VoSinhID: "VS-HCM-005", VoSinhName: "Võ Thanh Thảo", FromBelt: BeltYellow, FromLabel: "Đai vàng", ToBelt: BeltGreen, ToLabel: "Đai xanh", ExamDate: "2019-06-15", Result: "pass", Score: 9.5, ExaminerName: "HLV Trần Hùng", ExamLocation: "CLB Bình Định Sa Long Cương TD", CreatedAt: now},
+		{ID: "BH-014", VoSinhID: "VS-HCM-005", VoSinhName: "Võ Thanh Thảo", FromBelt: BeltGreen, FromLabel: "Đai xanh", ToBelt: BeltBlue, ToLabel: "Đai lam", ExamDate: "2020-03-20", Result: "pass", Score: 8.5, ExaminerName: "HLV Trần Hùng", ExamLocation: "LĐ VCT TP.HCM", CreatedAt: now},
+		{ID: "BH-015", VoSinhID: "VS-HCM-005", VoSinhName: "Võ Thanh Thảo", FromBelt: BeltBlue, FromLabel: "Đai lam", ToBelt: BeltRed, ToLabel: "Đai đỏ", ExamDate: "2021-12-10", Result: "pass", Score: 9.0, ExaminerName: "HLV Lê Minh", ExamLocation: "LĐ VCT TP.HCM", CertID: "CERT-DAI-015", CreatedAt: now},
+	} {
+		s.items[h.ID] = h
+	}
+}
+
+func (s *InMemBeltHistoryStore) ListByVoSinh(_ context.Context, voSinhID string) ([]BeltHistory, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []BeltHistory
+	for _, h := range s.items {
+		if h.VoSinhID == voSinhID {
+			result = append(result, h)
+		}
+	}
+	return result, nil
+}
+
+func (s *InMemBeltHistoryStore) Create(_ context.Context, h BeltHistory) (*BeltHistory, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.items[h.ID] = h
+	return &h, nil
 }

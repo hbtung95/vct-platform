@@ -7,10 +7,13 @@
 import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { VCT_Icons } from '../components/vct-icons'
+import { useTheme } from '../theme/ThemeProvider'
 import { useAuth } from '../auth/AuthProvider'
+import { useI18n } from '../i18n'
 import { resolveWorkspacesForUser } from '../layout/workspace-resolver'
 import type { WorkspaceCard, WorkspaceType } from '../layout/workspace-types'
 import { WORKSPACE_META } from '../layout/workspace-types'
+import { UI_Logo } from '../components/ui-logo'
 
 // ── Mock: workspaces for demo user who has multiple roles ──
 const MOCK_USER = {
@@ -88,22 +91,7 @@ const MOCK_WORKSPACE_CARDS: WorkspaceCard[] = [
         ],
         lastAccessed: '30 phút trước',
     },
-    {
-        id: 'ref:giai-qg-2026',
-        type: 'referee_console',
-        scope: { type: 'tournament', id: 'tourn-001', name: 'Giải VĐQG 2026' },
-        label: 'Trọng tài — VĐQG 2026',
-        description: 'Chấm điểm, VAR, lịch điều hành',
-        icon: 'Scale',
-        color: '#0ea5e9',
-        gradient: 'from-[#0ea5e9] to-[#0284c7]',
-        badge: 'Trọng tài A',
-        stats: [
-            { label: 'Trận hôm nay', value: 8 },
-            { label: 'Đã chấm', value: 24 },
-            { label: 'Tổng giải', value: 156 },
-        ],
-    },
+
     {
         id: 'athlete:self',
         type: 'athlete_portal',
@@ -150,166 +138,21 @@ const MOCK_WORKSPACE_CARDS: WorkspaceCard[] = [
     },
 ]
 
-// ── Styles ──
-const styles: Record<string, React.CSSProperties> = {
-    page: {
-        minHeight: '100vh',
-        width: '100%',
-        overflowX: 'hidden' as const,
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-        padding: '0',
-        fontFamily: "'Inter', sans-serif",
-    },
-    header: {
-        padding: '40px 48px 20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    logo: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-    },
-    logoMark: {
-        width: 56, height: 56,
-        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-        borderRadius: 16,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 8px 32px rgba(59,130,246,0.3)',
-    },
-    logoText: {
-        color: '#fff', fontSize: 11, fontWeight: 800,
-        letterSpacing: 4, textTransform: 'uppercase' as const,
-    },
-    logoSub: {
-        color: '#94a3b8', fontSize: 13, marginTop: 2,
-    },
-    userArea: {
-        display: 'flex', alignItems: 'center', gap: 12,
-    },
-    avatar: {
-        width: 44, height: 44, borderRadius: '50%',
-        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#fff', fontWeight: 700, fontSize: 16,
-    },
-    userName: { color: '#f1f5f9', fontSize: 14, fontWeight: 600 },
-    userEmail: { color: '#64748b', fontSize: 12 },
-    hero: {
-        textAlign: 'center' as const,
-        padding: '20px 48px 40px',
-    },
-    heroTitle: {
-        fontSize: 36, fontWeight: 800, color: '#f8fafc',
-        letterSpacing: -0.5,
-        marginBottom: 8,
-    },
-    heroSub: {
-        fontSize: 16, color: '#94a3b8', maxWidth: 600, margin: '0 auto',
-    },
-    filterBar: {
-        display: 'flex', justifyContent: 'center', gap: 8,
-        padding: '0 48px 32px',
-        flexWrap: 'wrap' as const,
-    },
-    filterBtn: {
-        padding: '8px 20px', borderRadius: 100,
-        border: '1px solid #334155',
-        background: 'transparent',
-        color: '#94a3b8', fontSize: 13, fontWeight: 500,
-        cursor: 'pointer', transition: 'all .2s',
-    },
-    filterBtnActive: {
-        background: '#3b82f6', border: '1px solid #3b82f6',
-        color: '#fff', boxShadow: '0 4px 16px rgba(59,130,246,0.3)',
-    },
-    grid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(340, 1fr))',
-        gap: 24,
-        padding: '0 48px 64px',
-        maxWidth: 1400, margin: '0 auto',
-    },
-    card: {
-        background: 'rgba(30,41,59,0.8)',
-        border: '1px solid #334155',
-        borderRadius: 20,
-        padding: 0,
-        cursor: 'pointer',
-        transition: 'all .3s cubic-bezier(.4,0,.2,1)',
-        overflow: 'hidden',
-        backdropFilter: 'blur(16px)',
-        position: 'relative' as const,
-    },
-    cardTop: {
-        padding: '24px 24px 16px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-    },
-    cardIcon: {
-        width: 52, height: 52, borderRadius: 14,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 24, color: '#fff',
-    },
-    cardBadge: {
-        padding: '4px 12px', borderRadius: 100,
-        fontSize: 11, fontWeight: 600,
-        background: 'rgba(255,255,255,0.1)',
-        color: '#e2e8f0',
-    },
-    cardBody: {
-        padding: '0 24px 16px',
-    },
-    cardTitle: {
-        fontSize: 18, fontWeight: 700, color: '#f1f5f9',
-        marginBottom: 4,
-    },
-    cardDesc: {
-        fontSize: 13, color: '#64748b', lineHeight: 1.5,
-    },
-    cardStats: {
-        display: 'flex', gap: 0,
-        borderTop: '1px solid #1e293b',
-    },
-    cardStat: {
-        flex: 1,
-        padding: '14px 16px',
-        textAlign: 'center' as const,
-        borderRight: '1px solid #1e293b',
-    },
-    statValue: {
-        fontSize: 18, fontWeight: 700, color: '#f1f5f9',
-    },
-    statLabel: {
-        fontSize: 11, color: '#64748b', marginTop: 2,
-    },
-    lastAccessed: {
-        position: 'absolute' as const, top: 16, right: 16,
-        fontSize: 11, color: '#475569',
-    },
-    footer: {
-        textAlign: 'center' as const,
-        padding: '24px 48px 48px',
-        borderTop: '1px solid #1e293b',
-        margin: '0 48px',
-    },
-    footerText: {
-        color: '#475569', fontSize: 13,
-    },
+const FILTER_LABEL_MAP: Record<string, string> = {
+    federation_admin: '🏛️ Liên đoàn',
+    federation_provincial: '🏛️ Liên đoàn',
+    federation_discipline: '🏛️ Liên đoàn',
+    tournament_ops: '🏆 Giải đấu',
+    club_management: '🥋 CLB',
+    athlete_portal: '👤 Cá nhân',
+    public_spectator: '📺 Khán giả',
+    system_admin: '⚙️ Hệ thống',
 }
 
-const FILTER_OPTIONS: { label: string; value: string }[] = [
-    { label: 'Tất cả', value: 'all' },
-    { label: '🏛️ Liên đoàn', value: 'federation_admin' },
-    { label: '🏆 Giải đấu', value: 'tournament_ops' },
-    { label: '🥋 CLB', value: 'club_management' },
-    { label: '⚖️ Trọng tài', value: 'referee_console' },
-    { label: '👤 Cá nhân', value: 'athlete_portal' },
-    { label: '⚙️ Hệ thống', value: 'system_admin' },
-]
-
 const WORKSPACE_DESTINATIONS: Record<WorkspaceType, string> = {
-    federation_admin: '/',
+    federation_admin: '/dashboard',
+    federation_provincial: '/provincial',
+    federation_discipline: '/discipline',
     tournament_ops: '/giai-dau',
     club_management: '/clubs',
     referee_console: '/referee-scoring',
@@ -383,6 +226,8 @@ function getIconForWorkspace(icon: string) {
 export function Page_portal_hub() {
     const router = useRouter()
     const { currentUser, activeWorkspace, setActiveWorkspace } = useAuth()
+    const { theme, toggleTheme } = useTheme()
+    const { t } = useI18n()
     const [filter, setFilter] = useState('all')
     const [hoveredCard, setHoveredCard] = useState<string | null>(null)
 
@@ -419,8 +264,8 @@ export function Page_portal_hub() {
                     id: workspace.scopeId,
                     name: workspace.scopeName,
                 },
-                label: workspace.scopeName,
-                description: meta.description,
+                label: t(workspace.scopeName),
+                description: t(meta.description),
                 icon: meta.icon,
                 color: meta.color,
                 gradient: meta.gradient,
@@ -429,7 +274,20 @@ export function Page_portal_hub() {
                 lastAccessed: isActive ? 'Đang hoạt động' : undefined,
             }
         })
-    }, [activeWorkspace?.scopeId, activeWorkspace?.type, resolvedWorkspaces])
+    }, [activeWorkspace?.scopeId, activeWorkspace?.type, resolvedWorkspaces, t])
+
+    // Build dynamic filter options from actual workspace types
+    const filterOptions = useMemo(() => {
+        const types = new Set(workspaceCards.map(c => c.type))
+        const options: { label: string; value: string }[] = [{ label: 'Tất cả', value: 'all' }]
+        for (const type of Array.from(types)) {
+            const label = FILTER_LABEL_MAP[type]
+            if (label && !options.some(o => o.label === label)) {
+                options.push({ label, value: type })
+            }
+        }
+        return options
+    }, [workspaceCards])
 
     const filteredCards = useMemo(() => {
         if (filter === 'all') return workspaceCards
@@ -451,130 +309,157 @@ export function Page_portal_hub() {
     }
 
     return (
-        <div style={styles.page}>
-            {/* Header */}
-            <div style={styles.header}>
-                <div style={styles.logo}>
-                    <div style={styles.logoMark}>
-                        <VCT_Icons.Trophy size={32} />
-                    </div>
+        <div className="min-h-screen w-full overflow-x-hidden font-[Inter,sans-serif] transition-colors duration-300" style={{ background: 'var(--vct-bg-base)' }}>
+            {/* ── Header ─────────────────────────────────── */}
+            <div className="flex items-start justify-between px-8 pb-5 pt-10 md:px-12">
+                <div className="flex items-center gap-4">
+                    <UI_Logo size={56} />
                     <div>
-                        <div style={styles.logoText}>VCT ECOSYSTEM</div>
-                        <div style={styles.logoSub}>Nền tảng Quản trị Võ thuật Toàn diện</div>
+                        <div className="text-[11px] font-extrabold uppercase tracking-[4px] text-vct-text">VCT PLATFORM</div>
+                        <div className="mt-0.5 text-[13px] text-vct-text-muted">Nền tảng Quản trị Võ thuật Toàn diện</div>
                     </div>
                 </div>
-                <div style={styles.userArea}>
-                    <div>
-                        <div style={styles.userName}>{currentUser.name || MOCK_USER.name}</div>
-                        <div style={styles.userEmail}>{currentUser.email || MOCK_USER.email}</div>
+                <div className="flex items-center gap-3">
+                    {/* Theme Toggle */}
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        title={theme === 'dark' ? 'Chuyển sang sáng' : 'Chuyển sang tối'}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-vct-border transition-all duration-200 hover:border-vct-accent hover:shadow-[var(--vct-shadow-glow)]" style={{ background: 'var(--vct-bg-elevated)' }}
+                    >
+                        {theme === 'dark'
+                            ? <VCT_Icons.Sun size={18} className="text-amber-400" />
+                            : <VCT_Icons.Moon size={18} className="text-vct-text-muted" />
+                        }
+                    </button>
+                    <div className="text-right">
+                        <div className="text-sm font-semibold text-vct-text">{currentUser.name || MOCK_USER.name}</div>
+                        <div className="text-xs text-vct-text-muted">{currentUser.email || MOCK_USER.email}</div>
                     </div>
-                    <div style={styles.avatar}>{getInitials(currentUser.name || MOCK_USER.name)}</div>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full text-base font-bold text-white" style={{ background: 'var(--vct-accent-gradient)' }}>
+                        {getInitials(currentUser.name || MOCK_USER.name)}
+                    </div>
                 </div>
             </div>
 
-            {/* Hero */}
-            <div style={styles.hero}>
-                <h1 style={styles.heroTitle}>Chọn không gian làm việc</h1>
-                <p style={styles.heroSub}>
-                    Bạn có <strong style={{ color: '#3b82f6' }}>{workspaceCards.length} workspace</strong>{' '}
+            {/* ── Hero ────────────────────────────────────── */}
+            <div className="px-8 pb-10 pt-5 text-center md:px-12">
+                <h1 className="mb-2 text-4xl font-extrabold tracking-tight text-vct-text">Chọn không gian làm việc</h1>
+                <p className="mx-auto max-w-[600px] text-base text-vct-text-muted">
+                    Bạn có <strong className="text-vct-accent">{workspaceCards.length} workspace</strong>{' '}
                     khả dụng. Chọn một workspace để bắt đầu hoặc chuyển đổi vai trò.
                 </p>
             </div>
 
-            {/* Filter Bar */}
-            <div style={styles.filterBar}>
-                {FILTER_OPTIONS.map(f => (
-                    <button
-                        key={f.value}
-                        style={{
-                            ...styles.filterBtn,
-                            ...(filter === f.value ? styles.filterBtnActive : {}),
-                        }}
-                        onClick={() => setFilter(f.value)}
-                    >
-                        {f.label}
-                    </button>
-                ))}
-            </div>
+            {/* ── Filter Bar ─────────────────────────────── */}
+            {filterOptions.length > 2 && (
+                <div className="flex flex-wrap justify-center gap-2 px-8 pb-8 md:px-12">
+                    {filterOptions.map(f => (
+                        <button
+                            key={f.value}
+                            onClick={() => setFilter(f.value)}
+                            className={`rounded-full px-5 py-2 text-[13px] font-medium transition-all ${filter === f.value
+                                ? 'border border-vct-accent bg-vct-accent text-white shadow-[var(--vct-shadow-glow)]'
+                                : 'border border-vct-border bg-transparent text-vct-text-muted hover:border-vct-border-strong hover:text-vct-text-secondary'
+                                }`}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
-            {/* Workspace Cards Grid */}
-            <div style={{
-                ...styles.grid,
-                gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-            }}>
+            {/* ── Workspace Cards Grid ────────────────────── */}
+            <div className="vct-stagger mx-auto grid max-w-[1400px] grid-cols-1 gap-6 px-8 pb-16 sm:grid-cols-2 lg:grid-cols-3 xl:px-12">
                 {filteredCards.map(card => {
                     const isHovered = hoveredCard === card.id
                     return (
                         <div
                             key={card.id}
+                            className="group relative cursor-pointer overflow-hidden rounded-[20px] border border-vct-border backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1"
                             style={{
-                                ...styles.card,
-                                transform: isHovered ? 'translateY(-4px)' : 'none',
-                                borderColor: isHovered ? card.color : '#334155',
+                                background: 'var(--vct-bg-card)',
+                                borderColor: isHovered ? card.color : undefined,
                                 boxShadow: isHovered
                                     ? `0 20px 60px ${card.color}22, 0 0 0 1px ${card.color}44`
-                                    : '0 1px 3px rgba(0,0,0,0.2)',
+                                    : 'var(--vct-shadow-sm)',
                             }}
                             onMouseEnter={() => setHoveredCard(card.id)}
                             onMouseLeave={() => setHoveredCard(null)}
                             onClick={() => handleEnterWorkspace(card)}
                         >
                             {card.lastAccessed && (
-                                <div style={styles.lastAccessed}>🕐 {card.lastAccessed}</div>
+                                <div className="absolute right-4 top-4 text-[11px] text-vct-text-muted">🕐 {card.lastAccessed}</div>
                             )}
 
                             {/* Top row: Icon + Badge */}
-                            <div style={styles.cardTop}>
-                                <div style={{ ...styles.cardIcon, background: `linear-gradient(135deg, ${card.color}, ${card.color}cc)` }}>
+                            <div className="flex items-start justify-between px-6 pb-4 pt-6">
+                                <div
+                                    className="flex h-[52px] w-[52px] items-center justify-center rounded-[14px] text-2xl text-white"
+                                    style={{ background: `linear-gradient(135deg, ${card.color}, ${card.color}cc)` }}
+                                >
                                     {getIconForWorkspace(card.icon)}
                                 </div>
                                 {card.badge && (
-                                    <div style={{ ...styles.cardBadge, background: `${card.color}22`, color: card.color }}>
+                                    <div
+                                        className="rounded-full px-3 py-1 text-[11px] font-semibold"
+                                        style={{ background: `${card.color}22`, color: card.color }}
+                                    >
                                         {card.badge}
                                     </div>
                                 )}
                             </div>
 
                             {/* Body */}
-                            <div style={styles.cardBody}>
-                                <div style={styles.cardTitle}>{card.label}</div>
-                                <div style={styles.cardDesc}>{card.description}</div>
+                            <div className="px-6 pb-4">
+                                <div className="mb-1 text-lg font-bold text-vct-text">{card.label}</div>
+                                <div className="text-[13px] leading-relaxed text-vct-text-muted">{card.description}</div>
                             </div>
 
                             {/* Stats Footer */}
                             {card.stats && card.stats.length > 0 && (
-                                <div style={styles.cardStats}>
-                                    {card.stats.map((s, i) => (
-                                        <div key={i} style={{
-                                            ...styles.cardStat,
-                                            borderRight: i < card.stats!.length - 1 ? '1px solid #1e293b' : 'none',
-                                        }}>
-                                            <div style={{ ...styles.statValue, color: card.color }}>{s.value}</div>
-                                            <div style={styles.statLabel}>{s.label}</div>
-                                        </div>
-                                    ))}
+                                <div className="mx-5 mt-1 mb-0">
+                                    {/* Gradient separator */}
+                                    <div
+                                        className="h-px w-full"
+                                        style={{
+                                            background: `linear-gradient(90deg, transparent, ${card.color}40, transparent)`,
+                                        }}
+                                    />
+                                    <div className="flex py-4">
+                                        {card.stats.map((s, i) => (
+                                            <div key={i} className="relative flex-1 text-center">
+                                                {/* Subtle vertical dot separator */}
+                                                {i > 0 && (
+                                                    <div
+                                                        className="absolute left-0 top-1/2 h-6 w-px -translate-y-1/2 opacity-20"
+                                                        style={{ background: card.color }}
+                                                    />
+                                                )}
+                                                <div className="text-[17px] font-extrabold tracking-tight" style={{ color: card.color }}>{s.value}</div>
+                                                <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-vct-text-muted">{s.label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {/* Hover glow effect */}
-                            <div style={{
-                                position: 'absolute', bottom: 0, left: 0, right: 0,
-                                height: 3,
-                                background: isHovered ? `linear-gradient(90deg, transparent, ${card.color}, transparent)` : 'transparent',
-                                transition: 'all .3s',
-                            }} />
+                            <div
+                                className="absolute bottom-0 left-0 right-0 h-[3px] transition-all"
+                                style={{
+                                    background: isHovered ? `linear-gradient(90deg, transparent, ${card.color}, transparent)` : 'transparent',
+                                }}
+                            />
                         </div>
                     )
                 })}
             </div>
 
-            {/* Footer */}
-            <div style={styles.footer}>
-                <p style={styles.footerText}>
-                    VCT Ecosystem v2.0 — Nền tảng Quản trị Võ Cổ Truyền Việt Nam •{' '}
-                    <span style={{ color: '#64748b' }}>
-                        Powered by Next.js + Go + PostgreSQL
-                    </span>
+            {/* ── Footer ─────────────────────────────────── */}
+            <div className="mx-8 border-t border-vct-border px-0 pb-12 pt-6 text-center md:mx-12">
+                <p className="text-[13px] text-vct-text-muted">
+                    © VCT PLATFORM — NỀN TẢNG QUẢN TRỊ VÕ THUẬT TOÀN DIỆN •{' '}
                 </p>
             </div>
         </div>

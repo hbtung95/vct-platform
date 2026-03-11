@@ -141,7 +141,7 @@ export const Page_dashboard = () => {
                 <VCT_SectionCard
                     title="🔴 Sàn đấu trực tiếp"
                     accentColor="#ef4444"
-                    headerAction={<VCT_Button variant="secondary" onClick={() => router.push('/combat')}>Quản lý</VCT_Button>}
+                    headerAction={<VCT_Button variant="secondary" onClick={() => router.push('/combat')} icon={<VCT_Icons.Laptop size={14} />}>Điều hành</VCT_Button>}
                 >
                     <div className="space-y-4">
                         {kpis.san_live.map(san => (
@@ -157,7 +157,11 @@ export const Page_dashboard = () => {
                                 {san.match && (
                                     <div className="flex items-center justify-center gap-6 rounded-xl bg-vct-glass p-4">
                                         <div className="flex-1 text-center">
-                                            <div className="mx-auto mb-2 h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                            <motion.div
+                                                animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
+                                                transition={{ repeat: Infinity, duration: 2 }}
+                                                className="mx-auto mb-2 h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]"
+                                            />
                                             <div className="text-sm font-extrabold">{san.match.vdv_xanh.ten}</div>
                                             <div className="text-[11px] text-vct-text-muted">{san.match.vdv_xanh.doan}</div>
                                         </div>
@@ -167,7 +171,11 @@ export const Page_dashboard = () => {
                                             <span className="text-red-500">{san.match.diem_do}</span>
                                         </div>
                                         <div className="flex-1 text-center">
-                                            <div className="mx-auto mb-2 h-3 w-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                            <motion.div
+                                                animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
+                                                transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
+                                                className="mx-auto mb-2 h-3 w-3 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.6)]"
+                                            />
                                             <div className="text-sm font-extrabold">{san.match.vdv_do.ten}</div>
                                             <div className="text-[11px] text-vct-text-muted">{san.match.vdv_do.doan}</div>
                                         </div>

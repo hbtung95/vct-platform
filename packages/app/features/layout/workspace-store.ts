@@ -77,6 +77,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 )
 
 // ── Helper: Generate workspace cards from user roles ──
+// Labels use i18n keys — consumers call t(card.label) to localize
 export function generateWorkspaceCards(
     userRoles: Array<{ role: string; scope_type: string; scope_id: string; scope_name: string }>,
     userName: string
@@ -112,7 +113,7 @@ export function generateWorkspaceCards(
             id: `athlete:self`,
             type: 'athlete_portal',
             scope: { type: 'user', id: 'self', name: userName },
-            label: 'Hồ sơ cá nhân',
+            label: 'ws.scope.profile',
             description: meta.description,
             icon: meta.icon,
             color: meta.color,
@@ -125,8 +126,8 @@ export function generateWorkspaceCards(
     cards.push({
         id: 'public:spectator',
         type: 'public_spectator',
-        scope: { type: 'public', id: 'public', name: 'Công cộng' },
-        label: 'Xem trực tiếp & Tin tức',
+        scope: { type: 'public', id: 'public', name: 'ws.scope.public' },
+        label: 'ws.scope.spectatorLive',
         description: pubMeta.description,
         icon: pubMeta.icon,
         color: pubMeta.color,
@@ -164,8 +165,16 @@ function mapRoleToWorkspaceType(role: string): WorkspaceType | null {
         // Club
         'CLUB_MANAGER': 'club_management',
         'CLUB_COACH': 'club_management',
+        'CLUB_LEADER': 'club_management',
+        'CLUB_VICE_LEADER': 'club_management',
+        'CLUB_SECRETARY': 'club_management',
+        'CLUB_ACCOUNTANT': 'club_management',
         'COACH': 'club_management',
         'coach': 'club_management',
+        'club_leader': 'club_management',
+        'club_vice_leader': 'club_management',
+        'club_secretary': 'club_management',
+        'club_accountant': 'club_management',
         // Referee
         'HEAD_REFEREE': 'referee_console',
         'REFEREE': 'referee_console',

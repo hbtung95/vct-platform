@@ -16,6 +16,7 @@ export type RouteGroupId =
     | 'ket_qua_tong_hop'
     | 'cong_dong'
     | 'cap_tinh'
+    | 'cau_lac_bo'
     | 'he_thong'
 
 export type RouteId =
@@ -50,6 +51,7 @@ export type RouteId =
     | 'results'
     | 'medals'
     | 'appeals'
+    | 'pending-approvals'
     | 'reports'
     | 'community'
     | 'admin-dashboard'
@@ -70,6 +72,21 @@ export type RouteId =
     | 'provincial-documents'
     | 'provincial-finance'
     | 'provincial-reports'
+    | 'provincial-vo-sinh'
+    | 'club-dashboard'
+    | 'club-members'
+    | 'club-classes'
+    | 'club-training'
+    | 'club-tournaments'
+    | 'club-finance'
+    | 'club-certifications'
+    | 'club-settings'
+    | 'federation-organizations'
+    | 'federation-master-data'
+    | 'federation-finance'
+    | 'parent-dashboard'
+    | 'athlete-portal'
+    | 'athlete-tournaments'
 
 export type RouteAction =
     | 'view'

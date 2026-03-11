@@ -1,7 +1,5 @@
 'use client'
 
-import type { CSSProperties } from 'react'
-
 /* ────────────────────────────────────────────
  *  VCT_NotificationBell
  *  Header bell icon with unread badge count
@@ -21,56 +19,14 @@ export interface VCT_NotificationBellProps {
 export function VCT_NotificationBell({
     count,
     onClick,
-    size = 20,
-    className,
+    size = 18,
+    className = '',
 }: VCT_NotificationBellProps) {
-    const badgeStyle: CSSProperties = {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        minWidth: 18,
-        height: 18,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 'var(--vct-radius-full)',
-        background: 'var(--vct-danger)',
-        color: '#fff',
-        fontSize: 10,
-        fontWeight: 700,
-        padding: '0 4px',
-        lineHeight: 1,
-        boxShadow: '0 0 0 2px var(--vct-bg-elevated)',
-        animation: count > 0 ? 'vct-pulse 2s infinite' : undefined,
-    }
-
     return (
         <button
-            className={className}
+            className={`group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-vct-border bg-vct-elevated text-vct-text-muted transition hover:border-vct-accent hover:text-vct-text ${className}`}
             onClick={onClick}
             aria-label={`Thông báo${count > 0 ? ` (${count} chưa đọc)` : ''}`}
-            style={{
-                position: 'relative',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                borderRadius: 'var(--vct-radius-md)',
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--vct-text-secondary)',
-                cursor: 'pointer',
-                transition: 'background var(--vct-duration-fast) ease, color var(--vct-duration-fast) ease',
-            }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--vct-bg-hover)'
-                e.currentTarget.style.color = 'var(--vct-text-primary)'
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = 'var(--vct-text-secondary)'
-            }}
         >
             {/* Bell SVG (Lucide bell) */}
             <svg
@@ -89,7 +45,7 @@ export function VCT_NotificationBell({
 
             {/* Badge */}
             {count > 0 && (
-                <span style={badgeStyle}>
+                <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-[var(--vct-danger)] px-1 text-[10px] font-bold leading-none text-white shadow-[0_0_0_2px_var(--vct-bg-elevated)] animate-pulse">
                     {count > 99 ? '99+' : count}
                 </span>
             )}

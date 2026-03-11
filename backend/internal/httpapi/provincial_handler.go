@@ -48,7 +48,10 @@ func resolveProvinceID(r *http.Request) string {
 
 // ── Dashboard ────────────────────────────────────────────────
 
-func (s *Server) handleProvincialDashboard(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleProvincialDashboard(w http.ResponseWriter, r *http.Request, p auth.Principal) {
+	if !requireRole(w, p, provincialReadRoles...) {
+		return
+	}
 	provID := resolveProvinceID(r)
 	stats, err := s.provincialSvc.GetDashboard(r.Context(), provID)
 	if err != nil {
@@ -71,6 +74,9 @@ func (s *Server) handleProvincialClubs(w http.ResponseWriter, r *http.Request, p
 
 	switch {
 	case r.Method == "GET" && id == "":
+		if !requireRole(w, p, provincialReadRoles...) {
+			return
+		}
 		provID := resolveProvinceID(r)
 		clubs, err := s.provincialSvc.ListClubs(r.Context(), provID)
 		if err != nil {
@@ -80,6 +86,9 @@ func (s *Server) handleProvincialClubs(w http.ResponseWriter, r *http.Request, p
 		success(w, http.StatusOK, map[string]any{"clubs": clubs, "total": len(clubs)})
 
 	case r.Method == "POST" && id == "":
+		if !requireRole(w, p, provincialWriteRoles...) {
+			return
+		}
 		var club provincial.ProvincialClub
 		if err := json.NewDecoder(r.Body).Decode(&club); err != nil {
 			badRequest(w, "invalid JSON: "+err.Error())
@@ -177,12 +186,41 @@ func (s *Server) handleProvincialAthletes(w http.ResponseWriter, r *http.Request
 		}
 		success(w, http.StatusOK, athlete)
 
+	// PATCH /athletes/{id} (update)
+	case (r.Method == "PATCH" || r.Method == "PUT") && id != "" && action == "":
+		var patch map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+			badRequest(w, "invalid JSON: "+err.Error())
+			return
+		}
+		if err := s.provincialSvc.UpdateAthlete(r.Context(), id, patch); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "updated"})
+
 	case r.Method == "POST" && action == "approve":
 		if err := s.provincialSvc.ApproveAthlete(r.Context(), id); err != nil {
 			badRequest(w, err.Error())
 			return
 		}
 		success(w, http.StatusOK, map[string]string{"status": "approved"})
+
+	// POST /athletes/{id}/deactivate
+	case r.Method == "POST" && action == "deactivate":
+		if err := s.provincialSvc.DeactivateAthlete(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "inactive"})
+
+	// POST /athletes/{id}/reactivate
+	case r.Method == "POST" && action == "reactivate":
+		if err := s.provincialSvc.ReactivateAthlete(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "active"})
 
 	default:
 		http.Error(w, "not found", http.StatusNotFound)
@@ -191,7 +229,10 @@ func (s *Server) handleProvincialAthletes(w http.ResponseWriter, r *http.Request
 
 // ── Võ Sinh ──────────────────────────────────────────────────
 
-func (s *Server) handleProvincialVoSinh(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleProvincialVoSinh(w http.ResponseWriter, r *http.Request, p auth.Principal) {
+	if !requireRole(w, p, provincialReadRoles...) {
+		return
+	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/provincial/vo-sinh")
 	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	id := parts[0]
@@ -265,6 +306,50 @@ func (s *Server) handleProvincialVoSinh(w http.ResponseWriter, r *http.Request, 
 		}
 		success(w, http.StatusOK, map[string]string{"status": "approved"})
 
+	// POST /vo-sinh/{id}/deactivate
+	case r.Method == "POST" && action == "deactivate":
+		if err := s.provincialSvc.DeactivateVoSinh(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "inactive"})
+
+	// POST /vo-sinh/{id}/reactivate
+	case r.Method == "POST" && action == "reactivate":
+		if err := s.provincialSvc.ReactivateVoSinh(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "active"})
+
+	// GET /vo-sinh/{id}/belt-history
+	case r.Method == "GET" && action == "belt-history":
+		hist, err := s.provincialSvc.ListBeltHistory(r.Context(), id)
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+		success(w, http.StatusOK, map[string]any{"belt_history": hist, "total": len(hist)})
+
+	// PATCH /vo-sinh/{id} (update)
+	case (r.Method == "PATCH" || r.Method == "PUT") && id != "" && action == "":
+		var patch map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+			badRequest(w, "invalid JSON: "+err.Error())
+			return
+		}
+		if err := s.provincialSvc.UpdateVoSinh(r.Context(), id, patch); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		// Return the updated record
+		updated, err := s.provincialSvc.GetVoSinh(r.Context(), id)
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+		success(w, http.StatusOK, updated)
+
 	default:
 		http.Error(w, "not found", http.StatusNotFound)
 	}
@@ -274,7 +359,12 @@ func (s *Server) handleProvincialVoSinh(w http.ResponseWriter, r *http.Request, 
 
 func (s *Server) handleProvincialCoaches(w http.ResponseWriter, r *http.Request, p auth.Principal) {
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/provincial/coaches")
-	id := strings.TrimPrefix(path, "/")
+	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	id := parts[0]
+	action := ""
+	if len(parts) > 1 {
+		action = parts[1]
+	}
 
 	switch {
 	case r.Method == "GET" && id == "":
@@ -302,13 +392,42 @@ func (s *Server) handleProvincialCoaches(w http.ResponseWriter, r *http.Request,
 		}
 		success(w, http.StatusCreated, created)
 
-	case r.Method == "GET" && id != "":
+	case r.Method == "GET" && id != "" && action == "":
 		coach, err := s.provincialSvc.GetCoach(r.Context(), id)
 		if err != nil {
 			notFoundError(w, "coach not found")
 			return
 		}
 		success(w, http.StatusOK, coach)
+
+	// PATCH /coaches/{id} (update)
+	case (r.Method == "PATCH" || r.Method == "PUT") && id != "" && action == "":
+		var patch map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+			badRequest(w, "invalid JSON: "+err.Error())
+			return
+		}
+		if err := s.provincialSvc.UpdateCoach(r.Context(), id, patch); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "updated"})
+
+	// POST /coaches/{id}/approve
+	case r.Method == "POST" && action == "approve":
+		if err := s.provincialSvc.ApproveCoach(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "approved"})
+
+	// POST /coaches/{id}/deactivate
+	case r.Method == "POST" && action == "deactivate":
+		if err := s.provincialSvc.DeactivateCoach(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "inactive"})
 
 	default:
 		http.Error(w, "not found", http.StatusNotFound)
@@ -319,9 +438,25 @@ func (s *Server) handleProvincialCoaches(w http.ResponseWriter, r *http.Request,
 
 func (s *Server) handleProvincialReferees(w http.ResponseWriter, r *http.Request, p auth.Principal) {
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/provincial/referees")
-	id := strings.TrimPrefix(path, "/")
+	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	id := parts[0]
+	action := ""
+	if len(parts) > 1 {
+		action = parts[1]
+	}
 
 	switch {
+	// GET /referees/stats
+	case r.Method == "GET" && id == "stats":
+		provID := resolveProvinceID(r)
+		stats, err := s.provincialSvc.GetRefereeStats(r.Context(), provID)
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+		success(w, http.StatusOK, stats)
+
+	// GET /referees (list)
 	case r.Method == "GET" && id == "":
 		provID := resolveProvinceID(r)
 		referees, err := s.provincialSvc.ListReferees(r.Context(), provID)
@@ -331,6 +466,7 @@ func (s *Server) handleProvincialReferees(w http.ResponseWriter, r *http.Request
 		}
 		success(w, http.StatusOK, map[string]any{"referees": referees, "total": len(referees)})
 
+	// POST /referees (create)
 	case r.Method == "POST" && id == "":
 		var ref provincial.ProvincialReferee
 		if err := json.NewDecoder(r.Body).Decode(&ref); err != nil {
@@ -347,13 +483,75 @@ func (s *Server) handleProvincialReferees(w http.ResponseWriter, r *http.Request
 		}
 		success(w, http.StatusCreated, created)
 
-	case r.Method == "GET" && id != "":
+	// GET /referees/{id}
+	case r.Method == "GET" && id != "" && action == "":
 		ref, err := s.provincialSvc.GetReferee(r.Context(), id)
 		if err != nil {
 			notFoundError(w, "referee not found")
 			return
 		}
 		success(w, http.StatusOK, ref)
+
+	// PATCH /referees/{id} (update)
+	case (r.Method == "PATCH" || r.Method == "PUT") && id != "" && action == "":
+		var patch map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+			badRequest(w, "invalid JSON: "+err.Error())
+			return
+		}
+		if err := s.provincialSvc.UpdateReferee(r.Context(), id, patch); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "updated"})
+
+	// DELETE /referees/{id}
+	case r.Method == "DELETE" && id != "":
+		if err := s.provincialSvc.DeleteReferee(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusNoContent, nil)
+
+	// POST /referees/{id}/approve
+	case r.Method == "POST" && action == "approve":
+		if err := s.provincialSvc.ApproveReferee(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "approved"})
+
+	// POST /referees/{id}/reject
+	case r.Method == "POST" && action == "reject":
+		if err := s.provincialSvc.RejectReferee(r.Context(), id); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusOK, map[string]string{"status": "rejected"})
+
+	// GET /referees/{id}/certificates
+	case r.Method == "GET" && action == "certificates":
+		certs, err := s.provincialSvc.ListRefereeCertificates(r.Context(), id)
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+		success(w, http.StatusOK, map[string]any{"certificates": certs, "total": len(certs)})
+
+	// POST /referees/{id}/certificates
+	case r.Method == "POST" && action == "certificates":
+		var cert provincial.RefereeCertificate
+		if err := json.NewDecoder(r.Body).Decode(&cert); err != nil {
+			badRequest(w, "invalid JSON: "+err.Error())
+			return
+		}
+		cert.RefereeID = id
+		created, err := s.provincialSvc.CreateRefereeCertificate(r.Context(), cert)
+		if err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		success(w, http.StatusCreated, created)
 
 	default:
 		http.Error(w, "not found", http.StatusNotFound)

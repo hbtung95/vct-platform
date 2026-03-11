@@ -13,6 +13,7 @@ import (
 	"vct-platform/backend/internal/config"
 	"vct-platform/backend/internal/domain/approval"
 	"vct-platform/backend/internal/domain/athlete"
+	"vct-platform/backend/internal/domain/btc"
 	"vct-platform/backend/internal/domain/certification"
 	"vct-platform/backend/internal/domain/community"
 	"vct-platform/backend/internal/domain/discipline"
@@ -22,6 +23,7 @@ import (
 	"vct-platform/backend/internal/domain/heritage"
 	"vct-platform/backend/internal/domain/international"
 	"vct-platform/backend/internal/domain/organization"
+	"vct-platform/backend/internal/domain/parent"
 	"vct-platform/backend/internal/domain/provincial"
 	"vct-platform/backend/internal/domain/ranking"
 	"vct-platform/backend/internal/domain/scoring"
@@ -46,7 +48,8 @@ type Server struct {
 	realtimeHub     *realtime.Hub
 	allowedEntities map[string]struct{}
 	allowedOrigins  map[string]struct{}
-	rateLimiter     *rateLimiter
+	rateLimiter      *rateLimiter
+	loginRateLimiter *rateLimiter // stricter limit for auth endpoints
 
 	athleteService      *athlete.Service
 	orgService          *organization.Service
@@ -67,18 +70,27 @@ type Server struct {
 	documentSvc      *document.Service
 	internationalSvc *international.Service
 
+	// ── Athlete Profile Service ─────────────────────────
+	athleteProfileSvc *athlete.ProfileService
+
 	// ── Provincial Federation Services ──────────────────
 	provincialSvc *provincial.Service
 
 	// ── Provincial Phase 2 Stores ───────────────────────
-	tournamentStore *provincial.InMemTournamentStore
-	financeStore    *provincial.InMemFinanceStore
-	certStore       *provincial.InMemCertStore
-	disciplineStore *provincial.InMemDisciplineStore
-	docStore        *provincial.InMemDocStore
+	tournamentStore provincial.TournamentStore
+	financeStore    provincial.FinanceStore
+	certStore       provincial.CertStore
+	disciplineStore provincial.DisciplineStore
+	docStore        provincial.DocStore
+
+	// ── BTC (Ban Tổ Chức giải) ──────────────────────────────
+	btcSvc *btc.Service
 
 	// ── Event Bus ──────────────────────────────────────────────
 	eventBus *events.InMemoryBus
+
+	// ── Parent / Guardian Service ──────────────────────────────
+	parentSvc *parent.Service
 }
 
 func New(cfg config.Config) *Server {
@@ -111,7 +123,8 @@ func New(cfg config.Config) *Server {
 		realtimeHub:     realtime.NewHub(cfg.AllowedOrigins),
 		allowedEntities: defaultEntitySet(),
 		allowedOrigins:  originSet,
-		rateLimiter:     newRateLimiter(10, time.Second, 100), // 100 burst, 10/s refill
+		rateLimiter:      newRateLimiter(10, time.Second, 100), // 100 burst, 10/s refill
+		loginRateLimiter: newRateLimiter(1, time.Second, 5),    // 5 burst, 1/s — stricter for auth
 
 		athleteService: athlete.NewService(adapter.NewAthleteRepository(cachedStore)),
 		orgService: organization.NewService(
@@ -129,53 +142,76 @@ func New(cfg config.Config) *Server {
 
 		// ── Wire National Federation Services ────────────
 		federationSvc: federation.NewService(
-			adapter.NewMemProvinceRepo(),
-			adapter.NewMemUnitRepo(),
-			adapter.NewMemPersonnelRepo(),
+			adapter.NewPgProvinceRepo(cachedStore),
+			adapter.NewPgUnitRepo(cachedStore),
+			adapter.NewPgPersonnelRepo(cachedStore),
+			adapter.NewPgMasterDataStore(cachedStore),
 			newUUID,
 		),
 		approvalSvc: approval.NewService( // Use the extracted wfRepo
 			wfRepo,
-			adapter.NewMemRequestRepo(),
-			adapter.NewMemStepRepo(),
-			adapter.NewMemHistoryRepo(),
+			adapter.NewPgRequestRepo(cachedStore),
+			adapter.NewPgStepRepo(cachedStore),
+			adapter.NewPgHistoryRepo(cachedStore),
 			newUUID,
 		),
 		workflowRepo:     wfRepo, // Assign to s.workflowRepo
-		certificationSvc: certification.NewService(adapter.NewMemCertRepo(), newUUID),
-		disciplineSvc:    discipline.NewService(adapter.NewMemCaseRepo(), adapter.NewMemHearingRepo(), newUUID),
-		documentSvc:      document.NewService(adapter.NewMemDocumentRepo(), newUUID),
+		certificationSvc: certification.NewService(adapter.NewPgCertAdminRepo(cachedStore), newUUID),
+		disciplineSvc:    discipline.NewService(adapter.NewPgCaseRepo(cachedStore), adapter.NewPgHearingRepo(cachedStore), newUUID),
+		documentSvc:      document.NewService(adapter.NewPgDocumentRepo(cachedStore), newUUID),
 		internationalSvc: international.NewService(
-			adapter.NewMemPartnerRepo(),
-			adapter.NewMemIntlEventRepo(),
-			adapter.NewMemDelegationRepo(),
+			adapter.NewPgPartnerRepo(cachedStore),
+			adapter.NewPgIntlEventRepo(cachedStore),
+			adapter.NewPgDelegationRepo(cachedStore),
+		),
+
+		// ── Wire Athlete Profile Service ─────────────
+		athleteProfileSvc: athlete.NewProfileService(
+			athlete.NewInMemProfileStore(),
+			athlete.NewInMemMembershipStore(),
+			athlete.NewInMemEntryStore(),
+			newUUID,
 		),
 
 		// ── Wire Provincial Services ─────────────────
 		provincialSvc: provincial.NewService(
-			provincial.NewInMemAssociationStore(),
-			provincial.NewInMemSubAssociationStore(),
-			provincial.NewInMemClubStore(),
-			provincial.NewInMemAthleteStore(),
-			provincial.NewInMemCoachStore(),
-			provincial.NewInMemRefereeStore(),
-			provincial.NewInMemCommitteeStore(),
-			provincial.NewInMemTransferStore(),
-			provincial.NewInMemClubClassStore(),
-			provincial.NewInMemClubMemberStore(),
-			provincial.NewInMemClubFinanceEntryStore(),
-			provincial.NewInMemVoSinhStore(),
+			adapter.NewPgAssociationRepo(cachedStore),
+			adapter.NewPgSubAssociationRepo(cachedStore),
+			adapter.NewPgClubRepo(cachedStore),
+			adapter.NewPgAthleteRepo(cachedStore),
+			adapter.NewPgCoachRepo(cachedStore),
+			adapter.NewPgRefereeRepo(cachedStore),
+			adapter.NewPgRefereeCertRepo(cachedStore),
+			adapter.NewPgCommitteeRepo(cachedStore),
+			adapter.NewPgTransferRepo(cachedStore),
+			adapter.NewPgClubClassRepo(cachedStore),
+			adapter.NewPgClubMemberRepo(cachedStore),
+			adapter.NewPgClubFinanceRepo(cachedStore),
+			adapter.NewPgVoSinhRepo(cachedStore),
+			adapter.NewPgBeltHistoryRepo(cachedStore),
 			newUUID,
 		),
 
 		// ── Wire Provincial Phase 2 Stores ──────────
-		tournamentStore: provincial.NewInMemTournamentStore(),
-		financeStore:    provincial.NewInMemFinanceStore(),
-		certStore:       provincial.NewInMemCertStore(),
-		disciplineStore: provincial.NewInMemDisciplineStore(),
-		docStore:        provincial.NewInMemDocStore(),
+		tournamentStore: adapter.NewPgTournamentStore(cachedStore),
+		financeStore:    adapter.NewPgFinanceStore(cachedStore),
+		certStore:       adapter.NewPgCertStore(cachedStore),
+		disciplineStore: adapter.NewPgDisciplineStore(cachedStore),
+		docStore:        adapter.NewPgDocStore(cachedStore),
+
+		// ── Wire BTC Service ─────────────────────────
+		btcSvc: btc.NewService(btc.NewInMemStore(), newUUID),
 
 		eventBus: events.NewBus(),
+
+		// ── Wire Parent Service ──────────────────────────
+		parentSvc: parent.NewService(
+			parent.NewInMemParentLinkStore(),
+			parent.NewInMemConsentStore(),
+			parent.NewInMemAttendanceStore(),
+			parent.NewInMemResultStore(),
+			newUUID,
+		),
 	}
 
 	// Wire JWT validation into WebSocket hub for first-message auth
@@ -208,51 +244,42 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.handleHealth)
 	mux.HandleFunc("/api/v1/ws", s.handleWebSocket)
-	mux.HandleFunc("/api/v1/auth/login", s.handleAuthLogin)
+	// Auth routes — stricter rate limiting + smaller body limit for login/register
+	loginRL := withRateLimit(s.loginRateLimiter)
+	loginBody := withBodyLimitSize(2 * 1024) // 2KB body limit
+	mux.Handle("/api/v1/auth/login", loginRL(loginBody(http.HandlerFunc(s.handleAuthLogin))))
+	mux.Handle("/api/v1/auth/register", loginRL(loginBody(http.HandlerFunc(s.handleAuthRegister))))
 	mux.HandleFunc("/api/v1/auth/refresh", s.handleAuthRefresh)
 	mux.HandleFunc("/api/v1/auth/me", s.withAuth(s.handleAuthMe))
 	mux.HandleFunc("/api/v1/auth/logout", s.withAuth(s.handleAuthLogout))
 	mux.HandleFunc("/api/v1/auth/revoke", s.withAuth(s.handleAuthRevoke))
 	mux.HandleFunc("/api/v1/auth/audit", s.withAuth(s.handleAuthAudit))
-	mux.HandleFunc("/api/v1/auth/register", s.handleAuthRegister)
 	mux.HandleFunc("/api/v1/auth/switch-context", s.withAuth(s.handleAuthSwitchContext))
 	mux.HandleFunc("/api/v1/auth/my-roles", s.withAuth(s.handleAuthMyRoles))
 	// Scoring API (requires auth)
 	mux.HandleFunc("/api/v1/scoring/", s.handleScoringRoutes)
 	// Public API (no auth)
 	mux.HandleFunc("/api/v1/public/", s.handlePublicRoutes)
-	// Specific domain entities
+	// Specific domain entities — Use subtree patterns only to avoid 307 redirects
+	// in Go 1.22+ ServeMux (exact + subtree double registration causes 307).
 	mux.HandleFunc("/api/v1/athletes/", s.handleAthleteRoutes)
-	mux.HandleFunc("/api/v1/athletes", s.handleAthleteRoutes)
 	mux.HandleFunc("/api/v1/teams/", s.handleTeamRoutes)
-	mux.HandleFunc("/api/v1/teams", s.handleTeamRoutes)
 	mux.HandleFunc("/api/v1/referees/", s.handleRefereeRoutes)
-	mux.HandleFunc("/api/v1/referees", s.handleRefereeRoutes)
 	mux.HandleFunc("/api/v1/arenas/", s.handleArenaRoutes)
-	mux.HandleFunc("/api/v1/arenas", s.handleArenaRoutes)
 	mux.HandleFunc("/api/v1/registration/", s.handleRegistrationRoutes)
-	mux.HandleFunc("/api/v1/registration", s.handleRegistrationRoutes)
 	mux.HandleFunc("/api/v1/tournaments/", s.handleTournamentRoutes)
-	mux.HandleFunc("/api/v1/tournaments", s.handleTournamentRoutes)
 	// Ranking
 	mux.HandleFunc("/api/v1/rankings/", s.handleRankingRoutes)
-	mux.HandleFunc("/api/v1/rankings", s.handleRankingRoutes)
 	// Heritage
 	mux.HandleFunc("/api/v1/belts/", s.handleBeltRoutes)
-	mux.HandleFunc("/api/v1/belts", s.handleBeltRoutes)
 	mux.HandleFunc("/api/v1/techniques/", s.handleTechniqueRoutes)
-	mux.HandleFunc("/api/v1/techniques", s.handleTechniqueRoutes)
 	// Finance
 	mux.HandleFunc("/api/v1/transactions/", s.handleTransactionRoutes)
-	mux.HandleFunc("/api/v1/transactions", s.handleTransactionRoutes)
 	mux.HandleFunc("/api/v1/budgets", s.handleBudgetRoutes)
 	// Community
 	mux.HandleFunc("/api/v1/clubs/", s.handleClubRoutes)
-	mux.HandleFunc("/api/v1/clubs", s.handleClubRoutes)
 	mux.HandleFunc("/api/v1/members/", s.handleMemberRoutes)
-	mux.HandleFunc("/api/v1/members", s.handleMemberRoutes)
 	mux.HandleFunc("/api/v1/community-events/", s.handleCommunityEventRoutes)
-	mux.HandleFunc("/api/v1/community-events", s.handleCommunityEventRoutes)
 	// ── Approval Engine ─────────────────────────────────────
 	s.handleApprovalRoutes(mux)
 	// ── Finance V2 ──────────────────────────────────────────
@@ -265,7 +292,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/finance/sponsorships/", s.withAuth(s.handleSponsorshipList))
 	mux.HandleFunc("/api/v1/finance/sponsorships", s.withAuth(s.handleSponsorshipCreate))
 	// ── Bracket & Tournament Orchestration ───────────────────
-	mux.HandleFunc("/api/v1/brackets/", s.withAuth(s.handleAssignMedals))
+	mux.HandleFunc("/api/v1/brackets-action/assign-medals", s.withAuth(s.handleAssignMedals))
 	mux.HandleFunc("/api/v1/tournaments-action/open-registration", s.withAuth(s.handleTournamentOpenRegistration))
 	mux.HandleFunc("/api/v1/tournaments-action/lock-registration", s.withAuth(s.handleTournamentLockRegistration))
 	mux.HandleFunc("/api/v1/tournaments-action/start", s.withAuth(s.handleTournamentStart))
@@ -288,12 +315,18 @@ func (s *Server) Handler() http.Handler {
 	s.handleCertificationRoutes(mux)
 	// ── International Relations ──────────────────────────────
 	s.handleInternationalRoutes(mux)
+	// ── Athlete Profiles ─────────────────────────────────
+	s.handleAthleteProfileRoutes(mux)
 	// ── Provincial (Provincial Level) ───────────────────
 	s.handleProvincialRoutes(mux)
 	// ── Provincial Phase 2 (Tournament, Finance, etc.) ──
 	s.handleProvincialPhase2Routes(mux)
 	// ── Club Internal Management ────────────────────────
 	s.handleClubInternalRoutes(mux)
+	// ── BTC (Ban Tổ Chức giải) ─────────────────────────
+	s.handleBTCRoutes(mux)
+	// ── Parent / Guardian ──────────────────────────────────
+	s.handleParentRoutes(mux)
 	// ── Domain Events ────────────────────────────────────────
 	mux.HandleFunc("/api/v1/events/recent", s.withAuth(s.handleRecentEvents))
 	// Generic entity CRUD (catch-all for unmigrated entities)

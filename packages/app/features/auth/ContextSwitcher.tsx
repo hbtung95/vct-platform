@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useI18n } from '../i18n'
 
 // ═══════════════════════════════════════════════════════════════
 // VCT PLATFORM — CONTEXT SWITCHER COMPONENT
@@ -29,19 +30,20 @@ interface ContextSwitcherProps {
     className?: string
 }
 
-const ROLE_DISPLAY_NAMES: Record<string, string> = {
-    admin: 'Quản trị hệ thống',
-    federation_president: 'Chủ tịch Liên đoàn',
-    federation_secretary: 'Tổng thư ký',
-    provincial_admin: 'Quản trị địa phương',
-    technical_director: 'Giám đốc kỹ thuật',
-    btc: 'Ban tổ chức',
-    referee_manager: 'Điều phối trọng tài',
-    referee: 'Trọng tài',
-    coach: 'Huấn luyện viên',
-    delegate: 'Cán bộ đoàn',
-    athlete: 'Vận động viên',
-    medical_staff: 'Nhân viên y tế',
+// Role display name i18n keys
+const ROLE_I18N_KEYS: Record<string, string> = {
+    admin: 'role.admin',
+    federation_president: 'role.federation_president',
+    federation_secretary: 'role.federation_secretary',
+    provincial_admin: 'role.provincial_admin',
+    technical_director: 'role.technical_director',
+    btc: 'role.btc',
+    referee_manager: 'role.referee_manager',
+    referee: 'role.referee',
+    coach: 'role.coach',
+    delegate: 'role.delegate',
+    athlete: 'role.athlete',
+    medical_staff: 'role.medical_staff',
 }
 
 const ROLE_ICONS: Record<string, string> = {
@@ -65,10 +67,16 @@ export function ContextSwitcher({
     onContextSwitch,
     className = '',
 }: ContextSwitcherProps) {
+    const { t } = useI18n()
     const [bindings, setBindings] = useState<RoleBinding[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    const getRoleName = (role: string) => {
+        const key = ROLE_I18N_KEYS[role]
+        return key ? t(key) : role
+    }
 
     // Fetch user's role bindings
     useEffect(() => {
@@ -115,7 +123,7 @@ export function ContextSwitcher({
 
                 if (!res.ok) {
                     const errData = await res.json()
-                    setError(errData.message || 'Chuyển ngữ cảnh thất bại')
+                    setError(errData.message || t('context.switchFailed'))
                     return
                 }
 
@@ -132,12 +140,12 @@ export function ContextSwitcher({
                 setIsOpen(false)
                 onContextSwitch?.(result)
             } catch {
-                setError('Lỗi kết nối khi chuyển ngữ cảnh')
+                setError(t('context.switchError'))
             } finally {
                 setIsLoading(false)
             }
         },
-        [apiBase, onContextSwitch]
+        [apiBase, onContextSwitch, t]
     )
 
     // Don't render if user has only 1 or fewer roles
@@ -145,7 +153,7 @@ export function ContextSwitcher({
         return (
             <div className={`inline-flex items-center gap-1.5 rounded-full border border-vct-border bg-vct-input px-3 py-2 text-xs font-bold text-[var(--vct-text-secondary)] ${className}`}>
                 <span className="text-sm">{ROLE_ICONS[currentRole] || '👤'}</span>
-                <span>{ROLE_DISPLAY_NAMES[currentRole] || currentRole}</span>
+                <span>{getRoleName(currentRole)}</span>
             </div>
         )
     }
@@ -156,13 +164,13 @@ export function ContextSwitcher({
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition-all ${isOpen
-                        ? 'border-vct-accent bg-vct-accent/10 text-vct-accent'
-                        : 'border-vct-border bg-vct-elevated text-vct-text hover:border-vct-accent hover:text-vct-accent'
+                    ? 'border-vct-accent bg-vct-accent/10 text-vct-accent'
+                    : 'border-vct-border bg-vct-elevated text-vct-text hover:border-vct-accent hover:text-vct-accent'
                     }`}
-                title="Chuyển vai trò"
+                title={t('context.switchRole')}
             >
                 <span className="text-sm">{ROLE_ICONS[currentRole] || '👤'}</span>
-                <span>{ROLE_DISPLAY_NAMES[currentRole] || currentRole}</span>
+                <span>{getRoleName(currentRole)}</span>
                 <span className="ml-0.5 text-[10px] opacity-50">{isOpen ? '▲' : '▼'}</span>
             </button>
 
@@ -170,7 +178,7 @@ export function ContextSwitcher({
             {isOpen && (
                 <div className="absolute right-0 top-[calc(100%+6px)] z-[100] min-w-[280px] overflow-hidden rounded-xl border border-vct-border bg-vct-card shadow-[var(--vct-shadow-xl)]">
                     <div className="px-4 pb-2 pt-3 text-[11px] font-extrabold uppercase tracking-[0.5px] text-vct-text-muted">
-                        Chuyển vai trò
+                        {t('context.switchRole')}
                     </div>
                     {error && (
                         <div className="px-4 py-2 text-xs text-[var(--vct-danger)] bg-[var(--vct-danger-muted)]">
@@ -183,14 +191,14 @@ export function ContextSwitcher({
                             onClick={() => handleSwitch(b.id)}
                             disabled={isLoading || b.role === currentRole}
                             className={`flex w-full items-center gap-2.5 border-none px-4 py-2.5 text-left text-sm transition-colors ${b.role === currentRole
-                                    ? 'cursor-default bg-vct-accent/10 opacity-70'
-                                    : 'cursor-pointer bg-transparent hover:bg-[var(--vct-bg-hover)]'
+                                ? 'cursor-default bg-vct-accent/10 opacity-70'
+                                : 'cursor-pointer bg-transparent hover:bg-[var(--vct-bg-hover)]'
                                 }`}
                         >
                             <span className="shrink-0 text-base">{ROLE_ICONS[b.role] || '👤'}</span>
                             <div className="min-w-0 flex-1">
                                 <div className="text-sm font-semibold text-vct-text">
-                                    {ROLE_DISPLAY_NAMES[b.role] || b.role}
+                                    {getRoleName(b.role)}
                                 </div>
                                 <div className="mt-0.5 text-[11px] text-vct-text-muted">
                                     {b.scope_name}
@@ -198,7 +206,7 @@ export function ContextSwitcher({
                             </div>
                             {b.role === currentRole && (
                                 <span className="shrink-0 rounded-full bg-vct-accent/15 px-2 py-0.5 text-[10px] font-bold text-vct-accent">
-                                    Đang dùng
+                                    {t('context.active')}
                                 </span>
                             )}
                         </button>

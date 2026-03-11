@@ -166,6 +166,7 @@ type Service struct {
 	provinces ProvinceRepository
 	units     FederationUnitRepository
 	personnel PersonnelRepository
+	master    MasterDataStore
 	idGen     func() string
 }
 
@@ -173,12 +174,14 @@ func NewService(
 	prov ProvinceRepository,
 	units FederationUnitRepository,
 	pers PersonnelRepository,
+	master MasterDataStore,
 	idGen func() string,
 ) *Service {
 	return &Service{
 		provinces: prov,
 		units:     units,
 		personnel: pers,
+		master:    master,
 		idGen:     idGen,
 	}
 }
@@ -324,4 +327,93 @@ func (s *Service) GetNationalStatistics(ctx context.Context) (*NationalStatistic
 	}
 
 	return stats, nil
+}
+
+// ── Master Data Operations ───────────────────────────────────
+
+func (s *Service) ListMasterBelts(ctx context.Context) ([]MasterBelt, error) {
+	return s.master.ListMasterBelts(ctx)
+}
+
+func (s *Service) CreateMasterBelt(ctx context.Context, req MasterBelt) error {
+	return s.master.CreateMasterBelt(ctx, req)
+}
+
+func (s *Service) ListMasterWeights(ctx context.Context) ([]MasterWeightClass, error) {
+	return s.master.ListMasterWeights(ctx)
+}
+
+func (s *Service) CreateMasterWeight(ctx context.Context, req MasterWeightClass) error {
+	return s.master.CreateMasterWeight(ctx, req)
+}
+
+func (s *Service) ListMasterAges(ctx context.Context) ([]MasterAgeGroup, error) {
+	return s.master.ListMasterAges(ctx)
+}
+
+func (s *Service) CreateMasterAge(ctx context.Context, req MasterAgeGroup) error {
+	return s.master.CreateMasterAge(ctx, req)
+}
+
+func (s *Service) GetMasterBelt(ctx context.Context, level string) (*MasterBelt, error) {
+	return s.master.GetMasterBelt(ctx, level)
+}
+
+func (s *Service) UpdateMasterBelt(ctx context.Context, belt MasterBelt) error {
+	return s.master.UpdateMasterBelt(ctx, belt)
+}
+
+func (s *Service) DeleteMasterBelt(ctx context.Context, level string) error {
+	return s.master.DeleteMasterBelt(ctx, level)
+}
+
+func (s *Service) GetMasterWeight(ctx context.Context, id string) (*MasterWeightClass, error) {
+	return s.master.GetMasterWeight(ctx, id)
+}
+
+func (s *Service) UpdateMasterWeight(ctx context.Context, wc MasterWeightClass) error {
+	return s.master.UpdateMasterWeight(ctx, wc)
+}
+
+func (s *Service) DeleteMasterWeight(ctx context.Context, id string) error {
+	return s.master.DeleteMasterWeight(ctx, id)
+}
+
+func (s *Service) GetMasterAge(ctx context.Context, id string) (*MasterAgeGroup, error) {
+	return s.master.GetMasterAge(ctx, id)
+}
+
+func (s *Service) UpdateMasterAge(ctx context.Context, ag MasterAgeGroup) error {
+	return s.master.UpdateMasterAge(ctx, ag)
+}
+
+func (s *Service) DeleteMasterAge(ctx context.Context, id string) error {
+	return s.master.DeleteMasterAge(ctx, id)
+}
+
+// ── Approval Workflow Engine ─────────────────────────────────
+
+func (s *Service) ListPendingApprovals(ctx context.Context) ([]ApprovalRequest, error) {
+	return s.master.ListApprovals(ctx, string(RequestPending))
+}
+
+func (s *Service) GetAllApprovals(ctx context.Context, status string) ([]ApprovalRequest, error) {
+	return s.master.ListApprovals(ctx, status)
+}
+
+func (s *Service) ProcessApproval(ctx context.Context, reqID string, action string, notes string) error {
+	// action could be "APPROVE" or "REJECT"
+	req, err := s.master.GetApproval(ctx, reqID)
+	if err != nil {
+		return err
+	}
+
+	if action == "APPROVE" {
+		req.Status = RequestApproved
+	} else if action == "REJECT" {
+		req.Status = RequestRejected
+	}
+	req.Notes = notes
+
+	return s.master.UpdateApproval(ctx, req)
 }

@@ -60,6 +60,7 @@ import {
     CheckCircle,
     RotateCcw,
     Eye,
+    EyeOff,
     List,
     Flag,
     ClipboardList,
@@ -87,7 +88,9 @@ import {
     Camera,
     VideoOff,
     Info,
-    Image as ImageIcon
+    Image as ImageIcon,
+    MinusCircle,
+    Target
 } from 'lucide-react';
 
 /**
@@ -165,6 +168,8 @@ export const VCT_Icons = {
     Clock: (p: IconProps) => <Clock {...defaultProps} {...p} />,
     CheckSquare: (p: IconProps) => <SquareCheckBig {...defaultProps} {...p} />,
     Alert: (p: IconProps) => <AlertTriangle {...defaultProps} {...p} />,
+    AlertTriangle: (p: IconProps) => <AlertTriangle {...defaultProps} {...p} />,
+    MinusCircle: (p: IconProps) => <MinusCircle {...defaultProps} {...p} />,
     Moon: (p: IconProps) => <Moon {...defaultProps} {...p} />,
     Sun: (p: IconProps) => <Sun {...defaultProps} {...p} />,
     Play: (p: IconProps) => <Play {...defaultProps} {...p} />,
@@ -202,7 +207,7 @@ export const VCT_Icons = {
     CheckCircle: (p: IconProps) => <CheckCircle {...defaultProps} {...p} />,
     RotateCcw: (p: IconProps) => <RotateCcw {...defaultProps} {...p} />,
     Eye: (p: IconProps) => <Eye {...defaultProps} {...p} />,
-    EyeOff: (p: IconProps) => <Eye {...defaultProps} {...p} />,
+    EyeOff: (p: IconProps) => <EyeOff {...defaultProps} {...p} />,
     Flag: (p: IconProps) => <Flag {...defaultProps} {...p} />,
     ClipboardList: (p: IconProps) => <ClipboardList {...defaultProps} {...p} />,
 
@@ -233,4 +238,5 @@ export const VCT_Icons = {
     VideoOff: (p: IconProps) => <VideoOff {...defaultProps} {...p} />,
     Info: (p: IconProps) => <Info {...defaultProps} {...p} />,
     Image: (p: IconProps) => <ImageIcon {...defaultProps} {...p} />,
+    Target: (p: IconProps) => <Target {...defaultProps} {...p} />,
 };

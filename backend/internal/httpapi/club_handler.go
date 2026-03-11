@@ -23,9 +23,12 @@ func (s *Server) handleClubInternalRoutes(mux *http.ServeMux) {
 
 // ── Dashboard ────────────────────────────────────────────────
 
-func (s *Server) handleClubDashboard(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubDashboard(w http.ResponseWriter, r *http.Request, p auth.Principal) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !requireRole(w, p, clubReadRoles...) {
 		return
 	}
 	clubID := r.URL.Query().Get("club_id")
@@ -42,7 +45,7 @@ func (s *Server) handleClubDashboard(w http.ResponseWriter, r *http.Request, _ a
 
 // ── Members ──────────────────────────────────────────────────
 
-func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, p auth.Principal) {
 	clubID := r.URL.Query().Get("club_id")
 	if clubID == "" {
 		clubID = "CLB-001"
@@ -50,6 +53,9 @@ func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, _ aut
 
 	switch r.Method {
 	case http.MethodGet:
+		if !requireRole(w, p, clubReadRoles...) {
+			return
+		}
 		members, err := s.provincialSvc.ListClubMembers(r.Context(), clubID)
 		if err != nil {
 			internalError(w, err)
@@ -58,6 +64,9 @@ func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, _ aut
 		success(w, http.StatusOK, map[string]any{"data": map[string]any{"members": members, "total": len(members)}})
 
 	case http.MethodPost:
+		if !requireRole(w, p, clubWriteRoles...) {
+			return
+		}
 		var m provincial.ClubMember
 		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
 			badRequest(w, "invalid request body")
@@ -78,7 +87,10 @@ func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, _ aut
 	}
 }
 
-func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, p auth.Principal) {
+	if !requireRole(w, p, clubReadRoles...) {
+		return
+	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/club/members/")
 	parts := strings.SplitN(path, "/", 2)
 	id := parts[0]
@@ -143,7 +155,7 @@ func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, 
 
 // ── Classes ──────────────────────────────────────────────────
 
-func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, p auth.Principal) {
 	clubID := r.URL.Query().Get("club_id")
 	if clubID == "" {
 		clubID = "CLB-001"
@@ -151,6 +163,9 @@ func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, _ aut
 
 	switch r.Method {
 	case http.MethodGet:
+		if !requireRole(w, p, clubReadRoles...) {
+			return
+		}
 		classes, err := s.provincialSvc.ListClubClasses(r.Context(), clubID)
 		if err != nil {
 			internalError(w, err)
@@ -159,6 +174,9 @@ func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, _ aut
 		success(w, http.StatusOK, map[string]any{"data": map[string]any{"classes": classes, "total": len(classes)}})
 
 	case http.MethodPost:
+		if !requireRole(w, p, clubWriteRoles...) {
+			return
+		}
 		var c provincial.ClubClass
 		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 			badRequest(w, "invalid request body")
@@ -179,7 +197,10 @@ func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, _ aut
 	}
 }
 
-func (s *Server) handleClubClassAction(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubClassAction(w http.ResponseWriter, r *http.Request, p auth.Principal) {
+	if !requireRole(w, p, clubReadRoles...) {
+		return
+	}
 	id := strings.TrimPrefix(r.URL.Path, "/api/v1/club/classes/")
 
 	switch r.Method {
@@ -217,7 +238,10 @@ func (s *Server) handleClubClassAction(w http.ResponseWriter, r *http.Request, _
 
 // ── Finance ──────────────────────────────────────────────────
 
-func (s *Server) handleClubFinance(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubFinance(w http.ResponseWriter, r *http.Request, p auth.Principal) {
+	if !requireRole(w, p, clubReadRoles...) {
+		return
+	}
 	clubID := r.URL.Query().Get("club_id")
 	if clubID == "" {
 		clubID = "CLB-001"
@@ -253,9 +277,12 @@ func (s *Server) handleClubFinance(w http.ResponseWriter, r *http.Request, _ aut
 	}
 }
 
-func (s *Server) handleClubFinanceSummary(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubFinanceSummary(w http.ResponseWriter, r *http.Request, p auth.Principal) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !requireRole(w, p, clubReadRoles...) {
 		return
 	}
 	clubID := r.URL.Query().Get("club_id")
@@ -272,7 +299,10 @@ func (s *Server) handleClubFinanceSummary(w http.ResponseWriter, r *http.Request
 
 // ── Settings ─────────────────────────────────────────────────
 
-func (s *Server) handleClubSettings(w http.ResponseWriter, r *http.Request, _ auth.Principal) {
+func (s *Server) handleClubSettings(w http.ResponseWriter, r *http.Request, p auth.Principal) {
+	if !requireRole(w, p, clubReadRoles...) {
+		return
+	}
 	clubID := r.URL.Query().Get("club_id")
 	if clubID == "" {
 		clubID = "CLB-001"

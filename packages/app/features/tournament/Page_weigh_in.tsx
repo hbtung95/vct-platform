@@ -14,6 +14,7 @@ import { VCT_Icons } from '../components/vct-icons';
 import type { CanKy, KetQuaCan } from '../data/types';
 import { repositories, useEntityCollection } from '../data/repository';
 import { useToast } from '../hooks/use-toast';
+import { VCT_Card } from '../components/vct-ui';
 
 const KQ_MAP: Record<KetQuaCan, { label: string; color: string; type: string }> = {
     dat: { label: '✓ Đạt', color: '#10b981', type: 'success' },
@@ -34,6 +35,7 @@ export const Page_weigh_in = () => {
     const { toast, showToast, hideToast } = useToast();
     const [weighModal, setWeighModal] = useState<CanKy | null>(null);
     const [weighValue, setWeighValue] = useState('');
+    const [isKioskMode, setIsKioskMode] = useState(false);
 
     const setRecords = useCallback((updater: React.SetStateAction<CanKy[]>) => {
         setRecordsState(prev => {
@@ -84,14 +86,28 @@ export const Page_weigh_in = () => {
                 </div>
             )}
 
+            <div className="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-black uppercase text-[var(--vct-text-primary)]">Trạm Cân Ký</h1>
+                    <p className="text-sm font-medium text-[var(--vct-text-tertiary)]">Quản lý và cập nhật số liệu cân nặng thực tế</p>
+                </div>
+                <VCT_SegmentedControl
+                    options={[{ label: 'Giao diện Quản lý', value: 'admin' }, { label: 'Kiosk Mode', value: 'kiosk' }]}
+                    value={isKioskMode ? 'kiosk' : 'admin'}
+                    onChange={(v) => setIsKioskMode(v === 'kiosk')}
+                />
+            </div>
+
             {/* KPI Row */}
-            <VCT_StatRow items={[
-                { label: 'Tổng VĐV cần cân', value: records.length, icon: <VCT_Icons.Activity size={18} />, color: '#0ea5e9' },
-                { label: 'Đã cân', value: daCan, icon: <VCT_Icons.Check size={18} />, color: '#10b981', sub: `${Math.round((daCan / Math.max(1, records.length)) * 100)}% hoàn thành` },
-                { label: 'Đạt cân', value: records.filter(r => r.ket_qua === 'dat').length, icon: <VCT_Icons.Check size={18} />, color: '#22d3ee' },
-                { label: 'Lố cân', value: records.filter(r => r.ket_qua === 'khong_dat').length, icon: <VCT_Icons.Alert size={18} />, color: '#ef4444', sub: 'Cần xử lý' },
-                { label: 'Chờ cân', value: records.filter(r => r.ket_qua === 'cho_can').length, icon: <VCT_Icons.Clock size={18} />, color: '#f59e0b' },
-            ] as StatItem[]} className="mb-6" />
+            {!isKioskMode && (
+                <VCT_StatRow items={[
+                    { label: 'Tổng VĐV cần cân', value: records.length, icon: <VCT_Icons.Activity size={18} />, color: '#0ea5e9' },
+                    { label: 'Đã cân', value: daCan, icon: <VCT_Icons.Check size={18} />, color: '#10b981', sub: `${Math.round((daCan / Math.max(1, records.length)) * 100)}% hoàn thành` },
+                    { label: 'Đạt cân', value: records.filter(r => r.ket_qua === 'dat').length, icon: <VCT_Icons.Check size={18} />, color: '#22d3ee' },
+                    { label: 'Lố cân', value: records.filter(r => r.ket_qua === 'khong_dat').length, icon: <VCT_Icons.Alert size={18} />, color: '#ef4444', sub: 'Cần xử lý' },
+                    { label: 'Chờ cân', value: records.filter(r => r.ket_qua === 'cho_can').length, icon: <VCT_Icons.Clock size={18} />, color: '#f59e0b' },
+                ] as StatItem[]} className="mb-6" />
+            )}
 
             {/* Progress */}
             <div className="mb-5">
@@ -170,7 +186,7 @@ export const Page_weigh_in = () => {
             <VCT_Stack direction="row" gap={16} align="center" className="mb-5">
                 <div className="min-w-[200px] flex-[1_1_250px]"><VCT_SearchInput value={search} onChange={setSearch} onClear={() => setSearch('')} placeholder="Tìm VĐV, đoàn..." /></div>
                 <div className="flex-none">
-                    <VCT_Button variant="secondary" icon={<VCT_Icons.Printer size={16} />} onClick={() => window.print()}>In danh sách Cân Ký & Bốc thăm</VCT_Button>
+                    <VCT_Button variant="secondary" icon={<VCT_Icons.Printer size={16} />} onClick={() => window.print()}>In danh sách</VCT_Button>
                 </div>
             </VCT_Stack>
 
@@ -236,9 +252,68 @@ export const Page_weigh_in = () => {
                 </div>
             </div>
 
-            {/* Table */}
+            {/* Table / Kiosk View */}
             {filtered.length === 0 ? (
                 <VCT_EmptyState title="Không tìm thấy" description="Thử thay đổi bộ lọc." icon="⚖️" />
+            ) : isKioskMode ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {filtered.map(r => {
+                        const kq = KQ_MAP[r.ket_qua];
+                        const isWait = r.ket_qua === 'cho_can';
+                        const isOverweight = r.ket_qua === 'khong_dat';
+                        return (
+                            <motion.div key={r.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ position: 'relative' }}>
+                                <div
+                                    onClick={() => openWeigh(r)}
+                                    className={`relative cursor-pointer overflow-hidden rounded-2xl border-2 bg-[var(--vct-bg-card)] p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md ${isWait ? 'border-[var(--vct-accent-blue)]' : (isOverweight ? 'border-red-500' : 'border-emerald-500')}`}
+                                >
+                                    {/* Action overlay */}
+                                    <div className="absolute right-3 top-3">
+                                        {isWait ? (
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg animate-pulse">
+                                                <VCT_Icons.Activity size={20} />
+                                            </div>
+                                        ) : (
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400">
+                                                <VCT_Icons.Refresh size={18} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <VCT_Stack gap={16}>
+                                        <div className="flex items-center gap-3">
+                                            <VCT_AvatarLetter name={r.vdv_ten} size={56} className="shadow-sm" />
+                                            <div>
+                                                <div className="text-lg font-black leading-tight text-[var(--vct-text-primary)]">{r.vdv_ten}</div>
+                                                <div className="text-xs font-semibold uppercase text-[var(--vct-text-tertiary)] opacity-80">{r.doan_ten} • {r.gioi === 'nam' ? 'Nam' : 'Nữ'}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between rounded-xl bg-[var(--vct-bg-input)] p-3">
+                                            <div className="text-center">
+                                                <div className="text-[10px] font-bold uppercase opacity-50">Đăng ký</div>
+                                                <div className="font-mono text-base font-bold text-[var(--vct-text-primary)]">{r.can_tu}-{r.can_den}k</div>
+                                            </div>
+                                            <div className="w-[1px] bg-[var(--vct-border-subtle)]" />
+                                            <div className="text-center">
+                                                <div className="text-[10px] font-bold uppercase opacity-50">Thực tế</div>
+                                                <div className={`font-mono text-base font-black ${isOverweight ? 'text-red-500' : (isWait ? 'text-[var(--vct-text-secondary)] opacity-30' : 'text-emerald-500')}`}>
+                                                    {r.can_thuc_te > 0 ? `${r.can_thuc_te}k` : '—'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {!isWait && (
+                                            <div className="text-center text-xs font-bold opacity-60">
+                                                {kq.label} {isOverweight && `(${r.ghi_chu})`}
+                                            </div>
+                                        )}
+                                    </VCT_Stack>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
             ) : (
                 <div className="overflow-hidden rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)]">
                     <table className="w-full border-collapse">
@@ -282,7 +357,7 @@ export const Page_weigh_in = () => {
                             })}
                         </tbody>
                     </table>
-                    <div className="flex gap-6 border-t-2 border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)] px-4 py-2.5 text-xs font-bold opacity-60">
+                    <div className="flex gap-6 border-t-2 border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)] px-4 py-3 text-xs font-bold opacity-60">
                         <span>Hiện {filtered.length}/{records.length}</span>
                         <span>♂ {filtered.filter(r => r.gioi === 'nam').length} — ♀ {filtered.filter(r => r.gioi === 'nu').length}</span>
                     </div>
@@ -296,25 +371,25 @@ export const Page_weigh_in = () => {
                 {weighModal && (
                     <VCT_Stack gap={16}>
                         <div style={{ padding: 16, borderRadius: 12, background: 'var(--vct-bg-input)', display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <VCT_AvatarLetter name={weighModal.vdv_ten} size={40} />
+                            <VCT_AvatarLetter name={weighModal.vdv_ten} size={56} />
                             <div>
-                                <div style={{ fontWeight: 800, fontSize: 15 }}>{weighModal.vdv_ten}</div>
-                                <div className="text-xs opacity-60">{weighModal.doan_ten} • {weighModal.gioi === 'nam' ? '♂ Nam' : '♀ Nữ'}</div>
+                                <div style={{ fontWeight: 900, fontSize: 18 }}>{weighModal.vdv_ten}</div>
+                                <div className="text-sm font-bold uppercase opacity-60">{weighModal.doan_ten} • {weighModal.gioi === 'nam' ? '♂ Nam' : '♀ Nữ'}</div>
                             </div>
                         </div>
-                        <div style={{ padding: 16, borderRadius: 12, background: 'var(--vct-bg-elevated)', textAlign: 'center' }}>
-                            <div style={{ fontSize: 11, opacity: 0.5, textTransform: 'uppercase', fontWeight: 700 }}>Hạng cân đăng ký</div>
-                            <div style={{ fontSize: 28, fontWeight: 900, fontFamily: 'monospace', color: 'var(--vct-accent-cyan)' }}>{weighModal.can_tu} — {weighModal.can_den} kg</div>
+                        <div style={{ padding: 20, borderRadius: 12, background: 'var(--vct-bg-elevated)', border: '1px solid var(--vct-border-subtle)', textAlign: 'center' }}>
+                            <div style={{ fontSize: 12, opacity: 0.5, textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Hạng cân đăng ký</div>
+                            <div style={{ fontSize: 36, fontWeight: 900, fontFamily: 'monospace', color: 'var(--vct-accent-cyan)' }}>{weighModal.can_tu} — {weighModal.can_den} kg</div>
                         </div>
-                        <VCT_Field label="Cân nặng thực tế (kg)">
-                            <VCT_Input type="number" value={weighValue} onChange={(e: any) => setWeighValue(e.target.value)} placeholder="VD: 47.5" autoFocus style={{ fontSize: 24, fontWeight: 900, textAlign: 'center', fontFamily: 'monospace' }} />
+                        <VCT_Field label={<span className="text-lg font-bold">Cân nặng thực tế báo cáo (kg)</span>}>
+                            <VCT_Input type="number" value={weighValue} onChange={(e: any) => setWeighValue(e.target.value)} placeholder="VD: 47.5" autoFocus style={{ fontSize: 48, height: 80, fontWeight: 900, textAlign: 'center', fontFamily: 'monospace', borderRadius: 16 }} />
                         </VCT_Field>
                         {weighValue && !isNaN(parseFloat(weighValue)) && (
-                            <div style={{ textAlign: 'center', padding: 12, borderRadius: 12, background: parseFloat(weighValue) >= weighModal.can_tu && parseFloat(weighValue) <= weighModal.can_den ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${parseFloat(weighValue) >= weighModal.can_tu && parseFloat(weighValue) <= weighModal.can_den ? '#10b981' : '#ef4444'}30` }}>
-                                <span style={{ fontSize: 16, fontWeight: 800, color: parseFloat(weighValue) >= weighModal.can_tu && parseFloat(weighValue) <= weighModal.can_den ? '#10b981' : '#ef4444' }}>
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', padding: 16, borderRadius: 12, background: parseFloat(weighValue) >= weighModal.can_tu && parseFloat(weighValue) <= weighModal.can_den ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: `2px solid ${parseFloat(weighValue) >= weighModal.can_tu && parseFloat(weighValue) <= weighModal.can_den ? '#10b981' : '#ef4444'}50` }}>
+                                <span style={{ fontSize: 18, fontWeight: 900, color: parseFloat(weighValue) >= weighModal.can_tu && parseFloat(weighValue) <= weighModal.can_den ? '#10b981' : '#ef4444' }}>
                                     {parseFloat(weighValue) >= weighModal.can_tu && parseFloat(weighValue) <= weighModal.can_den ? '✓ ĐẠT — Trong phạm vi hạng cân' : `✗ KHÔNG ĐẠT — Lệch ${Math.abs(parseFloat(weighValue) > weighModal.can_den ? parseFloat(weighValue) - weighModal.can_den : weighModal.can_tu - parseFloat(weighValue)).toFixed(1)}kg`}
                                 </span>
-                            </div>
+                            </motion.div>
                         )}
                     </VCT_Stack>
                 )}

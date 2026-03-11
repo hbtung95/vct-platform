@@ -399,6 +399,14 @@ func resolveCredentials(raw string, allowDemo bool) (map[string]userCredential, 
 	return credentials, nil
 }
 
+// ── Demo User ID Constants ────────────────────────────────────
+// These are fixed IDs used for demo users so that seed data in
+// in-memory stores can reference them consistently.
+const (
+	DemoAthleteUserID = "demo-athlete-00000001"
+	DemoParentUserID  = "demo-parent-000000001"
+)
+
 func demoCredentials() map[string]userCredential {
 	// Pre-hash demo passwords with bcrypt at startup.
 	hashOrPanic := func(pw string) string {
@@ -414,6 +422,12 @@ func demoCredentials() map[string]userCredential {
 			passwordHash: hashOrPanic("Admin@123"),
 			displayName:  "Quản trị hệ thống",
 			allowedRole:  []UserRole{RoleAdmin},
+			userID:       util.NewUUIDv7(),
+		},
+		"federation": {
+			passwordHash: hashOrPanic("Fed@123"),
+			displayName:  "Chủ tịch Liên đoàn",
+			allowedRole:  []UserRole{RoleFederationPresident},
 			userID:       util.NewUUIDv7(),
 		},
 		"btc": {
@@ -450,6 +464,36 @@ func demoCredentials() map[string]userCredential {
 			passwordHash: hashOrPanic("Parent@123"),
 			displayName:  "Nguyễn Thị Phụ Huynh",
 			allowedRole:  []UserRole{RoleParent},
+			userID:       DemoParentUserID,
+		},
+		"coach": {
+			passwordHash: hashOrPanic("Coach@123"),
+			displayName:  "Huấn luyện viên",
+			allowedRole:  []UserRole{RoleCoach},
+			userID:       util.NewUUIDv7(),
+		},
+		"athlete": {
+			passwordHash: hashOrPanic("Athlete@123"),
+			displayName:  "Nguyễn Hoàng Nam",
+			allowedRole:  []UserRole{RoleAthlete},
+			userID:       DemoAthleteUserID,
+		},
+		"provincial": {
+			passwordHash: hashOrPanic("Prov@123"),
+			displayName:  "Quản trị tỉnh/thành",
+			allowedRole:  []UserRole{RoleProvincialAdmin},
+			userID:       util.NewUUIDv7(),
+		},
+		"medical": {
+			passwordHash: hashOrPanic("Medical@123"),
+			displayName:  "Bác sĩ y tế",
+			allowedRole:  []UserRole{RoleMedicalStaff},
+			userID:       util.NewUUIDv7(),
+		},
+		"tech-director": {
+			passwordHash: hashOrPanic("Tech@123"),
+			displayName:  "Giám đốc kỹ thuật",
+			allowedRole:  []UserRole{RoleTechnicalDirector},
 			userID:       util.NewUUIDv7(),
 		},
 	}

@@ -54,6 +54,14 @@ const ADMIN_CAPS: RoleRouteCapabilities = {
     appeals: capability(['create', 'update', 'approve', 'publish', 'export'], 'Xử lý khiếu nại'),
     reports: capability(['export', 'publish'], 'Phát hành báo cáo'),
     'user-detail': capability(['create', 'update', 'delete', 'manage'], 'Quản trị tài khoản hệ thống'),
+    'club-dashboard': capability(['monitor', 'export'], 'Theo dõi vận hành tổng quan CLB'),
+    'club-members': capability(['create', 'update', 'delete', 'approve', 'import', 'export'], 'Quản trị hồ sơ thành viên CLB'),
+    'club-classes': capability(['create', 'update', 'delete', 'approve', 'publish'], 'Quản trị lớp học và lịch tập CLB'),
+    'club-training': capability(['create', 'update', 'delete', 'approve', 'publish'], 'Quản trị giáo trình và huấn luyện CLB'),
+    'club-tournaments': capability(['create', 'update', 'delete', 'approve', 'publish', 'export'], 'Quản trị giải đấu CLB tham gia'),
+    'club-finance': capability(['create', 'update', 'delete', 'approve', 'publish', 'export'], 'Quản trị thu chi và sổ quỹ CLB'),
+    'club-certifications': capability(['create', 'update', 'delete', 'approve', 'publish', 'export'], 'Quản trị thi đai và chứng nhận CLB'),
+    'club-settings': capability(['update', 'manage'], 'Quản trị cấu hình và thông tin pháp lý CLB'),
 }
 
 export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
@@ -191,6 +199,54 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         schedule: capability([], 'Xem lịch thi đấu'),
         results: capability([], 'Xem kết quả'),
         medals: capability([], 'Xem huy chương'),
+        'club-dashboard': capability([], 'Theo dõi vận hành tổng quan CLB'),
+        'club-members': capability(['create', 'update'], 'Quản lý danh sách thành viên CLB'),
+        'club-classes': capability(['create', 'update'], 'Quản lý lớp học và lịch tập CLB'),
+        'club-training': capability(['create', 'update'], 'Quản lý giáo trình và kỳ thi đai CLB'),
+        'club-tournaments': capability(['create', 'update'], 'Quản lý danh sách giải đấu CLB'),
+        'club-finance': capability([], 'Xem tình hình thu chi CLB'),
+        'club-certifications': capability(['create', 'update'], 'Cập nhật hồ sơ thăng đẳng CLB'),
+        'club-settings': capability([], 'Xem cấu hình CLB'),
+    },
+
+    club_leader: {
+        'club-dashboard': capability(['monitor', 'export'], 'Điều hành tổng thể hoạt động CLB'),
+        'club-members': capability(['create', 'update', 'delete', 'approve', 'import', 'export'], 'Quản trị danh sách thành viên CLB'),
+        'club-classes': capability(['create', 'update', 'delete', 'approve'], 'Quản trị lớp học CLB'),
+        'club-training': capability(['create', 'update', 'delete', 'approve'], 'Quản trị giáo trình huấn luyện CLB'),
+        'club-tournaments': capability(['create', 'update', 'approve', 'export'], 'Điều phối giải đấu CLB tham gia'),
+        'club-finance': capability(['create', 'update', 'approve', 'export'], 'Quản trị thu chi CLB'),
+        'club-certifications': capability(['create', 'update', 'approve', 'export'], 'Quản trị hồ sơ thăng đẳng CLB'),
+        'club-settings': capability(['update', 'manage'], 'Quản trị cấu hình vận hành CLB'),
+    },
+
+    club_vice_leader: {
+        'club-dashboard': capability(['monitor'], 'Theo dõi hoạt động tổng quan CLB'),
+        'club-members': capability(['create', 'update', 'approve'], 'Quản lý thành viên CLB theo phân công'),
+        'club-classes': capability(['create', 'update'], 'Quản lý lớp học CLB'),
+        'club-training': capability(['create', 'update'], 'Quản lý giáo trình huấn luyện CLB'),
+        'club-tournaments': capability(['create', 'update'], 'Quản lý danh sách giải đấu của CLB'),
+        'club-finance': capability([], 'Xem báo cáo thu chi CLB'),
+        'club-certifications': capability(['create', 'update'], 'Cập nhật hồ sơ thăng đẳng CLB'),
+        'club-settings': capability(['update'], 'Cập nhật thông tin CLB'),
+    },
+
+    club_secretary: {
+        'club-dashboard': capability([], 'Theo dõi vận hành CLB'),
+        'club-members': capability(['create', 'update', 'import', 'export'], 'Quản lý hồ sơ thành viên và văn thư CLB'),
+        'club-classes': capability(['create', 'update'], 'Cập nhật lịch lớp CLB'),
+        'club-training': capability(['create', 'update'], 'Cập nhật giáo trình huấn luyện CLB'),
+        'club-tournaments': capability(['create', 'update', 'export'], 'Điều phối đăng ký giải đấu CLB'),
+        'club-finance': capability([], 'Xem số liệu thu chi CLB'),
+        'club-certifications': capability(['create', 'update', 'export'], 'Cập nhật hồ sơ chứng nhận CLB'),
+        'club-settings': capability(['update'], 'Cập nhật thông tin hành chính CLB'),
+    },
+
+    club_accountant: {
+        'club-dashboard': capability([], 'Theo dõi chỉ số tài chính CLB'),
+        'club-members': capability([], 'Xem danh sách thành viên phục vụ đối soát thu phí'),
+        'club-finance': capability(['create', 'update', 'approve', 'export'], 'Quản lý sổ quỹ và giao dịch CLB'),
+        'club-settings': capability([], 'Xem cấu hình CLB liên quan tài chính'),
     },
 
     delegate: {
@@ -206,6 +262,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
     },
 
     athlete: {
+        'athlete-portal': capability([], 'Trang tổng quan VĐV cá nhân'),
         'command-center': capability([], 'Xem thông báo cá nhân'),
         schedule: capability([], 'Xem lịch thi đấu'),
         results: capability([], 'Xem kết quả cá nhân'),

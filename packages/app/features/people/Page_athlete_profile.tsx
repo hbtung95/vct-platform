@@ -1,7 +1,12 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
-import { Search, Plus, User, Award, Activity, Heart, Clock, ChevronRight, Edit, MoreHorizontal, TrendingUp, Calendar, Scale, Ruler } from 'lucide-react'
+import React, { useState } from 'react'
+import {
+    VCT_PageContainer, VCT_PageHero, VCT_SectionCard,
+    VCT_EmptyState, VCT_StatRow, VCT_Badge,
+} from 'app/features/components/vct-ui'
+import type { StatItem } from 'app/features/components/vct-ui'
+import { VCT_Icons } from '../components/vct-icons'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -19,13 +24,11 @@ interface AthleteProfile {
     so_nam_tap: number
     trang_thai: string
     avatar_url?: string
-    // Stats
     total_matches: number
     wins: number
     losses: number
     medals: { gold: number; silver: number; bronze: number }
     elo_rating: number
-    // Timeline
     achievements: { year: number; event: string; result: string }[]
     belt_history: { date: string; belt: string; color: string }[]
 }
@@ -70,11 +73,11 @@ const MOCK_ATHLETE: AthleteProfile = {
 // ── Tab Component ────────────────────────────────────────────
 
 const TABS = [
-    { id: 'info', label: 'Thông tin', icon: User },
-    { id: 'stats', label: 'Thành tích', icon: TrendingUp },
-    { id: 'timeline', label: 'Lịch sử', icon: Clock },
-    { id: 'medical', label: 'Y tế', icon: Heart },
-    { id: 'belt', label: 'Đai', icon: Award },
+    { id: 'info', label: 'Thông tin', icon: 'User' },
+    { id: 'stats', label: 'Thành tích', icon: 'TrendingUp' },
+    { id: 'timeline', label: 'Lịch sử', icon: 'Clock' },
+    { id: 'medical', label: 'Y tế', icon: 'Heart' },
+    { id: 'belt', label: 'Đai', icon: 'Award' },
 ] as const
 
 type TabId = typeof TABS[number]['id']
@@ -84,196 +87,173 @@ type TabId = typeof TABS[number]['id']
 export default function Page_athlete_profile() {
     const [activeTab, setActiveTab] = useState<TabId>('info')
     const athlete = MOCK_ATHLETE
-
     const winRate = athlete.total_matches > 0 ? Math.round((athlete.wins / athlete.total_matches) * 100) : 0
 
+    const heroStats: StatItem[] = [
+        { label: 'ELO', value: athlete.elo_rating, color: '#ef4444' },
+        { label: 'Tỉ lệ thắng', value: `${winRate}%`, color: '#22c55e' },
+        { label: 'Huy chương', value: `🥇${athlete.medals.gold} 🥈${athlete.medals.silver} 🥉${athlete.medals.bronze}`, color: '#f59e0b' },
+    ]
+
     return (
-        <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-            {/* Profile Header */}
-            <div style={{ background: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)', borderRadius: 16, padding: 32, color: '#fff', marginBottom: 24 }}>
-                <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-                    {/* Avatar */}
-                    <div style={{ width: 100, height: 100, borderRadius: 20, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, fontWeight: 700, flexShrink: 0 }}>
+        <VCT_PageContainer size="wide" animated>
+            {/* ── Profile Header ──────────────────────────── */}
+            <VCT_PageHero
+                icon={
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 text-4xl font-bold text-white">
                         {athlete.ho_ten.split(' ').pop()?.[0]}
                     </div>
-                    {/* Info */}
-                    <div style={{ flex: 1 }}>
-                        <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{athlete.ho_ten}</h1>
-                        <div style={{ display: 'flex', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, opacity: 0.9 }}>
-                                <Award size={16} /> {athlete.dai}
-                            </span>
-                            <span style={{ fontSize: 14, opacity: 0.9 }}>
-                                📍 {athlete.doan_ten}
-                            </span>
-                            <span style={{ fontSize: 14, opacity: 0.9 }}>
-                                {athlete.gioi_tinh === 'nam' ? '♂' : '♀'} {new Date().getFullYear() - new Date(athlete.ngay_sinh).getFullYear()} tuổi
-                            </span>
-                        </div>
-                    </div>
-                    {/* Quick Stats */}
-                    <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
-                        <div style={{ textAlign: 'center', padding: '12px 20px', background: 'rgba(255,255,255,0.15)', borderRadius: 12 }}>
-                            <div style={{ fontSize: 24, fontWeight: 700 }}>{athlete.elo_rating}</div>
-                            <div style={{ fontSize: 11, opacity: 0.8 }}>ELO</div>
-                        </div>
-                        <div style={{ textAlign: 'center', padding: '12px 20px', background: 'rgba(255,255,255,0.15)', borderRadius: 12 }}>
-                            <div style={{ fontSize: 24, fontWeight: 700 }}>{winRate}%</div>
-                            <div style={{ fontSize: 11, opacity: 0.8 }}>Tỉ lệ thắng</div>
-                        </div>
-                        <div style={{ textAlign: 'center', padding: '12px 20px', background: 'rgba(255,255,255,0.15)', borderRadius: 12 }}>
-                            <div style={{ fontSize: 24, fontWeight: 700 }}>🥇{athlete.medals.gold} 🥈{athlete.medals.silver} 🥉{athlete.medals.bronze}</div>
-                            <div style={{ fontSize: 11, opacity: 0.8 }}>Huy chương</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                }
+                title={athlete.ho_ten}
+                subtitle={`🥋 ${athlete.dai} · 📍 ${athlete.doan_ten} · ${athlete.gioi_tinh === 'nam' ? '♂' : '♀'} ${new Date().getFullYear() - new Date(athlete.ngay_sinh).getFullYear()} tuổi`}
+                gradientFrom="rgba(153, 27, 27, 0.9)"
+                gradientTo="rgba(220, 38, 38, 0.9)"
+            />
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '2px solid #f3f4f6', paddingBottom: 0 }}>
+            {/* ── Quick Stats ─────────────────────────────── */}
+            <VCT_StatRow items={heroStats} cols={3} className="-mt-2 mb-6" />
+
+            {/* ── Tabs ────────────────────────────────────── */}
+            <div className="mb-6 flex gap-1 border-b-2 border-vct-border">
                 {TABS.map(tab => {
-                    const Icon = tab.icon
+                    const IconComp = VCT_Icons[tab.icon as keyof typeof VCT_Icons]
                     return (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                padding: '12px 20px',
-                                fontSize: 14, fontWeight: activeTab === tab.id ? 600 : 400,
-                                color: activeTab === tab.id ? '#dc2626' : '#6b7280',
-                                background: 'none', border: 'none', cursor: 'pointer',
-                                borderBottom: activeTab === tab.id ? '2px solid #dc2626' : '2px solid transparent',
-                                marginBottom: -2,
-                                transition: 'all 0.15s',
-                            }}
+                            className={`-mb-[2px] flex items-center gap-1.5 border-b-2 px-5 py-3 text-sm transition-all ${activeTab === tab.id
+                                    ? 'border-red-500 font-semibold text-red-500'
+                                    : 'border-transparent text-vct-text-muted hover:text-vct-text'
+                                }`}
                         >
-                            <Icon size={16} /> {tab.label}
+                            {IconComp && <IconComp size={16} />} {tab.label}
                         </button>
                     )
                 })}
             </div>
 
-            {/* Tab Content */}
+            {/* ── Tab Content ─────────────────────────────── */}
             {activeTab === 'info' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
-                        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', margin: '0 0 16px' }}>Thông tin cá nhân</h3>
-                        <div style={{ display: 'grid', gap: 16 }}>
+                <div className="grid gap-5 md:grid-cols-2">
+                    <VCT_SectionCard title="Thông tin cá nhân" icon={<VCT_Icons.User size={18} />}>
+                        <div className="space-y-4">
                             {[
-                                { icon: Calendar, label: 'Ngày sinh', value: new Date(athlete.ngay_sinh).toLocaleDateString('vi-VN') },
-                                { icon: User, label: 'Giới tính', value: athlete.gioi_tinh === 'nam' ? 'Nam' : 'Nữ' },
-                                { icon: Scale, label: 'Cân nặng', value: `${athlete.can_nang} kg` },
-                                { icon: Ruler, label: 'Chiều cao', value: `${athlete.chieu_cao} cm` },
-                                { icon: Clock, label: 'Số năm tập', value: `${athlete.so_nam_tap} năm` },
+                                { icon: <VCT_Icons.Calendar size={16} />, label: 'Ngày sinh', value: new Date(athlete.ngay_sinh).toLocaleDateString('vi-VN') },
+                                { icon: <VCT_Icons.User size={16} />, label: 'Giới tính', value: athlete.gioi_tinh === 'nam' ? 'Nam' : 'Nữ' },
+                                { icon: <VCT_Icons.Scale size={16} />, label: 'Cân nặng', value: `${athlete.can_nang} kg` },
+                                { icon: <VCT_Icons.Activity size={16} />, label: 'Chiều cao', value: `${athlete.chieu_cao} cm` },
+                                { icon: <VCT_Icons.Clock size={16} />, label: 'Số năm tập', value: `${athlete.so_nam_tap} năm` },
                             ].map(item => (
-                                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <item.icon size={16} style={{ color: '#6b7280' }} />
+                                <div key={item.label} className="flex items-center gap-3">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-vct-bg text-vct-text-muted">
+                                        {item.icon}
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: 12, color: '#9ca3af' }}>{item.label}</div>
-                                        <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{item.value}</div>
+                                        <div className="text-xs text-vct-text-muted">{item.label}</div>
+                                        <div className="text-sm font-medium text-vct-text">{item.value}</div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
-                        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', margin: '0 0 16px' }}>Thống kê thi đấu</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <div style={{ textAlign: 'center', padding: 16, borderRadius: 12, background: '#f9fafb' }}>
-                                <div style={{ fontSize: 32, fontWeight: 700, color: '#111827' }}>{athlete.total_matches}</div>
-                                <div style={{ fontSize: 13, color: '#6b7280' }}>Tổng trận</div>
+                    </VCT_SectionCard>
+
+                    <VCT_SectionCard title="Thống kê thi đấu" icon={<VCT_Icons.BarChart2 size={18} />}>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="rounded-xl bg-vct-bg p-4 text-center">
+                                <div className="text-3xl font-bold text-vct-text">{athlete.total_matches}</div>
+                                <div className="text-[13px] text-vct-text-muted">Tổng trận</div>
                             </div>
-                            <div style={{ textAlign: 'center', padding: 16, borderRadius: 12, background: '#f0fdf4' }}>
-                                <div style={{ fontSize: 32, fontWeight: 700, color: '#16a34a' }}>{athlete.wins}</div>
-                                <div style={{ fontSize: 13, color: '#6b7280' }}>Thắng</div>
+                            <div className="rounded-xl bg-green-500/5 p-4 text-center">
+                                <div className="text-3xl font-bold text-green-600">{athlete.wins}</div>
+                                <div className="text-[13px] text-vct-text-muted">Thắng</div>
                             </div>
-                            <div style={{ textAlign: 'center', padding: 16, borderRadius: 12, background: '#fef2f2' }}>
-                                <div style={{ fontSize: 32, fontWeight: 700, color: '#dc2626' }}>{athlete.losses}</div>
-                                <div style={{ fontSize: 13, color: '#6b7280' }}>Thua</div>
+                            <div className="rounded-xl bg-red-500/5 p-4 text-center">
+                                <div className="text-3xl font-bold text-red-600">{athlete.losses}</div>
+                                <div className="text-[13px] text-vct-text-muted">Thua</div>
                             </div>
-                            <div style={{ textAlign: 'center', padding: 16, borderRadius: 12, background: '#fffbeb' }}>
-                                <div style={{ fontSize: 32, fontWeight: 700, color: '#f59e0b' }}>{winRate}%</div>
-                                <div style={{ fontSize: 13, color: '#6b7280' }}>Tỉ lệ thắng</div>
+                            <div className="rounded-xl bg-amber-500/5 p-4 text-center">
+                                <div className="text-3xl font-bold text-amber-500">{winRate}%</div>
+                                <div className="text-[13px] text-vct-text-muted">Tỉ lệ thắng</div>
                             </div>
                         </div>
-                    </div>
+                    </VCT_SectionCard>
                 </div>
             )}
 
             {activeTab === 'stats' && (
-                <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', margin: '0 0 16px' }}>Thành tích thi đấu</h3>
-                    <div style={{ display: 'grid', gap: 8 }}>
+                <VCT_SectionCard title="Thành tích thi đấu" icon={<VCT_Icons.Trophy size={18} />}>
+                    <div className="space-y-2">
                         {athlete.achievements.map((a, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 16px', borderRadius: 10, background: i % 2 === 0 ? '#fafafa' : '#fff', border: '1px solid #f3f4f6' }}>
-                                <div style={{ width: 48, height: 48, borderRadius: 12, background: a.result.includes('HCV') ? '#fef3c7' : a.result.includes('HCB') ? '#e5e7eb' : '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                            <div key={i} className="flex items-center gap-4 rounded-xl border border-vct-border bg-vct-bg p-3.5 transition-all hover:border-vct-accent/30">
+                                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl ${a.result.includes('HCV') ? 'bg-amber-50 dark:bg-amber-500/10' : a.result.includes('HCB') ? 'bg-slate-100 dark:bg-slate-500/10' : 'bg-orange-50 dark:bg-orange-500/10'
+                                    }`}>
                                     {a.result.includes('HCV') ? '🥇' : a.result.includes('HCB') ? '🥈' : '🥉'}
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{a.event}</div>
-                                    <div style={{ fontSize: 13, color: '#6b7280' }}>{a.result}</div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-sm font-semibold text-vct-text">{a.event}</div>
+                                    <div className="text-[13px] text-vct-text-muted">{a.result}</div>
                                 </div>
-                                <span style={{ fontSize: 14, fontWeight: 500, color: '#9ca3af' }}>{a.year}</span>
+                                <span className="text-sm font-medium text-vct-text-muted">{a.year}</span>
                             </div>
                         ))}
                     </div>
-                </div>
+                </VCT_SectionCard>
             )}
 
             {activeTab === 'belt' && (
-                <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', margin: '0 0 16px' }}>Lịch sử Đai</h3>
-                    <div style={{ position: 'relative', paddingLeft: 32 }}>
-                        {/* Timeline line */}
-                        <div style={{ position: 'absolute', left: 11, top: 8, bottom: 8, width: 2, background: '#e5e7eb' }} />
+                <VCT_SectionCard title="Lịch sử Đai" icon={<VCT_Icons.Award size={18} />}>
+                    <div className="relative pl-8">
+                        <div className="absolute bottom-2 left-[11px] top-2 w-0.5 bg-vct-border" />
                         {athlete.belt_history.map((b, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, position: 'relative' }}>
-                                <div style={{ position: 'absolute', left: -24, width: 24, height: 24, borderRadius: '50%', background: b.color, border: '3px solid #fff', boxShadow: '0 0 0 2px ' + b.color + '40', zIndex: 1 }} />
-                                <div style={{ flex: 1, padding: '12px 16px', borderRadius: 10, background: '#fafafa', border: '1px solid #f3f4f6' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{b.belt}</span>
-                                        <span style={{ fontSize: 13, color: '#9ca3af' }}>{b.date}</span>
+                            <div key={i} className="relative mb-5 flex items-center gap-4 last:mb-0">
+                                <div
+                                    className="absolute -left-5 z-10 h-6 w-6 rounded-full border-[3px] border-white shadow-sm dark:border-slate-800"
+                                    style={{ backgroundColor: b.color, boxShadow: `0 0 0 2px ${b.color}40` }}
+                                />
+                                <div className="flex-1 rounded-xl border border-vct-border bg-vct-bg p-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-sm font-semibold text-vct-text">{b.belt}</span>
+                                        <span className="text-[13px] text-vct-text-muted">{b.date}</span>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                </div>
+                </VCT_SectionCard>
             )}
 
             {activeTab === 'medical' && (
-                <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24, textAlign: 'center' }}>
-                    <Heart size={48} style={{ color: '#d1d5db', margin: '32px 0 16px' }} />
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>Hồ sơ Y tế</h3>
-                    <p style={{ fontSize: 14, color: '#9ca3af' }}>Chưa có hồ sơ y tế nào được ghi nhận</p>
-                </div>
+                <VCT_EmptyState
+                    icon={<VCT_Icons.Heart size={48} />}
+                    title="Hồ sơ Y tế"
+                    description="Chưa có hồ sơ y tế nào được ghi nhận"
+                />
             )}
 
             {activeTab === 'timeline' && (
-                <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', margin: '0 0 16px' }}>Dòng thời gian</h3>
-                    <div style={{ position: 'relative', paddingLeft: 32 }}>
-                        <div style={{ position: 'absolute', left: 11, top: 8, bottom: 8, width: 2, background: '#e5e7eb' }} />
-                        {[...athlete.achievements, ...athlete.belt_history.map(b => ({ year: parseInt(b.date.split('-')[0] || ''), event: 'Thăng đai', result: b.belt }))].sort((a, b) => b.year - a.year).map((item, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, position: 'relative' }}>
-                                <div style={{ position: 'absolute', left: -24, width: 20, height: 20, borderRadius: '50%', background: item.event === 'Thăng đai' ? '#f59e0b' : '#dc2626', border: '3px solid #fff', zIndex: 1 }} />
-                                <div style={{ flex: 1, padding: '12px 16px', borderRadius: 10, background: '#fafafa', border: '1px solid #f3f4f6' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <div>
-                                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{item.event}</div>
-                                            <div style={{ fontSize: 13, color: '#6b7280' }}>{item.result}</div>
+                <VCT_SectionCard title="Dòng thời gian" icon={<VCT_Icons.Clock size={18} />}>
+                    <div className="relative pl-8">
+                        <div className="absolute bottom-2 left-[11px] top-2 w-0.5 bg-vct-border" />
+                        {[...athlete.achievements, ...athlete.belt_history.map(b => ({ year: parseInt(b.date.split('-')[0] || ''), event: 'Thăng đai', result: b.belt }))]
+                            .sort((a, b) => b.year - a.year)
+                            .map((item, i) => (
+                                <div key={i} className="relative mb-4 flex items-center gap-4 last:mb-0">
+                                    <div className={`absolute -left-5 z-10 h-5 w-5 rounded-full border-[3px] border-white dark:border-slate-800 ${item.event === 'Thăng đai' ? 'bg-amber-500' : 'bg-red-600'
+                                        }`} />
+                                    <div className="flex-1 rounded-xl border border-vct-border bg-vct-bg p-3">
+                                        <div className="flex justify-between">
+                                            <div>
+                                                <div className="text-sm font-semibold text-vct-text">{item.event}</div>
+                                                <div className="text-[13px] text-vct-text-muted">{item.result}</div>
+                                            </div>
+                                            <span className="text-[13px] text-vct-text-muted">{item.year}</span>
                                         </div>
-                                        <span style={{ fontSize: 13, color: '#9ca3af' }}>{item.year}</span>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
-                </div>
+                </VCT_SectionCard>
             )}
-        </div>
+        </VCT_PageContainer>
     )
 }

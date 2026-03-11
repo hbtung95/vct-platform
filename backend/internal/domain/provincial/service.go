@@ -197,19 +197,45 @@ type ProvincialCoach struct {
 
 // ProvincialReferee represents a referee registered under a provincial federation.
 type ProvincialReferee struct {
-	ID          string       `json:"id"`
-	ProvinceID  string       `json:"province_id"`
-	FullName    string       `json:"full_name"`
-	Gender      string       `json:"gender"`
-	DateOfBirth string       `json:"date_of_birth"`
-	RefereeRank string       `json:"referee_rank"` // Cấp bậc trọng tài
-	CertNumber  string       `json:"cert_number,omitempty"`
-	Expertise   string       `json:"expertise"` // Chuyên môn: đối kháng / biểu diễn / cả hai
-	Phone       string       `json:"phone,omitempty"`
-	Email       string       `json:"email,omitempty"`
-	Status      MemberStatus `json:"status"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	ID              string       `json:"id"`
+	ProvinceID      string       `json:"province_id"`
+	FullName        string       `json:"full_name"`
+	Gender          string       `json:"gender"`
+	DateOfBirth     string       `json:"date_of_birth"`
+	RefereeRank     string       `json:"referee_rank"` // Cấp bậc trọng tài: quoc_gia, cap_1, cap_2, cap_3
+	CertNumber      string       `json:"cert_number,omitempty"`
+	Expertise       string       `json:"expertise"`        // Chuyên môn: doi_khang, quyen, ca_hai
+	ExperienceYears int          `json:"experience_years"` // Số năm kinh nghiệm
+	Phone           string       `json:"phone,omitempty"`
+	Email           string       `json:"email,omitempty"`
+	Address         string       `json:"address,omitempty"`
+	PhotoURL        string       `json:"photo_url,omitempty"`
+	Notes           string       `json:"notes,omitempty"`
+	Status          MemberStatus `json:"status"`
+	CreatedAt       time.Time    `json:"created_at"`
+	UpdatedAt       time.Time    `json:"updated_at"`
+}
+
+// RefereeCertificate represents a certification/license held by a referee.
+type RefereeCertificate struct {
+	ID         string `json:"id"`
+	RefereeID  string `json:"referee_id"`
+	Name       string `json:"name"`      // e.g. "Chứng chỉ trọng tài cấp II"
+	Issuer     string `json:"issuer"`    // Cơ quan cấp
+	CertType   string `json:"cert_type"` // referee_license, training, first_aid
+	IssueDate  string `json:"issue_date"`
+	ExpiryDate string `json:"expiry_date,omitempty"`
+	Status     string `json:"status"` // valid, expiring, expired
+}
+
+// RefereeStats provides aggregate statistics about referees in a province.
+type RefereeStats struct {
+	Total       int            `json:"total"`
+	Active      int            `json:"active"`
+	Pending     int            `json:"pending"`
+	Inactive    int            `json:"inactive"`
+	ByRank      map[string]int `json:"by_rank"`
+	ByExpertise map[string]int `json:"by_expertise"`
 }
 
 // CommitteeMember represents a member of the provincial executive committee (BCH).
@@ -373,19 +399,22 @@ type ClubFinanceSummary struct {
 type BeltLevel string
 
 const (
-	BeltNone   BeltLevel = "khong_dai" // Không đai (mới)
-	BeltYellow BeltLevel = "dai_vang"  // Đai vàng
-	BeltGreen  BeltLevel = "dai_xanh"  // Đai xanh
-	BeltBlue   BeltLevel = "dai_lam"   // Đai lam
-	BeltRed    BeltLevel = "dai_do"    // Đai đỏ
-	BeltBlack0 BeltLevel = "so_dang"   // Sơ đẳng
-	BeltBlack1 BeltLevel = "nhat_dang" // Nhất đẳng
-	BeltBlack2 BeltLevel = "nhi_dang"  // Nhị đẳng
-	BeltBlack3 BeltLevel = "tam_dang"  // Tam đẳng
-	BeltBlack4 BeltLevel = "tu_dang"   // Tứ đẳng
-	BeltBlack5 BeltLevel = "ngu_dang"  // Ngũ đẳng
-	BeltBlack6 BeltLevel = "luc_dang"  // Lục đẳng
-	BeltBlack7 BeltLevel = "that_dang" // Thất đẳng
+	BeltNone    BeltLevel = "khong_dai" // Không đai (mới)
+	BeltYellow  BeltLevel = "dai_vang"  // Đai vàng
+	BeltGreen   BeltLevel = "dai_xanh"  // Đai xanh
+	BeltBlue    BeltLevel = "dai_lam"   // Đai lam
+	BeltRed     BeltLevel = "dai_do"    // Đai đỏ
+	BeltBlack0  BeltLevel = "so_dang"   // Sơ đẳng
+	BeltBlack1  BeltLevel = "nhat_dang" // Nhất đẳng
+	BeltBlack2  BeltLevel = "nhi_dang"  // Nhị đẳng
+	BeltBlack3  BeltLevel = "tam_dang"  // Tam đẳng
+	BeltBlack4  BeltLevel = "tu_dang"   // Tứ đẳng
+	BeltBlack5  BeltLevel = "ngu_dang"  // Ngũ đẳng
+	BeltBlack6  BeltLevel = "luc_dang"  // Lục đẳng
+	BeltBlack7  BeltLevel = "that_dang" // Thất đẳng
+	BeltBlack8  BeltLevel = "bat_dang"  // Bát đẳng
+	BeltBlack9  BeltLevel = "cuu_dang"  // Cửu đẳng
+	BeltBlack10 BeltLevel = "thap_dang" // Thập đẳng
 )
 
 var BeltLabelMap = map[BeltLevel]string{
@@ -393,7 +422,8 @@ var BeltLabelMap = map[BeltLevel]string{
 	BeltBlue: "Đai lam", BeltRed: "Đai đỏ", BeltBlack0: "Sơ đẳng",
 	BeltBlack1: "Nhất đẳng", BeltBlack2: "Nhị đẳng", BeltBlack3: "Tam đẳng",
 	BeltBlack4: "Tứ đẳng", BeltBlack5: "Ngũ đẳng", BeltBlack6: "Lục đẳng",
-	BeltBlack7: "Thất đẳng",
+	BeltBlack7: "Thất đẳng", BeltBlack8: "Bát đẳng", BeltBlack9: "Cửu đẳng",
+	BeltBlack10: "Thập đẳng",
 }
 
 type AgeGroup string
@@ -448,8 +478,50 @@ type VoSinhStats struct {
 	ByAgeGroup   map[string]int `json:"by_age_group"`
 	ByBelt       map[string]int `json:"by_belt"`
 	ByStatus     map[string]int `json:"by_status"`
+	ByClub       map[string]int `json:"by_club"`
 	ActiveCount  int            `json:"active_count"`
 	PendingCount int            `json:"pending_count"`
+}
+
+// resolveAgeGroup calculates age group from date of birth string (YYYY-MM-DD).
+func resolveAgeGroup(dob string) AgeGroup {
+	if dob == "" {
+		return ""
+	}
+	t, err := time.Parse("2006-01-02", dob)
+	if err != nil {
+		return ""
+	}
+	age := int(time.Since(t).Hours() / 24 / 365)
+	switch {
+	case age <= 12:
+		return AgeGroupChild
+	case age <= 17:
+		return AgeGroupTeen
+	case age <= 35:
+		return AgeGroupYouth
+	default:
+		return AgeGroupSenior
+	}
+}
+
+// BeltHistory records a belt exam / promotion event.
+type BeltHistory struct {
+	ID           string    `json:"id"`
+	VoSinhID     string    `json:"vo_sinh_id"`
+	VoSinhName   string    `json:"vo_sinh_name"`
+	FromBelt     BeltLevel `json:"from_belt"`
+	FromLabel    string    `json:"from_label"`
+	ToBelt       BeltLevel `json:"to_belt"`
+	ToLabel      string    `json:"to_label"`
+	ExamDate     string    `json:"exam_date"`
+	Result       string    `json:"result"` // "pass" | "fail"
+	Score        float64   `json:"score,omitempty"`
+	ExaminerName string    `json:"examiner_name,omitempty"`
+	ExamLocation string    `json:"exam_location,omitempty"`
+	CertID       string    `json:"cert_id,omitempty"`
+	Notes        string    `json:"notes,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // ── Repository Interfaces ────────────────────────────────────
@@ -500,6 +572,12 @@ type RefereeRepository interface {
 	GetByID(ctx context.Context, id string) (*ProvincialReferee, error)
 	Create(ctx context.Context, r ProvincialReferee) (*ProvincialReferee, error)
 	Update(ctx context.Context, id string, patch map[string]interface{}) error
+	Delete(ctx context.Context, id string) error
+}
+
+type RefereeCertificateRepository interface {
+	ListByReferee(ctx context.Context, refereeID string) ([]RefereeCertificate, error)
+	Create(ctx context.Context, c RefereeCertificate) (*RefereeCertificate, error)
 }
 
 type CommitteeRepository interface {
@@ -549,6 +627,11 @@ type VoSinhRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+type BeltHistoryRepository interface {
+	ListByVoSinh(ctx context.Context, voSinhID string) ([]BeltHistory, error)
+	Create(ctx context.Context, h BeltHistory) (*BeltHistory, error)
+}
+
 // ── Service ──────────────────────────────────────────────────
 
 type Service struct {
@@ -558,12 +641,14 @@ type Service struct {
 	athletes        AthleteRepository
 	coaches         CoachRepository
 	referees        RefereeRepository
+	refCerts        RefereeCertificateRepository
 	committee       CommitteeRepository
 	transfers       TransferRepository
 	clubClasses     ClubClassRepository
 	clubMembers     ClubMemberRepository
 	clubFinance     ClubFinanceRepository
 	voSinh          VoSinhRepository
+	beltHistory     BeltHistoryRepository
 	idGen           func() string
 }
 
@@ -574,12 +659,14 @@ func NewService(
 	athletes AthleteRepository,
 	coaches CoachRepository,
 	referees RefereeRepository,
+	refCerts RefereeCertificateRepository,
 	committee CommitteeRepository,
 	transfers TransferRepository,
 	clubClasses ClubClassRepository,
 	clubMembers ClubMemberRepository,
 	clubFinance ClubFinanceRepository,
 	voSinh VoSinhRepository,
+	beltHistory BeltHistoryRepository,
 	idGen func() string,
 ) *Service {
 	return &Service{
@@ -589,12 +676,14 @@ func NewService(
 		athletes:        athletes,
 		coaches:         coaches,
 		referees:        referees,
+		refCerts:        refCerts,
 		committee:       committee,
 		transfers:       transfers,
 		clubClasses:     clubClasses,
 		clubMembers:     clubMembers,
 		clubFinance:     clubFinance,
 		voSinh:          voSinh,
+		beltHistory:     beltHistory,
 		idGen:           idGen,
 	}
 }
@@ -742,6 +831,25 @@ func (s *Service) ApproveAthlete(ctx context.Context, id string) error {
 	})
 }
 
+func (s *Service) UpdateAthlete(ctx context.Context, id string, patch map[string]interface{}) error {
+	patch["updated_at"] = time.Now().UTC()
+	return s.athletes.Update(ctx, id, patch)
+}
+
+func (s *Service) DeactivateAthlete(ctx context.Context, id string) error {
+	return s.athletes.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusInactive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
+func (s *Service) ReactivateAthlete(ctx context.Context, id string) error {
+	return s.athletes.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusActive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
 // ── Coach Operations ─────────────────────────────────────────
 
 func (s *Service) ListCoaches(ctx context.Context, provinceID string) ([]ProvincialCoach, error) {
@@ -764,6 +872,25 @@ func (s *Service) CreateCoach(ctx context.Context, c ProvincialCoach) (*Provinci
 	return s.coaches.Create(ctx, c)
 }
 
+func (s *Service) UpdateCoach(ctx context.Context, id string, patch map[string]interface{}) error {
+	patch["updated_at"] = time.Now().UTC()
+	return s.coaches.Update(ctx, id, patch)
+}
+
+func (s *Service) ApproveCoach(ctx context.Context, id string) error {
+	return s.coaches.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusActive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
+func (s *Service) DeactivateCoach(ctx context.Context, id string) error {
+	return s.coaches.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusInactive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
 // ── Referee Operations ───────────────────────────────────────
 
 func (s *Service) ListReferees(ctx context.Context, provinceID string) ([]ProvincialReferee, error) {
@@ -784,6 +911,70 @@ func (s *Service) CreateReferee(ctx context.Context, r ProvincialReferee) (*Prov
 	r.CreatedAt = now
 	r.UpdatedAt = now
 	return s.referees.Create(ctx, r)
+}
+
+func (s *Service) UpdateReferee(ctx context.Context, id string, patch map[string]interface{}) error {
+	patch["updated_at"] = time.Now().UTC()
+	return s.referees.Update(ctx, id, patch)
+}
+
+func (s *Service) DeleteReferee(ctx context.Context, id string) error {
+	return s.referees.Delete(ctx, id)
+}
+
+func (s *Service) ApproveReferee(ctx context.Context, id string) error {
+	return s.referees.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusActive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
+func (s *Service) RejectReferee(ctx context.Context, id string) error {
+	return s.referees.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusInactive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
+func (s *Service) GetRefereeStats(ctx context.Context, provinceID string) (*RefereeStats, error) {
+	referees, err := s.referees.List(ctx, provinceID)
+	if err != nil {
+		return nil, err
+	}
+	stats := &RefereeStats{
+		Total:       len(referees),
+		ByRank:      make(map[string]int),
+		ByExpertise: make(map[string]int),
+	}
+	for _, r := range referees {
+		switch r.Status {
+		case MemberStatusActive:
+			stats.Active++
+		case MemberStatusPending:
+			stats.Pending++
+		case MemberStatusInactive:
+			stats.Inactive++
+		}
+		if r.RefereeRank != "" {
+			stats.ByRank[r.RefereeRank]++
+		}
+		if r.Expertise != "" {
+			stats.ByExpertise[r.Expertise]++
+		}
+	}
+	return stats, nil
+}
+
+func (s *Service) ListRefereeCertificates(ctx context.Context, refereeID string) ([]RefereeCertificate, error) {
+	return s.refCerts.ListByReferee(ctx, refereeID)
+}
+
+func (s *Service) CreateRefereeCertificate(ctx context.Context, c RefereeCertificate) (*RefereeCertificate, error) {
+	if c.RefereeID == "" || c.Name == "" {
+		return nil, fmt.Errorf("referee_id và name là bắt buộc")
+	}
+	c.ID = s.idGen()
+	return s.refCerts.Create(ctx, c)
 }
 
 // ── Committee Operations ─────────────────────────────────────
@@ -976,6 +1167,10 @@ func (s *Service) CreateVoSinh(ctx context.Context, v VoSinh) (*VoSinh, error) {
 		v.BeltRank = BeltNone
 	}
 	v.BeltLabel = BeltLabelMap[v.BeltRank]
+	// Auto-calculate age group from DOB if not provided
+	if v.AgeGroup == "" && v.DateOfBirth != "" {
+		v.AgeGroup = resolveAgeGroup(v.DateOfBirth)
+	}
 	if v.AgeGroup != "" {
 		v.AgeGroupLabel = AgeGroupLabelMap[v.AgeGroup]
 	}
@@ -1003,12 +1198,16 @@ func (s *Service) GetVoSinhStats(ctx context.Context, provinceID string) (*VoSin
 		ByAgeGroup: make(map[string]int),
 		ByBelt:     make(map[string]int),
 		ByStatus:   make(map[string]int),
+		ByClub:     make(map[string]int),
 	}
 	for _, v := range list {
 		stats.ByGender[v.Gender]++
 		stats.ByAgeGroup[string(v.AgeGroup)]++
 		stats.ByBelt[string(v.BeltRank)]++
 		stats.ByStatus[string(v.Status)]++
+		if v.ClubName != "" {
+			stats.ByClub[v.ClubName]++
+		}
 		if v.Status == MemberStatusActive {
 			stats.ActiveCount++
 		}
@@ -1017,4 +1216,31 @@ func (s *Service) GetVoSinhStats(ctx context.Context, provinceID string) (*VoSin
 		}
 	}
 	return stats, nil
+}
+
+func (s *Service) UpdateVoSinh(ctx context.Context, id string, patch map[string]interface{}) error {
+	// Auto-resolve belt label if belt_rank changed
+	if br, ok := patch["belt_rank"].(string); ok {
+		patch["belt_label"] = BeltLabelMap[BeltLevel(br)]
+	}
+	patch["updated_at"] = time.Now().UTC()
+	return s.voSinh.Update(ctx, id, patch)
+}
+
+func (s *Service) DeactivateVoSinh(ctx context.Context, id string) error {
+	return s.voSinh.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusInactive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
+func (s *Service) ReactivateVoSinh(ctx context.Context, id string) error {
+	return s.voSinh.Update(ctx, id, map[string]interface{}{
+		"status":     string(MemberStatusActive),
+		"updated_at": time.Now().UTC(),
+	})
+}
+
+func (s *Service) ListBeltHistory(ctx context.Context, voSinhID string) ([]BeltHistory, error) {
+	return s.beltHistory.ListByVoSinh(ctx, voSinhID)
 }

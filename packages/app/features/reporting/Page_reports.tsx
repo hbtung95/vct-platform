@@ -121,7 +121,7 @@ export function Page_Reports() {
     return (
         <div className="min-h-screen" style={{ background: 'var(--vct-bg-base)' }}>
             {/* Header */}
-            <div className="px-6 py-5" style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}>
+            <div className="px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-800">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                     <div>
                         <VCT_Text variant="h1" style={{ color: '#fff', margin: 0 }}>📊 Báo cáo & Xuất dữ liệu</VCT_Text>

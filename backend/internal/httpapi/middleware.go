@@ -299,18 +299,65 @@ func requestContextFromRequest(r *http.Request) auth.RequestContext {
 }
 
 func extractClientIP(r *http.Request) string {
-	ip := strings.TrimSpace(r.Header.Get("X-Forwarded-For"))
-	if ip == "" {
-		host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-		if err == nil {
-			return host
+	remoteHost := strings.TrimSpace(r.RemoteAddr)
+	if h, _, err := net.SplitHostPort(remoteHost); err == nil {
+		remoteHost = h
+	}
+
+	// Only trust X-Forwarded-For from known private/loopback proxies
+	xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For"))
+	if xff != "" && isTrustedProxy(remoteHost) {
+		// Use the leftmost (client) IP from XFF
+		if strings.Contains(xff, ",") {
+			return strings.TrimSpace(strings.Split(xff, ",")[0])
 		}
-		return strings.TrimSpace(r.RemoteAddr)
+		return xff
 	}
-	if strings.Contains(ip, ",") {
-		return strings.TrimSpace(strings.Split(ip, ",")[0])
+
+	return remoteHost
+}
+
+// isTrustedProxy checks if the remote address is a private/loopback IP.
+func isTrustedProxy(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
 	}
-	return ip
+	// Loopback
+	if parsed.IsLoopback() {
+		return true
+	}
+	// Private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+	privateRanges := []struct{ start, end net.IP }{
+		{net.ParseIP("10.0.0.0"), net.ParseIP("10.255.255.255")},
+		{net.ParseIP("172.16.0.0"), net.ParseIP("172.31.255.255")},
+		{net.ParseIP("192.168.0.0"), net.ParseIP("192.168.255.255")},
+	}
+	ip4 := parsed.To4()
+	if ip4 == nil {
+		return false
+	}
+	for _, pr := range privateRanges {
+		s4 := pr.start.To4()
+		e4 := pr.end.To4()
+		if s4 != nil && e4 != nil &&
+			bytesGTE(ip4, s4) && bytesGTE(e4, ip4) {
+			return true
+		}
+	}
+	return false
+}
+
+func bytesGTE(a, b net.IP) bool {
+	for i := range a {
+		if a[i] < b[i] {
+			return false
+		}
+		if a[i] > b[i] {
+			return true
+		}
+	}
+	return true
 }
 
 // tokenFromRequest extracts the bearer token from the Authorization header.
@@ -333,4 +380,60 @@ type responseRecorder struct {
 func (r *responseRecorder) WriteHeader(statusCode int) {
 	r.statusCode = statusCode
 	r.ResponseWriter.WriteHeader(statusCode)
+}
+
+// ── Role Groups (reusable across handlers) ───────────────────
+
+// Federation management roles
+var federationReadRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleFederationPresident, auth.RoleFederationSecretary,
+	auth.RoleProvincialAdmin, auth.RoleBTC, auth.RoleTechnicalDirector,
+}
+var federationWriteRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleFederationPresident, auth.RoleFederationSecretary,
+}
+
+// BTC management roles
+var btcReadRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleBTC, auth.RoleRefereeManager,
+	auth.RoleDelegate, auth.RoleFederationPresident,
+}
+var btcWriteRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleBTC, auth.RoleRefereeManager,
+}
+
+// Club management roles
+var clubReadRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleClubLeader, auth.RoleClubViceLeader,
+	auth.RoleClubSecretary, auth.RoleClubAccountant,
+	auth.RoleProvincialAdmin, auth.RoleFederationPresident, auth.RoleCoach,
+}
+var clubWriteRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleClubLeader, auth.RoleClubViceLeader, auth.RoleClubSecretary,
+}
+
+// Provincial management roles
+var provincialReadRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleProvincialAdmin, auth.RoleProvincialPresident,
+	auth.RoleProvincialVicePresident, auth.RoleProvincialSecretary,
+	auth.RoleProvincialTechnicalHead, auth.RoleProvincialRefereeHead,
+	auth.RoleProvincialCommitteeMember, auth.RoleProvincialAccountant,
+	auth.RoleFederationPresident, auth.RoleFederationSecretary,
+}
+var provincialWriteRoles = []auth.UserRole{
+	auth.RoleAdmin, auth.RoleProvincialAdmin, auth.RoleProvincialPresident,
+	auth.RoleProvincialSecretary,
+}
+
+// ── Route-Specific Body Limits ──────────────────────────────
+
+func withBodyLimitSize(maxBytes int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Body != nil {
+				r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

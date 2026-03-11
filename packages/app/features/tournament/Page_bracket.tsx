@@ -142,31 +142,38 @@ const generateMockMatches = (numSlots: number): BracketMatch[] => {
 const CW = 220; // Card width
 const CH = 60;  // Card height
 
-const SVG_Card = ({ x, y, player, colorClass, isLoser, placeholderText, winnerId }: {
+const SVG_Card = ({ x, y, player, colorClass, isLoser, placeholderText, winnerId, isHovered, onHover }: {
     x: number; y: number; player: BracketPlayer | null; colorClass: 'red' | 'blue';
     isLoser?: any; placeholderText?: string; winnerId?: string | null;
+    isHovered?: boolean; onHover?: (hovered: boolean) => void;
 }) => {
     const isRed = colorClass === 'red';
-    const accentColor = isRed ? '#e11d48' : '#2563eb';
-    const bgTint = isRed ? '#fff1f2' : '#eff6ff';
+    const accentColor = isHovered ? (isRed ? '#f43f5e' : '#3b82f6') : (isRed ? '#e11d48' : '#2563eb');
+    const bgTint = isHovered ? (isRed ? '#ffe4e6' : '#dbeafe') : (isRed ? '#fff1f2' : '#eff6ff');
     const nameColor = '#0f172a'; // Dark slate/navy for names
     const unitColor = '#1e293b'; // Slightly lighter for unit
     const loserOpacity = isLoser ? 0.4 : 1;
     const SIDE_W = 24;
 
     return (
-        <g opacity={loserOpacity} transform={`translate(${x}, ${y})`}>
+        <g
+            opacity={loserOpacity}
+            transform={`translate(${x}, ${y})`}
+            onMouseEnter={() => onHover && onHover(true)}
+            onMouseLeave={() => onHover && onHover(false)}
+            style={{ cursor: player ? 'pointer' : 'default', transition: 'all 0.2s' }}
+        >
             {/* Card Shadow */}
-            <rect width={CW} height={CH} rx={10} fill="white" filter="url(#card-shadow)" />
+            <rect width={CW} height={CH} rx={10} fill="white" filter={isHovered ? "url(#card-shadow-hover)" : "url(#card-shadow)"} />
 
             {/* Main Background Tint */}
-            <rect width={CW} height={CH} rx={10} fill={bgTint} />
+            <rect width={CW} height={CH} rx={10} fill={bgTint} style={{ transition: 'fill 0.2s' }} />
 
             {/* Thick Side Accent Block */}
-            <path d={`M0 10 A10 10 0 0 1 10 0 H${SIDE_W} V${CH} H10 A10 10 0 0 1 0 ${CH - 10} Z`} fill={accentColor} />
+            <path d={`M0 10 A10 10 0 0 1 10 0 H${SIDE_W} V${CH} H10 A10 10 0 0 1 0 ${CH - 10} Z`} fill={accentColor} style={{ transition: 'fill 0.2s' }} />
 
             {/* Inner Content Border */}
-            <rect width={CW} height={CH} rx={10} fill="none" stroke={accentColor} strokeWidth={1.5} />
+            <rect width={CW} height={CH} rx={10} fill="none" stroke={accentColor} strokeWidth={isHovered ? 2 : 1.5} style={{ transition: 'stroke 0.2s, stroke-width 0.2s' }} />
 
             {player ? (
                 <>
@@ -213,15 +220,16 @@ const MatchNode = ({ x, y, matchNo, onClick, isDone }: {
     </g>
 );
 
-const ChampionBox = ({ x, y, winner }: { x: number; y: number; winner: BracketPlayer | null }) => (
+const ChampionBox = ({ x, y, winner, isHovered, onHover }: { x: number; y: number; winner: BracketPlayer | null; isHovered?: boolean; onHover?: (h: boolean) => void }) => (
     <g transform={`translate(${x}, ${y})`}>
         <rect width={CW} height={CH + 10} rx={18}
-            fill="rgba(245,158,11,0.05)" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray={winner ? '0' : '8,5'}
-            filter={winner ? 'url(#glow-gold)' : 'none'}
+            fill={isHovered ? "rgba(245,158,11,0.15)" : "rgba(245,158,11,0.05)"} stroke="#f59e0b" strokeWidth={isHovered ? 3.5 : 2.5} strokeDasharray={winner ? '0' : '8,5'}
+            filter={winner || isHovered ? 'url(#glow-gold)' : 'none'}
+            style={{ transition: 'all 0.2s' }}
         />
         <text x={CW / 2} y={-12} textAnchor="middle" fill="#f59e0b" fontSize={12} fontWeight={900} style={{ letterSpacing: '0.1em' }}>NHÀ VÔ ĐỊCH</text>
         {winner ? (
-            <SVG_Card x={0} y={5} player={winner} colorClass="red" winnerId={winner.id} />
+            <SVG_Card x={0} y={5} player={winner} colorClass="red" winnerId={winner.id} isHovered={isHovered} onHover={onHover} />
         ) : (
             <text x={CW / 2} y={(CH + 10) / 2 + 5} textAnchor="middle" fill="#d97706" fontSize={13} fontStyle="italic" opacity={0.6}>Đang chờ...</text>
         )}
@@ -231,11 +239,13 @@ const ChampionBox = ({ x, y, winner }: { x: number; y: number; winner: BracketPl
 // ════════════════════════════════════════════════════════════════
 // GENERIC BRACKET ENGINE — renders any schema from 2 to 128
 // ════════════════════════════════════════════════════════════════
-const GenericBracket = ({ numSlots, slots, matches, onNodeClick }: {
+const GenericBracket = ({ numSlots, slots, matches, onNodeClick, hoveredPlayerId, setHoveredPlayerId }: {
     numSlots: number;
     slots: (BracketPlayer | null)[];
     matches: BracketMatch[];
     onNodeClick: (m: BracketMatch) => void;
+    hoveredPlayerId?: string | null;
+    setHoveredPlayerId?: (id: string | null) => void;
 }) => {
     const numRounds = Math.log2(numSlots);
     const roundNames = getRoundNames(numRounds);
@@ -368,26 +378,30 @@ const GenericBracket = ({ numSlots, slots, matches, onNodeClick }: {
     const overlap = 2;
     const endX = (x: number) => x + CW;
 
-    const drawBranch = (startX: number, startY: number, nodeX: number, nodeY: number, isActive: boolean, color: 'red' | 'blue') => {
+    const drawBranch = (startX: number, startY: number, nodeX: number, nodeY: number, isActive: boolean, color: 'red' | 'blue', isHovered: boolean = false) => {
         const d = `M${startX - overlap} ${startY} H${nodeX} V${nodeY}`;
         const activeColor = color === 'red' ? '#ef4444' : '#3b82f6';
         const glowId = color === 'red' ? 'glow-red' : 'glow-blue';
+        const strokeW = isHovered ? 4 : (isActive ? 3 : 2);
+        const strokeC = isHovered ? activeColor : (isActive ? activeColor : '#e2e8f0');
         return (
             <>
-                <path d={d} fill="none" stroke="#e2e8f0" strokeWidth={2} />
-                {isActive && <path d={d} fill="none" stroke={activeColor} strokeWidth={3} filter={`url(#${glowId})`} strokeLinecap="round" strokeLinejoin="round" />}
+                <path d={d} fill="none" stroke={strokeC} strokeWidth={strokeW} style={{ transition: 'stroke 0.2s, stroke-width 0.2s' }} />
+                {(isActive || isHovered) && <path d={d} fill="none" stroke={activeColor} strokeWidth={strokeW} filter={`url(#${glowId})`} strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke-width 0.2s' }} />}
             </>
         );
     };
 
-    const drawStraight = (startX: number, startY: number, eX: number, isActive: boolean, color: 'red' | 'blue') => {
+    const drawStraight = (startX: number, startY: number, eX: number, isActive: boolean, color: 'red' | 'blue', isHovered: boolean = false) => {
         const d = `M${startX} ${startY} H${eX + overlap}`;
         const activeColor = color === 'red' ? '#ef4444' : '#3b82f6';
         const glowId = color === 'red' ? 'glow-red' : 'glow-blue';
+        const strokeW = isHovered ? 4 : (isActive ? 3 : 2);
+        const strokeC = isHovered ? activeColor : (isActive ? activeColor : '#e2e8f0');
         return (
             <>
-                <path d={d} fill="none" stroke="#e2e8f0" strokeWidth={2} />
-                {isActive && <path d={d} fill="none" stroke={activeColor} strokeWidth={3} filter={`url(#${glowId})`} strokeLinecap="round" />}
+                <path d={d} fill="none" stroke={strokeC} strokeWidth={strokeW} style={{ transition: 'stroke 0.2s, stroke-width 0.2s' }} />
+                {(isActive || isHovered) && <path d={d} fill="none" stroke={activeColor} strokeWidth={strokeW} filter={`url(#${glowId})`} strokeLinecap="round" style={{ transition: 'stroke-width 0.2s' }} />}
             </>
         );
     };
@@ -426,6 +440,9 @@ const GenericBracket = ({ numSlots, slots, matches, onNodeClick }: {
                 {/* Filters */}
                 <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="120%">
                     <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.08" />
+                </filter>
+                <filter id="card-shadow-hover" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#000" floodOpacity="0.15" />
                 </filter>
                 <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="4" result="blur" />
@@ -467,20 +484,27 @@ const GenericBracket = ({ numSlots, slots, matches, onNodeClick }: {
                     const yRed = rIdx === 0 ? coords.r : coords.prevNode1 - CH / 2;
                     const yBlue = rIdx === 0 ? coords.b : coords.prevNode2 - CH / 2;
 
+                    const isRedHovered = hoveredPlayerId && item.pRed?.id === hoveredPlayerId;
+                    const isBlueHovered = hoveredPlayerId && item.pBlue?.id === hoveredPlayerId;
+
                     return (
                         <g key={`r${rIdx}-m${i}`}>
                             {/* Branch lines */}
-                            {drawBranch(endX(x), yRed + CH / 2, nx, coords.node, item.redWin, 'red')}
-                            {drawBranch(endX(x), yBlue + CH / 2, nx, coords.node, item.blueWin, 'blue')}
-                            {drawStraight(nx, coords.node, nextX, !!item.w, item.redWin ? 'red' : 'blue')}
+                            {drawBranch(endX(x), yRed + CH / 2, nx, coords.node, item.redWin, 'red', !!isRedHovered)}
+                            {drawBranch(endX(x), yBlue + CH / 2, nx, coords.node, item.blueWin, 'blue', !!isBlueHovered)}
+                            {drawStraight(nx, coords.node, nextX, !!item.w, item.redWin ? 'red' : 'blue', !!(item.w && ((item.redWin && isRedHovered) || (item.blueWin && isBlueHovered))))}
 
                             {/* Player cards */}
                             <SVG_Card x={x} y={yRed} player={item.pRed}
                                 placeholderText={item.phRed} winnerId={item.w} colorClass="red"
-                                isLoser={item.w && !item.redWin} />
+                                isLoser={item.w && !item.redWin}
+                                isHovered={!!isRedHovered} onHover={(h) => setHoveredPlayerId && setHoveredPlayerId(h && item.pRed ? item.pRed.id : null)}
+                            />
                             <SVG_Card x={x} y={yBlue} player={item.pBlue}
                                 placeholderText={item.phBlue} winnerId={item.w} colorClass="blue"
-                                isLoser={item.w && !item.blueWin} />
+                                isLoser={item.w && !item.blueWin}
+                                isHovered={!!isBlueHovered} onHover={(h) => setHoveredPlayerId && setHoveredPlayerId(h && item.pBlue ? item.pBlue.id : null)}
+                            />
 
                             {/* Match node */}
                             {item.m.match_no && (
@@ -493,7 +517,9 @@ const GenericBracket = ({ numSlots, slots, matches, onNodeClick }: {
             )}
 
             {/* Champion */}
-            <ChampionBox x={X_CHAMP} y={champY} winner={champPlayer} />
+            <ChampionBox x={X_CHAMP} y={champY} winner={champPlayer}
+                isHovered={!!(hoveredPlayerId && champPlayer?.id === hoveredPlayerId)}
+                onHover={(h) => setHoveredPlayerId && setHoveredPlayerId(h && champPlayer ? champPlayer.id : null)} />
         </svg>
     );
 };
@@ -520,6 +546,7 @@ export const Page_bracket = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [selectedMatch, setSelectedMatch] = useState<BracketMatch | null>(null);
+    const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null);
     const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
     const containerRef = useRef<HTMLDivElement>(null);
     const showToast = useCallback((msg: string, type = 'success') => {
@@ -704,6 +731,8 @@ export const Page_bracket = () => {
                         slots={slots}
                         matches={matches}
                         onNodeClick={handleNodeClick}
+                        hoveredPlayerId={hoveredPlayerId}
+                        setHoveredPlayerId={setHoveredPlayerId}
                     />
                 </div>
             </div>

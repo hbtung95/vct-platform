@@ -171,42 +171,34 @@ const CLUB_SIDEBAR: WorkspaceSidebarConfig = {
     groups: [
         {
             id: 'overview', label: 'ws.club.overview', items: [
-                { id: 'club-dashboard', path: '/', label: 'ws.club.dashboard', icon: 'Dashboard' },
+                { id: 'club-dashboard', path: '/club', label: 'ws.club.dashboard', icon: 'Dashboard' },
             ],
         },
         {
             id: 'members', label: 'ws.club.members', items: [
-                { id: 'club-students', path: '/people', label: 'ws.club.students', icon: 'Users' },
-                { id: 'club-coaches', path: '/coaches', label: 'ws.club.coaches', icon: 'UserCheck' },
+                { id: 'club-members', path: '/club/members', label: 'ws.club.students', icon: 'Users' },
             ],
         },
         {
             id: 'training', label: 'ws.club.training', items: [
-                { id: 'club-curriculum', path: '/training/curriculum', label: 'ws.club.curriculum', icon: 'Book' },
-                { id: 'club-techniques', path: '/training/techniques', label: 'ws.club.techniques', icon: 'Video' },
-                { id: 'club-plans', path: '/training/plans', label: 'ws.club.plans', icon: 'Calendar' },
-                { id: 'club-classes', path: '/clubs/classes', label: 'ws.club.classes', icon: 'Clock' },
-                { id: 'club-attendance', path: '/training/attendance', label: 'ws.club.attendance', icon: 'CheckSquare' },
-                { id: 'club-beltexams', path: '/training/belt-exams', label: 'ws.club.beltExams', icon: 'Award' },
-                { id: 'club-elearning', path: '/training/elearning', label: 'ws.club.elearning', icon: 'Laptop' },
-            ],
-        },
-        {
-            id: 'facilities', label: 'ws.club.facilities', items: [
-                { id: 'club-facilities', path: '/clubs/facilities', label: 'ws.club.facilityList', icon: 'Home' },
+                { id: 'club-classes', path: '/club/classes', label: 'ws.club.classes', icon: 'Book' },
+                { id: 'club-training', path: '/club/training', label: 'ws.club.curriculum', icon: 'Award' },
+                { id: 'club-certifications', path: '/club/certifications', label: 'ws.club.beltExams', icon: 'FileText' },
             ],
         },
         {
             id: 'finance', label: 'ws.club.finance', items: [
-                { id: 'club-finance', path: '/finance', label: 'ws.club.financeOverview', icon: 'DollarSign' },
-                { id: 'club-invoices', path: '/finance/invoices', label: 'ws.club.invoices', icon: 'FileText' },
-                { id: 'club-fees', path: '/finance/fees', label: 'ws.club.fees', icon: 'CreditCard' },
+                { id: 'club-finance', path: '/club/finance', label: 'ws.club.financeOverview', icon: 'DollarSign' },
             ],
         },
         {
             id: 'tournaments', label: 'ws.club.tournaments', items: [
-                { id: 'club-tournaments', path: '/giai-dau', label: 'ws.club.tournamentList', icon: 'Trophy' },
-                { id: 'club-registration', path: '/registration', label: 'ws.club.registration', icon: 'ClipboardCheck' },
+                { id: 'club-tournaments', path: '/club/tournaments', label: 'ws.club.tournamentList', icon: 'Trophy' },
+            ],
+        },
+        {
+            id: 'settings', label: 'route.club-settings.label', items: [
+                { id: 'club-settings', path: '/club/settings', label: 'route.club-settings.label', icon: 'Settings' },
             ],
         },
     ],
@@ -247,25 +239,30 @@ const ATHLETE_SIDEBAR: WorkspaceSidebarConfig = {
     groups: [
         {
             id: 'overview', label: 'ws.ath.overview', items: [
-                { id: 'ath-profile', path: '/athlete-portal', label: 'ws.ath.profile', icon: 'User' },
+                { id: 'ath-home', path: '/athlete-portal', label: 'ws.ath.home', icon: 'Dashboard' },
+            ],
+        },
+        {
+            id: 'profile_belt', label: 'ws.ath.profileBelt', items: [
+                { id: 'ath-profile', path: '/athlete-portal/profile', label: 'ws.ath.profile', icon: 'User' },
             ],
         },
         {
             id: 'performance', label: 'ws.ath.performance', items: [
-                { id: 'ath-rankings', path: '/rankings', label: 'ws.ath.rankings', icon: 'BarChart2' },
-                { id: 'ath-results', path: '/results', label: 'ws.ath.results', icon: 'Award' },
+                { id: 'ath-rankings', path: '/athlete-portal/rankings', label: 'ws.ath.rankings', icon: 'BarChart2' },
+                { id: 'ath-results', path: '/athlete-portal/results', label: 'ws.ath.results', icon: 'Award' },
             ],
         },
         {
             id: 'activity', label: 'ws.ath.activity', items: [
-                { id: 'ath-tournaments', path: '/giai-dau', label: 'ws.ath.tournaments', icon: 'Trophy' },
-                { id: 'ath-training', path: '/training/plans', label: 'ws.ath.training', icon: 'Calendar' },
-                { id: 'ath-elearning', path: '/training/elearning', label: 'ws.ath.elearning', icon: 'Laptop' },
+                { id: 'ath-tournaments', path: '/athlete-portal/tournaments', label: 'ws.ath.tournaments', icon: 'Trophy' },
+                { id: 'ath-clubs', path: '/athlete-portal/clubs', label: 'ws.ath.clubs', icon: 'Building' },
+                { id: 'ath-training', path: '/athlete-portal/training', label: 'ws.ath.training', icon: 'Calendar' },
             ],
         },
         {
-            id: 'community', label: 'ws.ath.community', items: [
-                { id: 'ath-community', path: '/community', label: 'ws.ath.news', icon: 'Heart' },
+            id: 'learning', label: 'ws.ath.learning', items: [
+                { id: 'ath-elearning', path: '/athlete-portal/elearning', label: 'ws.ath.elearning', icon: 'Laptop' },
             ],
         },
     ],

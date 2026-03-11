@@ -3,9 +3,12 @@ package btc
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 	"time"
+
+	"vct-platform/backend/internal/domain"
 )
 
 // ═══════════════════════════════════════════════════════════════
@@ -15,7 +18,10 @@ import (
 type Store interface {
 	// BTC Members
 	ListMembers(ctx context.Context, giaiID string) ([]BTCMember, error)
+	GetMember(ctx context.Context, id string) (*BTCMember, error)
 	CreateMember(ctx context.Context, m *BTCMember) error
+	UpdateMember(ctx context.Context, m *BTCMember) error
+	DeleteMember(ctx context.Context, id string) error
 
 	// Weigh-In
 	ListWeighIns(ctx context.Context, giaiID string) ([]WeighInRecord, error)
@@ -37,6 +43,7 @@ type Store interface {
 	// Finance
 	ListFinance(ctx context.Context, giaiID string) ([]FinanceEntry, error)
 	CreateFinance(ctx context.Context, f *FinanceEntry) error
+	UpdateFinance(ctx context.Context, f *FinanceEntry) error
 
 	// Technical Meeting
 	ListMeetings(ctx context.Context, giaiID string) ([]TechnicalMeeting, error)
@@ -64,6 +71,10 @@ func (s *Service) ListMembers(ctx context.Context, giaiID string) ([]BTCMember, 
 	return s.store.ListMembers(ctx, giaiID)
 }
 
+func (s *Service) GetMember(ctx context.Context, id string) (*BTCMember, error) {
+	return s.store.GetMember(ctx, id)
+}
+
 func (s *Service) CreateMember(ctx context.Context, m *BTCMember) error {
 	if m.Ten == "" {
 		return fmt.Errorf("tên thành viên BTC là bắt buộc")
@@ -76,6 +87,17 @@ func (s *Service) CreateMember(ctx context.Context, m *BTCMember) error {
 	return s.store.CreateMember(ctx, m)
 }
 
+func (s *Service) UpdateMember(ctx context.Context, m *BTCMember) error {
+	if m.ID == "" {
+		return fmt.Errorf("ID thành viên là bắt buộc")
+	}
+	return s.store.UpdateMember(ctx, m)
+}
+
+func (s *Service) DeleteMember(ctx context.Context, id string) error {
+	return s.store.DeleteMember(ctx, id)
+}
+
 // ── Weigh-In ────────────────────────────────────────────────
 
 func (s *Service) ListWeighIns(ctx context.Context, giaiID string) ([]WeighInRecord, error) {
@@ -86,16 +108,20 @@ func (s *Service) CreateWeighIn(ctx context.Context, w *WeighInRecord) error {
 	if w.VdvID == "" || w.HangCan == "" {
 		return fmt.Errorf("VĐV và hạng cân là bắt buộc")
 	}
+	if w.CanNang <= 0 {
+		return fmt.Errorf("cân nặng phải lớn hơn 0")
+	}
 	w.ID = s.idGen()
 	w.CreatedAt = time.Now().UTC()
 	w.ThoiGian = time.Now().UTC()
 
-	// Validate weight
-	diff := w.CanNang - w.GioiHan
+	// BUG FIX: Use math.Abs to catch both overweight AND underweight
+	diff := math.Abs(w.CanNang - w.GioiHan)
 	if diff <= w.SaiSo {
 		w.KetQua = "dat"
 	} else {
 		w.KetQua = "khong_dat"
+		w.GhiChu = fmt.Sprintf("Lệch %.1fkg so với giới hạn %.1fkg", diff, w.GioiHan)
 	}
 	return s.store.CreateWeighIn(ctx, w)
 }
@@ -107,14 +133,14 @@ func (s *Service) ListDraws(ctx context.Context, giaiID string) ([]DrawResult, e
 }
 
 type DrawInput struct {
-	GiaiID     string
-	NoiDungID  string
-	NoiDungTen string
-	LoaiND     string
-	HangCan    string
-	LuaTuoi    string
-	Athletes   []DrawBranch
-	CreatedBy  string
+	GiaiID     string       `json:"giai_id"`
+	NoiDungID  string       `json:"noi_dung_id"`
+	NoiDungTen string       `json:"noi_dung_ten"`
+	LoaiND     string       `json:"loai_nd"`
+	HangCan    string       `json:"hang_can"`
+	LuaTuoi    string       `json:"lua_tuoi"`
+	Athletes   []DrawBranch `json:"athletes"`
+	CreatedBy  string       `json:"created_by"`
 }
 
 func (s *Service) GenerateDraw(ctx context.Context, input DrawInput) (*DrawResult, error) {
@@ -223,9 +249,44 @@ func (s *Service) CreateFinance(ctx context.Context, f *FinanceEntry) error {
 	if f.SoTien <= 0 {
 		return fmt.Errorf("số tiền phải lớn hơn 0")
 	}
+	if f.Loai != "thu" && f.Loai != "chi" {
+		return fmt.Errorf("loại phải là 'thu' hoặc 'chi'")
+	}
 	f.ID = s.idGen()
 	f.CreatedAt = time.Now().UTC()
 	return s.store.CreateFinance(ctx, f)
+}
+
+func (s *Service) UpdateFinance(ctx context.Context, f *FinanceEntry) error {
+	if f.ID == "" {
+		return fmt.Errorf("ID bút toán là bắt buộc")
+	}
+	return s.store.UpdateFinance(ctx, f)
+}
+
+// FinanceSummary returns aggregated finance info for a tournament.
+type FinanceSummaryResult struct {
+	TongThu float64 `json:"tong_thu"`
+	TongChi float64 `json:"tong_chi"`
+	SoDu    float64 `json:"so_du"`
+	SoBut   int     `json:"so_but"`
+}
+
+func (s *Service) FinanceSummary(ctx context.Context, giaiID string) (*FinanceSummaryResult, error) {
+	entries, err := s.store.ListFinance(ctx, giaiID)
+	if err != nil {
+		return nil, err
+	}
+	result := &FinanceSummaryResult{SoBut: len(entries)}
+	for _, f := range entries {
+		if f.Loai == "thu" {
+			result.TongThu += f.SoTien
+		} else {
+			result.TongChi += f.SoTien
+		}
+	}
+	result.SoDu = result.TongThu - result.TongChi
+	return result, nil
 }
 
 // ── Technical Meeting ───────────────────────────────────────
@@ -267,25 +328,8 @@ func (s *Service) UpdateProtestStatus(ctx context.Context, id, newStatus, nguoiX
 		return fmt.Errorf("không tìm thấy khiếu nại: %w", err)
 	}
 
-	// Validate transition against allowed transitions
-	allowed := map[string][]string{
-		"moi":        {"tiep_nhan"},
-		"tiep_nhan":  {"xem_xet"},
-		"xem_xet":    {"chap_nhan", "bac_bo"},
-		"chap_nhan":  {"hoan_tat"},
-		"bac_bo":     {"khang_nghi", "hoan_tat"},
-		"khang_nghi": {"xem_xet", "hoan_tat"},
-		"hoan_tat":   {},
-	}
-
-	valid := false
-	for _, s := range allowed[p.TrangThai] {
-		if s == newStatus {
-			valid = true
-			break
-		}
-	}
-	if !valid {
+	// FIX: Use global ProtestTransitions from state_machine.go instead of duplicate local map
+	if !domain.ProtestTransitions.CanTransition(p.TrangThai, newStatus) {
 		return fmt.Errorf("không thể chuyển từ '%s' sang '%s'", p.TrangThai, newStatus)
 	}
 
@@ -303,8 +347,11 @@ func (s *Service) UpdateProtestStatus(ctx context.Context, id, newStatus, nguoiX
 func (s *Service) GetStats(ctx context.Context, giaiID string) (*BTCStats, error) {
 	stats := &BTCStats{}
 
-	// Weigh-in stats
-	weighIns, _ := s.store.ListWeighIns(ctx, giaiID)
+	// FIX: Propagate errors instead of silently swallowing them
+	weighIns, err := s.store.ListWeighIns(ctx, giaiID)
+	if err != nil {
+		return nil, fmt.Errorf("lỗi tải weigh-in: %w", err)
+	}
 	for _, w := range weighIns {
 		if w.KetQua == "dat" {
 			stats.DaCanKy++
@@ -312,26 +359,42 @@ func (s *Service) GetStats(ctx context.Context, giaiID string) (*BTCStats, error
 			stats.ChuaCanKy++
 		}
 	}
-	total := stats.DaCanKy + stats.ChuaCanKy
-	if total > 0 {
-		stats.TyLeDatCan = float64(stats.DaCanKy) / float64(total) * 100
+	totalCan := stats.DaCanKy + stats.ChuaCanKy
+	if totalCan > 0 {
+		stats.TyLeDatCan = float64(stats.DaCanKy) / float64(totalCan) * 100
 	}
+	stats.TongVDV = len(weighIns)
 
 	// Referee stats
-	assignments, _ := s.store.ListAssignments(ctx, giaiID)
+	assignments, err := s.store.ListAssignments(ctx, giaiID)
+	if err != nil {
+		return nil, fmt.Errorf("lỗi tải assignments: %w", err)
+	}
 	stats.DaPhanCong = len(assignments)
+	// Count unique referees
+	uniqTT := map[string]bool{}
+	for _, a := range assignments {
+		uniqTT[a.TrongTaiID] = true
+	}
+	stats.TongTrongTai = len(uniqTT)
 
 	// Protest stats
-	protests, _ := s.store.ListProtests(ctx, giaiID)
+	protests, err := s.store.ListProtests(ctx, giaiID)
+	if err != nil {
+		return nil, fmt.Errorf("lỗi tải protests: %w", err)
+	}
 	stats.TongKhieuNai = len(protests)
 	for _, p := range protests {
-		if p.TrangThai == "moi" || p.TrangThai == "tiep_nhan" {
+		if p.TrangThai == "moi" || p.TrangThai == "tiep_nhan" || p.TrangThai == "xem_xet" {
 			stats.KNChoXuLy++
 		}
 	}
 
 	// Finance stats
-	finances, _ := s.store.ListFinance(ctx, giaiID)
+	finances, err := s.store.ListFinance(ctx, giaiID)
+	if err != nil {
+		return nil, fmt.Errorf("lỗi tải finance: %w", err)
+	}
 	for _, f := range finances {
 		if f.Loai == "thu" {
 			stats.TongThu += f.SoTien
@@ -341,10 +404,14 @@ func (s *Service) GetStats(ctx context.Context, giaiID string) (*BTCStats, error
 	}
 
 	// Results stats
-	results, _ := s.store.ListTeamResults(ctx, giaiID)
+	results, err := s.store.ListTeamResults(ctx, giaiID)
+	if err != nil {
+		return nil, fmt.Errorf("lỗi tải results: %w", err)
+	}
 	stats.TongDoan = len(results)
 	for _, r := range results {
 		stats.TongHuyChuong += r.TongHC
+		stats.TongTran += r.HCV + r.HCB + r.HCD // approximate match count
 	}
 
 	return stats, nil

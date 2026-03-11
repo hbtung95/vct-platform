@@ -126,7 +126,7 @@ export const Page_provincial_dashboard = () => {
             {stats && (stats.pending_clubs > 0 || stats.pending_transfers > 0) && (
                 <div className="mb-6 p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
                     <VCT_Stack direction="row" gap={24} align="center">
-                        <VCT_Icons.AlertTriangle size={20} color="#f59e0b" />
+                        <VCT_Icons.Alert size={20} color="#f59e0b" />
                         <VCT_Stack gap={4}>
                             <span className="text-sm font-semibold text-[var(--vct-text-primary)]">
                                 Cần xử lý

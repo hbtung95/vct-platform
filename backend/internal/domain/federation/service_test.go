@@ -21,6 +21,7 @@ func setup() *federation.Service {
 		adapter.NewMemProvinceRepo(),
 		adapter.NewMemUnitRepo(),
 		adapter.NewMemPersonnelRepo(),
+		federation.NewMemoryMasterDataStore(),
 		idGen,
 	)
 }

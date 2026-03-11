@@ -10,6 +10,16 @@ import "fmt"
 // TransitionMap maps each status to its valid next statuses.
 type TransitionMap map[string][]string
 
+// CanTransition checks if the transition from `from` to `to` is valid.
+func (t TransitionMap) CanTransition(from, to string) bool {
+	for _, s := range t[from] {
+		if s == to {
+			return true
+		}
+	}
+	return false
+}
+
 // ── Tournament Lifecycle ─────────────────────────────────────
 
 var TournamentTransitions = TransitionMap{
@@ -137,6 +147,28 @@ var MatchTransitions = TransitionMap{
 	"confirmed":   {"published"},
 	"published":   {},
 	"cancelled":   {},
+}
+
+// ── Protest (Khiếu nại BTC) ─────────────────────────────────
+
+var ProtestTransitions = TransitionMap{
+	"moi":        {"tiep_nhan"},
+	"tiep_nhan":  {"xem_xet"},
+	"xem_xet":    {"chap_nhan", "bac_bo"},
+	"chap_nhan":  {"hoan_tat"},
+	"bac_bo":     {"khang_nghi", "hoan_tat"},
+	"khang_nghi": {"xem_xet", "hoan_tat"},
+	"hoan_tat":   {},
+}
+
+// ── Weigh-In (Cân ký BTC) ───────────────────────────────────
+
+var WeighInTransitions = TransitionMap{
+	"cho_can":   {"dang_can"},
+	"dang_can":  {"dat", "khong_dat"},
+	"dat":       {},
+	"khong_dat": {"can_lai"},
+	"can_lai":   {"dang_can"},
 }
 
 // ── Sponsorship ─────────────────────────────────────────────
