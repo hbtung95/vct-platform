@@ -2,6 +2,8 @@
 // Covers: curriculum, techniques, training plans, attendance,
 // belt examinations, and training sessions.
 
+import type { TrainingSession } from './athlete'
+
 export interface Curriculum {
     id: string
     name: string
@@ -64,19 +66,7 @@ export interface TrainingPlan {
     created_at: string
 }
 
-export interface TrainingSession {
-    id: string
-    plan_id: string
-    date: string
-    start_time: string
-    end_time: string
-    location?: string
-    coach_id: string
-    techniques: string[] // technique IDs
-    notes?: string
-    status: 'scheduled' | 'completed' | 'cancelled'
-    attendance?: AttendanceRecord[]
-}
+
 
 export interface AttendanceRecord {
     id: string
