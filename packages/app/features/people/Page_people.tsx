@@ -8,6 +8,7 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_SectionCard, VCT_StatRow } from '../components/vct-ui'
 import { VCT_Icons } from '../components/vct-icons'
 import type { StatItem } from '../components/VCT_StatRow'
+import { useAthletes, useCoaches, useReferees } from '../hooks/usePeopleAPI'
 
 // ════════════════════════════════════════
 // MOCK DATA
@@ -48,21 +49,53 @@ export const Page_people = () => {
     const [search, setSearch] = useState('')
     const [roleFilter, setRoleFilter] = useState('all')
 
+    // ── Real API data ──
+    const { data: apiAthletes } = useAthletes()
+    const { data: apiCoaches } = useCoaches()
+    const { data: apiReferees } = useReferees()
+
+    const people = useMemo(() => {
+        const combined: Person[] = []
+        if (apiAthletes?.length) {
+            apiAthletes.forEach(a => combined.push({
+                id: a.id, name: a.name || a.full_name || '',
+                role: 'athlete', org: a.club_name || '', belt: a.belt_rank,
+                status: (a.status || 'active') as any,
+                phone: a.phone || '', email: a.email || '',
+            }))
+        }
+        if (apiCoaches?.length) {
+            apiCoaches.forEach(c => combined.push({
+                id: c.id, name: c.name || c.full_name || '',
+                role: 'coach', org: c.club_name || '', belt: c.belt_rank,
+                status: 'active', phone: c.phone || '', email: c.email || '',
+            }))
+        }
+        if (apiReferees?.length) {
+            apiReferees.forEach(r => combined.push({
+                id: r.id, name: r.name || r.full_name || '',
+                role: 'referee', org: r.federation || '',
+                status: 'active', phone: r.phone || '', email: r.email || '',
+            }))
+        }
+        return combined.length > 0 ? combined : MOCK_PEOPLE
+    }, [apiAthletes, apiCoaches, apiReferees])
+
     const filtered = useMemo(() => {
-        let data = MOCK_PEOPLE
+        let data = people
         if (roleFilter !== 'all') data = data.filter(p => p.role === roleFilter)
         if (search) {
             const q = search.toLowerCase()
             data = data.filter(p => p.name.toLowerCase().includes(q) || p.org.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
         }
         return data
-    }, [search, roleFilter])
+    }, [search, roleFilter, people])
 
     const kpis: StatItem[] = [
-        { label: 'Tổng VĐV', value: MOCK_PEOPLE.filter(p => p.role === 'athlete').length, icon: <VCT_Icons.Users size={18} />, color: '#0ea5e9' },
-        { label: 'HLV', value: MOCK_PEOPLE.filter(p => p.role === 'coach').length, icon: <VCT_Icons.UserCheck size={18} />, color: '#10b981' },
-        { label: 'Trọng tài', value: MOCK_PEOPLE.filter(p => p.role === 'referee').length, icon: <VCT_Icons.Shield size={18} />, color: '#f59e0b' },
-        { label: 'Hồ sơ chờ duyệt', value: MOCK_PEOPLE.filter(p => p.status === 'pending').length, icon: <VCT_Icons.Clock size={18} />, color: '#ef4444' },
+        { label: 'Tổng VĐV', value: people.filter(p => p.role === 'athlete').length, icon: <VCT_Icons.Users size={18} />, color: '#0ea5e9' },
+        { label: 'HLV', value: people.filter(p => p.role === 'coach').length, icon: <VCT_Icons.UserCheck size={18} />, color: '#10b981' },
+        { label: 'Trọng tài', value: people.filter(p => p.role === 'referee').length, icon: <VCT_Icons.Shield size={18} />, color: '#f59e0b' },
+        { label: 'Hồ sơ chờ duyệt', value: people.filter(p => p.status === 'pending').length, icon: <VCT_Icons.Clock size={18} />, color: '#ef4444' },
     ]
 
     return (

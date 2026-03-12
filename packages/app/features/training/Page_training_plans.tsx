@@ -9,6 +9,7 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useTrainingPlans } from '../hooks/useTrainingAPI'
 
 // ════════════════════════════════════════
 // TYPES & MOCK DATA
@@ -49,8 +50,24 @@ export const Page_training_plans = () => {
     const [clubFilter, setClubFilter] = useState('all')
     const [statusFilter, setStatusFilter] = useState('all')
 
+    // ── Real API data ──
+    const { data: apiPlans, isLoading } = useTrainingPlans()
+
+    const sessions = useMemo(() => {
+        if (apiPlans && apiPlans.length > 0) {
+            return apiPlans.flatMap(p => (p.schedule || []).map((s, i) => ({
+                id: `${p.id}-${i}`, date: s.day, time: s.time,
+                club_name: s.location || 'N/A', class_name: p.name,
+                instructor: s.instructor || 'N/A', topic: s.focus,
+                status: (p.status === 'active' ? 'upcoming' : 'completed') as any,
+                attendees: 0, capacity: 30,
+            })))
+        }
+        return MOCK_SESSIONS
+    }, [apiPlans])
+
     const filtered = useMemo(() => {
-        let v = MOCK_SESSIONS
+        let v = sessions
         if (clubFilter !== 'all') v = v.filter(s => s.club_name.includes(clubFilter))
         if (statusFilter !== 'all') v = v.filter(s => s.status === statusFilter)
         if (search) {

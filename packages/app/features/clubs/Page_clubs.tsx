@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import {
     VCT_Badge, VCT_Button, VCT_Stack, VCT_Toast,
@@ -12,6 +12,7 @@ import {
 } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useClubs } from '../hooks/useCommunityAPI'
 
 // ════════════════════════════════════════
 // TYPES & MOCK DATA
@@ -86,8 +87,23 @@ const BLANK_FORM: Partial<Club> = {
 // MAIN COMPONENT
 // ════════════════════════════════════════
 export const Page_clubs = () => {
+    // ── Real API data ──
+    const { data: apiClubs } = useClubs()
     const [clubs, setClubs] = useState<Club[]>(MOCK_CLUBS)
     const [search, setSearch] = useState('')
+
+    useEffect(() => {
+        if (apiClubs && apiClubs.length > 0) {
+            setClubs(apiClubs.map((c: any) => ({
+                id: c.id, name: c.name, code: c.code || '',
+                org_id: c.org_id || '', type: (c.type || 'clb') as ClubType,
+                founded_date: c.founded_date || '', master_name: c.master_name || '',
+                phone: c.phone || '', address: c.address || '',
+                status: (c.status || 'active') as any,
+                total_members: c.total_members || 0, active_classes: c.active_classes || 0,
+            })))
+        }
+    }, [apiClubs])
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
     const [typeFilter, setTypeFilter] = useState<string | null>(null)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())

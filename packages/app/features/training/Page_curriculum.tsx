@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import {
     VCT_Badge, VCT_Button, VCT_Stack, VCT_Toast,
@@ -12,6 +12,7 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useCurriculums } from '../hooks/useTrainingAPI'
 
 // ════════════════════════════════════════
 // TYPES & MOCK DATA
@@ -79,8 +80,24 @@ const BLANK_FORM: Partial<Curriculum> = {
 // MAIN COMPONENT
 // ════════════════════════════════════════
 export const Page_curriculum = () => {
+    // ── Real API data with fallback ──
+    const { data: apiCurriculums, isLoading } = useCurriculums()
     const [civs, setCivs] = useState<Curriculum[]>(MOCK_CURRICULUMS)
     const [search, setSearch] = useState('')
+
+    // Merge API data when available
+    useEffect(() => {
+        if (apiCurriculums && apiCurriculums.length > 0) {
+            setCivs(apiCurriculums.map(c => ({
+                id: c.id, title: c.title, code: c.code,
+                belt_level: (c.belt_level || 'trang') as BeltLevel,
+                estimated_months: c.estimated_months || 3,
+                forms: c.forms || [], techniques_count: c.techniques_count || 0,
+                status: c.status as any || 'draft',
+                last_updated: c.last_updated || ''
+            })))
+        }
+    }, [apiCurriculums])
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })

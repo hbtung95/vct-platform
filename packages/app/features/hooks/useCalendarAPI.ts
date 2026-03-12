@@ -11,9 +11,10 @@ import { useApiQuery } from './useApiQuery'
 
 export interface CalendarEvent {
     id: string; title: string; start: string; end?: string
-    type: 'tournament' | 'training' | 'meeting' | 'exam' | 'community' | 'other'
+    date?: string; start_date?: string; end_date?: string
+    type: 'tournament' | 'training' | 'meeting' | 'exam' | 'community' | 'seminar' | 'other'
     location?: string; description?: string
-    status?: string; color?: string
+    status?: string; color?: string; participants?: number
 }
 
 // ── Query Hooks ──────────────────────────────────────────────

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
     VCT_Badge, VCT_Button, VCT_Stack, VCT_SearchInput,
     VCT_Select, VCT_EmptyState
@@ -9,6 +9,7 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useAttendance } from '../hooks/useTrainingAPI'
 
 // ════════════════════════════════════════
 // TYPES & MOCK DATA
@@ -43,8 +44,19 @@ const MOCK_STUDENTS: Student[] = [
 // MAIN COMPONENT
 // ════════════════════════════════════════
 export const Page_attendance = () => {
+    // ── Real API data ──
+    const { data: apiAttendance, isLoading } = useAttendance()
     const [students, setStudents] = useState(MOCK_STUDENTS)
     const [search, setSearch] = useState('')
+
+    useEffect(() => {
+        if (apiAttendance && apiAttendance.length > 0) {
+            setStudents(apiAttendance.map(a => ({
+                id: a.id, name: a.student_name || a.student_id,
+                belt: 'N/A', status: a.status as any, note: a.notes,
+            })))
+        }
+    }, [apiAttendance])
 
     const filtered = useMemo(() => {
         let v = students

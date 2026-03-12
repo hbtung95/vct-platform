@@ -10,25 +10,26 @@ import { useApiQuery } from './useApiQuery'
 // ── Types ────────────────────────────────────────────────────
 
 export interface Athlete {
-    id: string; ho_ten: string; name?: string; ngay_sinh?: string
+    id: string; ho_ten: string; name?: string; full_name?: string; ngay_sinh?: string
     gioi_tinh?: string; so_cccd?: string; dia_chi?: string
     dien_thoai?: string; email?: string; dan_toc?: string
     doi?: string; team_id?: string; team_name?: string
-    club?: string; province?: string; belt?: string
-    hang_can?: string; trang_thai?: string
+    club?: string; club_name?: string; province?: string; belt?: string; belt_rank?: string
+    hang_can?: string; trang_thai?: string; status?: string
+    phone?: string
     created_at?: string; updated_at?: string
 }
 
 export interface Coach {
-    id: string; ho_ten: string; belt_level?: string
-    specialization?: string; province?: string; club?: string
+    id: string; ho_ten: string; name?: string; full_name?: string; belt_level?: string; belt_rank?: string
+    specialization?: string; province?: string; club?: string; club_name?: string
     phone?: string; email?: string; years_experience?: number
     certification?: string; status?: string
 }
 
 export interface Referee {
-    id: string; ho_ten: string; level?: string
-    specialization?: string; province?: string
+    id: string; ho_ten: string; name?: string; full_name?: string; level?: string
+    specialization?: string; province?: string; federation?: string
     phone?: string; email?: string; years_experience?: number
     certification?: string; status?: string
 }

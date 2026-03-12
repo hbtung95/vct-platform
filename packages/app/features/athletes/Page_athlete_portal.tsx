@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { VCT_Icons } from '../components/vct-icons'
 import { VCT_PageContainer, VCT_SectionCard, VCT_EmptyState, VCT_StatRow, VCT_Badge } from '../components/vct-ui'
 import { useApiQuery } from '../hooks/useApiQuery'
@@ -108,8 +108,86 @@ function deriveSkillStats(profile: AthleteProfile | null) {
     ]
 }
 
+/* ── Edit Profile Modal ─────────────────────────────────────── */
+
+function EditProfileModal({ profile, onClose, onSave }: {
+    profile: AthleteProfile
+    onClose: () => void
+    onSave: (updates: Record<string, unknown>) => Promise<void>
+}) {
+    const [form, setForm] = useState({
+        full_name: profile.full_name || '',
+        phone: (profile as any).phone || '',
+        weight: (profile as any).weight || '',
+        height: (profile as any).height || '',
+    })
+    const [saving, setSaving] = useState(false)
+    const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSaving(true)
+        setFeedback(null)
+        try {
+            await onSave(form)
+            setFeedback({ type: 'ok', msg: 'Cập nhật thành công!' })
+            setTimeout(onClose, 800)
+        } catch (err: any) {
+            setFeedback({ type: 'err', msg: err?.message || 'Lỗi cập nhật' })
+        } finally { setSaving(false) }
+    }
+
+    const inputCls = 'w-full rounded-xl border border-vct-border bg-vct-bg px-4 py-2.5 text-sm font-medium text-vct-text outline-none focus:border-vct-accent transition'
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in" onClick={onClose}>
+            <div className="w-full max-w-md rounded-3xl border border-vct-border bg-vct-elevated p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-black text-vct-text">Chỉnh sửa hồ sơ</h2>
+                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-vct-bg transition"><VCT_Icons.X size={18} /></button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-vct-text-muted mb-1 block">Họ và tên</label>
+                        <input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className={inputCls} required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs font-bold text-vct-text-muted mb-1 block">Cân nặng (kg)</label>
+                            <input type="number" step="0.1" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} className={inputCls} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-vct-text-muted mb-1 block">Chiều cao (cm)</label>
+                            <input type="number" value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value }))} className={inputCls} />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-vct-text-muted mb-1 block">Số điện thoại</label>
+                        <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
+                    </div>
+
+                    {feedback && (
+                        <div className={`text-sm font-bold px-4 py-2 rounded-xl ${feedback.type === 'ok' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                            {feedback.msg}
+                        </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-vct-border text-sm font-bold hover:bg-vct-bg transition">Hủy</button>
+                        <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-xl bg-vct-accent text-white text-sm font-bold hover:opacity-90 transition disabled:opacity-50">
+                            {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
 export function Page_athlete_portal() {
     const router = useRouter()
+    const [showEditModal, setShowEditModal] = useState(false)
 
     // Fetch profile
     const { data: profile, isLoading: isProfileLoading } = useApiQuery<AthleteProfile>(
@@ -225,10 +303,16 @@ export function Page_athlete_portal() {
 
                     <div className="flex gap-3 w-full md:w-auto mt-4 md:mt-0">
                         <button
+                            onClick={() => setShowEditModal(true)}
+                            className="flex-1 md:flex-none flex items-center justify-center gap-2 rounded-xl bg-vct-accent text-white px-5 py-2.5 font-bold transition hover:opacity-90 shadow-sm"
+                        >
+                            <VCT_Icons.Edit size={16} /> Chỉnh sửa
+                        </button>
+                        <button
                             onClick={() => router.push('/athlete-portal/profile')}
                             className="flex-1 md:flex-none flex items-center justify-center gap-2 rounded-xl bg-vct-bg border border-vct-border px-5 py-2.5 font-bold text-vct-text transition hover:bg-vct-input hover:border-vct-border-strong"
                         >
-                            <VCT_Icons.Edit size={16} /> Hồ sơ chi tiết
+                            <VCT_Icons.Eye size={16} /> Hồ sơ chi tiết
                         </button>
                     </div>
                 </div>
@@ -420,6 +504,21 @@ export function Page_athlete_portal() {
                     </VCT_SectionCard>
                 </div>
             </div>
+            {/* ══ EDIT MODAL ══ */}
+            {showEditModal && profile && (
+                <EditProfileModal
+                    profile={profile}
+                    onClose={() => setShowEditModal(false)}
+                    onSave={async (updates) => {
+                        const res = await fetch(`/api/v1/athlete-profiles/${profile.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(updates),
+                        })
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    }}
+                />
+            )}
         </VCT_PageContainer>
     )
 }

@@ -146,6 +146,102 @@ export function Page_athlete_training() {
                     sub={stats?.cancelled ? `${stats.cancelled} hủy` : undefined} />
             </div>
 
+            {/* ══ WEEKLY VOLUME CHART (SVG) ══ */}
+            <VCT_SectionCard
+                title="Khối lượng tập tuần"
+                icon={<VCT_Icons.BarChart2 size={20} />}
+                accentColor="#06b6d4"
+                className="border border-vct-border mb-6"
+            >
+                <div className="flex items-end justify-between gap-2" style={{ height: 100 }}>
+                    {weekDates.map((date, idx) => {
+                        const dateStr = formatDate(date)
+                        const count = (sessionsByDate[dateStr] || []).length
+                        const maxCount = Math.max(3, ...weekDates.map(d => (sessionsByDate[formatDate(d)] || []).length))
+                        const h = count > 0 ? Math.max(12, (count / maxCount) * 80) : 4
+                        const today = isToday(date)
+                        return (
+                            <div key={dateStr} className="flex-1 flex flex-col items-center gap-1">
+                                <span className="text-[10px] font-black text-vct-text">{count || ''}</span>
+                                <div
+                                    className="w-full rounded-lg transition-all duration-700 hover:opacity-80"
+                                    style={{
+                                        height: h,
+                                        background: today ? '#06b6d4' : count > 0 ? '#8b5cf6' : 'var(--vct-border)',
+                                        opacity: today ? 1 : 0.7,
+                                    }}
+                                />
+                                <span className={`text-[9px] font-bold ${today ? 'text-cyan-500' : 'text-vct-text-muted'}`}>
+                                    {WEEKDAYS[(idx + 1) % 7]}
+                                </span>
+                            </div>
+                        )
+                    })}
+                </div>
+                <div className="mt-3 pt-3 border-t border-vct-border flex items-center justify-between text-xs">
+                    <span className="text-vct-text-muted">
+                        Tổng tuần: <strong className="text-vct-text">
+                            {weekDates.reduce((sum, d) => sum + (sessionsByDate[formatDate(d)] || []).length, 0)}
+                        </strong> buổi
+                    </span>
+                    <span className="text-vct-text-muted">
+                        {stats?.current_streak ? `🔥 Chuỗi ${stats.current_streak} buổi liên tiếp` : ''}
+                    </span>
+                </div>
+            </VCT_SectionCard>
+
+            {/* ══ LOG SESSION QUICK-ADD ══ */}
+            <VCT_SectionCard
+                title="Ghi nhận buổi tập"
+                icon={<VCT_Icons.Plus size={20} />}
+                accentColor="#22c55e"
+                className="border border-vct-border mb-6"
+            >
+                <form
+                    onSubmit={async (e) => {
+                        e.preventDefault()
+                        const fd = new FormData(e.target as HTMLFormElement)
+                        const data = {
+                            type: fd.get('type') as string,
+                            date: fd.get('date') as string,
+                            start_time: fd.get('start_time') as string,
+                            athlete_id: 'AP-001',
+                            status: 'completed',
+                        }
+                        try {
+                            await fetch('/api/v1/training-sessions', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(data),
+                            })
+                            ;(e.target as HTMLFormElement).reset()
+                        } catch { /* graceful fail */ }
+                    }}
+                    className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
+                >
+                    <div>
+                        <label className="text-[10px] font-bold text-vct-text-muted mb-1 block uppercase tracking-wider">Loại</label>
+                        <select name="type" className="w-full rounded-xl border border-vct-border bg-vct-bg px-3 py-2 text-sm font-medium text-vct-text outline-none focus:border-vct-accent">
+                            <option value="regular">Thường</option>
+                            <option value="sparring">Đối kháng</option>
+                            <option value="exam">Thi đấu</option>
+                            <option value="special">Đặc biệt</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-bold text-vct-text-muted mb-1 block uppercase tracking-wider">Ngày</label>
+                        <input name="date" type="date" defaultValue={formatDate(new Date())} className="w-full rounded-xl border border-vct-border bg-vct-bg px-3 py-2 text-sm font-medium text-vct-text outline-none focus:border-vct-accent" />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-bold text-vct-text-muted mb-1 block uppercase tracking-wider">Thời gian</label>
+                        <input name="start_time" type="time" defaultValue="17:00" className="w-full rounded-xl border border-vct-border bg-vct-bg px-3 py-2 text-sm font-medium text-vct-text outline-none focus:border-vct-accent" />
+                    </div>
+                    <button type="submit" className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500 text-white px-4 py-2 text-sm font-bold hover:bg-emerald-600 transition shadow-sm">
+                        <VCT_Icons.Check size={16} /> Ghi nhận
+                    </button>
+                </form>
+            </VCT_SectionCard>
+
             {/* ══ WEEKLY SCHEDULE ══ */}
             <VCT_SectionCard
                 title="Lịch tập tuần"

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
     VCT_Badge, VCT_Button, VCT_Stack, VCT_SearchInput,
     VCT_Select, VCT_EmptyState, VCT_Tabs
@@ -9,6 +9,7 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useBeltExams } from '../hooks/useTrainingAPI'
 
 // ════════════════════════════════════════
 // TYPES & MOCK DATA
@@ -40,9 +41,22 @@ const STATUS_MAP = {
 // MAIN COMPONENT
 // ════════════════════════════════════════
 export const Page_belt_exams = () => {
+    // ── Real API data ──
+    const { data: apiBeltExams, isLoading } = useBeltExams()
     const [exams, setExams] = useState(MOCK_EXAMS)
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
+
+    useEffect(() => {
+        if (apiBeltExams && apiBeltExams.length > 0) {
+            setExams(apiBeltExams.map(e => ({
+                id: e.id, title: e.name || e.id,
+                date: e.exam_date, location: e.location || '',
+                levels: [e.belt_level], candidates_count: e.registered_count || 0,
+                status: e.status as any,
+            })))
+        }
+    }, [apiBeltExams])
 
     const filtered = useMemo(() => {
         let v = exams

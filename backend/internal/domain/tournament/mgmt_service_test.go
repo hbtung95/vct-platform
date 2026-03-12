@@ -185,6 +185,8 @@ func TestMgmtService_ScheduleCRUD(t *testing.T) {
 
 	slot, err := svc.CreateScheduleSlot(svcCtx, &ScheduleSlot{
 		TournamentID: tid,
+		ArenaID:      "ARENA-001",
+		ArenaName:    "Sân A1",
 		Date:         "2026-06-15",
 		Session:      "sang",
 		StartTime:    "08:00",
@@ -227,6 +229,7 @@ func TestMgmtService_ArenaAssignment(t *testing.T) {
 
 	assign, err := svc.AssignArena(svcCtx, &ArenaAssignment{
 		TournamentID: tid,
+		ArenaID:      "ARENA-001",
 		ArenaName:    "Sân A1",
 		Date:         "2026-06-15",
 		Session:      "sang",
@@ -289,9 +292,13 @@ func TestMgmtService_TeamStandings(t *testing.T) {
 	svc := newTestMgmtService(t)
 	tid := "TRN-STD-001"
 
-	// Record results for recalculation
-	svc.RecordResult(svcCtx, &TournamentResult{TournamentID: tid, CategoryID: "c1", GoldName: "A", GoldTeam: "HN", SilverName: "B", SilverTeam: "SG", ContentType: "doi_khang"})
-	svc.RecordResult(svcCtx, &TournamentResult{TournamentID: tid, CategoryID: "c2", GoldName: "C", GoldTeam: "HN", SilverName: "D", SilverTeam: "DN", ContentType: "quyen"})
+	// Record and finalize results for recalculation
+	res1, _ := svc.RecordResult(svcCtx, &TournamentResult{TournamentID: tid, CategoryID: "c1", GoldName: "A", GoldTeam: "HN", SilverName: "B", SilverTeam: "SG", ContentType: "doi_khang"})
+	res2, _ := svc.RecordResult(svcCtx, &TournamentResult{TournamentID: tid, CategoryID: "c2", GoldName: "C", GoldTeam: "HN", SilverName: "D", SilverTeam: "DN", ContentType: "quyen"})
+
+	// Must finalize before recalculation (RecalculateTeamStandings only counts finalized)
+	_ = svc.FinalizeResult(svcCtx, res1.ID, "admin")
+	_ = svc.FinalizeResult(svcCtx, res2.ID, "admin")
 
 	// Recalculate
 	standings, err := svc.RecalculateTeamStandings(svcCtx, tid)
@@ -302,6 +309,7 @@ func TestMgmtService_TeamStandings(t *testing.T) {
 		t.Error("expected standings after recalculation")
 	}
 
+	// HN should have 2 golds = 14 points, SG 1 silver = 5, DN 1 silver = 5
 	// Also via GetTeamStandings
 	list, err := svc.GetTeamStandings(svcCtx, tid)
 	if err != nil {

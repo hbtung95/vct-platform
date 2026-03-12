@@ -1,41 +1,28 @@
 'use client'
 
 import * as React from 'react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
     VCT_Button, VCT_Stack, VCT_SearchInput
 } from '../components/vct-ui'
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useBeltRanks, useLineageTree } from '../hooks/useHeritageAPI'
 
 // ════════════════════════════════════════
-// MOCK DATA
+// FALLBACK TREE DATA
 // ════════════════════════════════════════
-const TREE_DATA = {
-    id: 'T1',
-    name: 'Tổ Sư Sáng Lập',
-    title: 'Đại Lão Võ Sư',
-    era: '1930',
+const FALLBACK_TREE = {
+    id: 'T1', name: 'Tổ Sư Sáng Lập', title: 'Đại Lão Võ Sư', era: '1930',
     description: 'Người khai sáng môn phái',
     children: [
         {
-            id: 'T2',
-            name: 'Trưởng Môn Đời 2',
-            title: 'Hồng Đai Đệ Nhất Cấp',
-            era: '1960',
+            id: 'T2', name: 'Trưởng Môn Đời 2', title: 'Hồng Đai Đệ Nhất Cấp', era: '1960',
             children: [
+                { id: 'T4', name: 'Võ Sư Chuẩn Hồng Đai', title: 'Quản đốc khu vực Miền Bắc', era: '1985' },
                 {
-                    id: 'T4',
-                    name: 'Võ Sư Chuẩn Hồng Đai',
-                    title: 'Quản đốc khu vực Miền Bắc',
-                    era: '1985',
-                },
-                {
-                    id: 'T5',
-                    name: 'Võ Sư Chuẩn Hồng Đai',
-                    title: 'Quản đốc khu vực Miền Nam',
-                    era: '1987',
+                    id: 'T5', name: 'Võ Sư Chuẩn Hồng Đai', title: 'Quản đốc khu vực Miền Nam', era: '1987',
                     children: [
                         { id: 'T8', name: 'Hoàng Văn A', title: 'Hoàng Đai Đệ Tam', era: '2005' },
                         { id: 'T9', name: 'Lê Thị B', title: 'Hoàng Đai Đệ Nhị', era: '2010' },
@@ -44,23 +31,10 @@ const TREE_DATA = {
             ]
         },
         {
-            id: 'T3',
-            name: 'Võ Sư Sáng Lập Hệ Phái',
-            title: 'Hồng Đai Đệ Nhất Cấp',
-            era: '1965',
+            id: 'T3', name: 'Võ Sư Sáng Lập Hệ Phái', title: 'Hồng Đai Đệ Nhất Cấp', era: '1965',
             children: [
-                {
-                    id: 'T6',
-                    name: 'Chưởng Môn Hệ Phái',
-                    title: 'Hồng Đai Đệ Nhị Cấp',
-                    era: '1990',
-                },
-                {
-                    id: 'T7',
-                    name: 'Cố Vấn Kỹ Thuật',
-                    title: 'Hồng Đai Đệ Nhị Cấp',
-                    era: '1992',
-                }
+                { id: 'T6', name: 'Chưởng Môn Hệ Phái', title: 'Hồng Đai Đệ Nhị Cấp', era: '1990' },
+                { id: 'T7', name: 'Cố Vấn Kỹ Thuật', title: 'Hồng Đai Đệ Nhị Cấp', era: '1992' }
             ]
         }
     ]
@@ -121,10 +95,20 @@ const TreeNode = ({ node }: { node: any }) => {
 export const Page_heritage = () => {
     const [search, setSearch] = useState('')
 
+    // ── Real API data ──
+    const { data: belts, isLoading: beltsLoading } = useBeltRanks()
+    const { data: lineage, isLoading: lineageLoading } = useLineageTree()
+
+    // Use first lineage tree from API, or fallback
+    const treeData = useMemo(() => {
+        if (lineage && lineage.length > 0) return lineage[0]
+        return FALLBACK_TREE
+    }, [lineage])
+
     const kpis: StatItem[] = [
-        { label: 'Hệ Phái ĐK', value: 15, icon: <VCT_Icons.Network size={18} />, color: '#0ea5e9' },
+        { label: 'Hệ Phái ĐK', value: lineage?.length || 15, icon: <VCT_Icons.Network size={18} />, color: '#0ea5e9' },
         { label: 'Đại Võ Sư', value: 45, icon: <VCT_Icons.Star size={18} />, color: '#f59e0b' },
-        { label: 'Hồng Đai', value: 320, icon: <VCT_Icons.Award size={18} />, color: '#ef4444' },
+        { label: 'Hồng Đai', value: belts?.length || 320, icon: <VCT_Icons.Award size={18} />, color: '#ef4444' },
         { label: 'Di Sản Lưu Trữ', value: '2.5k', icon: <VCT_Icons.Library size={18} />, color: '#8b5cf6' },
     ]
 
@@ -146,6 +130,12 @@ export const Page_heritage = () => {
 
             <VCT_StatRow items={kpis} className="mb-8" />
 
+            {(beltsLoading || lineageLoading) && (
+                <div className="text-center py-6 text-[var(--vct-text-tertiary)] text-sm animate-pulse">
+                    Đang tải dữ liệu di sản...
+                </div>
+            )}
+
             {/* ── TOOLBAR ── */}
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4 bg-[var(--vct-bg-elevated)] p-4 rounded-xl border border-[var(--vct-border-subtle)]">
                 <div className="flex gap-4 items-center">
@@ -165,7 +155,7 @@ export const Page_heritage = () => {
                 <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(var(--vct-border-strong) 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.3 }}></div>
 
                 <div className="pt-8">
-                    <TreeNode node={TREE_DATA} />
+                    <TreeNode node={treeData} />
                 </div>
             </div>
 

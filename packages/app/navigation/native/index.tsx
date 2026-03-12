@@ -26,6 +26,7 @@ import {
   TournamentConfigMobileScreen,
   WeighInMobileScreen,
 } from 'app/features/mobile/tournament-screens'
+import { ProfileMobileScreen } from 'app/features/mobile/profile-screen'
 import { UserDetailScreen } from 'app/features/user/detail-screen'
 
 const Stack = createNativeStackNavigator()
@@ -100,6 +101,13 @@ export function NativeNavigation() {
           component={UserDetailScreen}
           options={{
             title: 'User',
+          }}
+        />
+        <Stack.Screen
+          name="profile"
+          component={ProfileMobileScreen}
+          options={{
+            title: 'Hồ sơ VĐV',
           }}
         />
       </Stack.Navigator>

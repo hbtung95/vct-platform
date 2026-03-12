@@ -9,16 +9,17 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_SectionCard, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useTransactions } from '../hooks/useFinanceAPI'
 
 // ════════════════════════════════════════
-// MOCK DATA
+// FALLBACK DATA
 // ════════════════════════════════════════
-const MOCK_TRANSACTIONS = [
-    { id: 'TRX-001', date: '2024-03-09 10:30', desc: 'Đóng phí liên đoàn quý 1', amount: 5000000, type: 'income', status: 'completed', source: 'Liên đoàn Võ thuật TP.HCM' },
-    { id: 'TRX-002', date: '2024-03-08 14:15', desc: 'Chi phí mua sắm thảm tập', amount: 12000000, type: 'expense', status: 'completed', source: 'Cửa hàng Thể thao ABC' },
-    { id: 'TRX-003', date: '2024-03-05 09:00', desc: 'Phí đăng ký thi đấu giải trẻ', amount: 2500000, type: 'income', status: 'pending', source: 'CLB Nguyễn Trãi' },
-    { id: 'TRX-004', date: '2024-03-01 16:45', desc: 'Thuê sân đấu tháng 3', amount: 8000000, type: 'expense', status: 'completed', source: 'Nhà thi đấu Phú Thọ' },
-    { id: 'TRX-005', date: '2024-02-28 11:20', desc: 'Tài trợ từ nhãn hàng', amount: 50000000, type: 'income', status: 'completed', source: 'Công ty RedBull' },
+const FALLBACK_TRANSACTIONS = [
+    { id: 'TRX-001', date: '2024-03-09 10:30', description: 'Đóng phí liên đoàn quý 1', amount: 5000000, type: 'income' as const, status: 'completed' as const, source: 'Liên đoàn Võ thuật TP.HCM' },
+    { id: 'TRX-002', date: '2024-03-08 14:15', description: 'Chi phí mua sắm thảm tập', amount: 12000000, type: 'expense' as const, status: 'completed' as const, source: 'Cửa hàng Thể thao ABC' },
+    { id: 'TRX-003', date: '2024-03-05 09:00', description: 'Phí đăng ký thi đấu giải trẻ', amount: 2500000, type: 'income' as const, status: 'pending' as const, source: 'CLB Nguyễn Trãi' },
+    { id: 'TRX-004', date: '2024-03-01 16:45', description: 'Thuê sân đấu tháng 3', amount: 8000000, type: 'expense' as const, status: 'completed' as const, source: 'Nhà thi đấu Phú Thọ' },
+    { id: 'TRX-005', date: '2024-02-28 11:20', description: 'Tài trợ từ nhãn hàng', amount: 50000000, type: 'income' as const, status: 'completed' as const, source: 'Công ty RedBull' },
 ]
 
 // ════════════════════════════════════════
@@ -28,8 +29,32 @@ export const Page_finance = () => {
     const [search, setSearch] = useState('')
     const [tab, setTab] = useState('all')
 
+    // ── Real API data ──
+    const { data: apiTransactions, isLoading } = useTransactions()
+
+    const transactions = useMemo(() => {
+        const raw = (apiTransactions && apiTransactions.length > 0) ? apiTransactions.map(t => ({
+            id: t.id,
+            date: t.date,
+            desc: t.description,
+            amount: t.amount,
+            type: t.type,
+            status: t.status,
+            source: t.source || '',
+        })) : FALLBACK_TRANSACTIONS.map(t => ({
+            id: t.id,
+            date: t.date,
+            desc: t.description,
+            amount: t.amount,
+            type: t.type,
+            status: t.status,
+            source: t.source,
+        }))
+        return raw
+    }, [apiTransactions])
+
     const filtered = useMemo(() => {
-        let v = MOCK_TRANSACTIONS
+        let v = transactions
         if (tab !== 'all') {
             v = v.filter(t => t.type === tab)
         }
@@ -38,17 +63,17 @@ export const Page_finance = () => {
             v = v.filter(t => t.desc.toLowerCase().includes(q) || t.source.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
         }
         return v
-    }, [search, tab])
+    }, [search, tab, transactions])
 
-    const totalIncome = MOCK_TRANSACTIONS.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0)
-    const totalExpense = MOCK_TRANSACTIONS.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0)
+    const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0)
+    const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0)
     const balance = totalIncome - totalExpense
 
     const kpis: StatItem[] = [
         { label: 'Tổng Quỹ Hiện Tại', value: `${(balance / 1000000).toFixed(1)}M`, icon: <VCT_Icons.DollarSign size={18} />, color: '#0ea5e9' },
         { label: 'Tổng Thu (Tháng)', value: `${(totalIncome / 1000000).toFixed(1)}M`, icon: <VCT_Icons.TrendingUp size={18} />, color: '#10b981' },
         { label: 'Tổng Chi (Tháng)', value: `${(totalExpense / 1000000).toFixed(1)}M`, icon: <VCT_Icons.TrendingDown size={18} />, color: '#ef4444' },
-        { label: 'Chờ Thanh Toán', value: '2.5M', icon: <VCT_Icons.Clock size={18} />, color: '#f59e0b' },
+        { label: 'Chờ Thanh Toán', value: `${(transactions.filter(t => t.status === 'pending').reduce((a, c) => a + c.amount, 0) / 1000000).toFixed(1)}M`, icon: <VCT_Icons.Clock size={18} />, color: '#f59e0b' },
     ]
 
     return (
@@ -68,6 +93,12 @@ export const Page_finance = () => {
             />
 
             <VCT_StatRow items={kpis} className="mb-8" />
+
+            {isLoading && (
+                <div className="text-center py-6 text-[var(--vct-text-tertiary)] text-sm animate-pulse">
+                    Đang tải dữ liệu tài chính...
+                </div>
+            )}
 
             {/* ── QUICK ACTIONS ── */}
             <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">

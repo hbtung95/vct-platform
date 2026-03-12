@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
     VCT_Badge, VCT_Button, VCT_Stack, VCT_Toast,
@@ -12,6 +12,7 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useTechniques } from '../hooks/useHeritageAPI'
 
 // ════════════════════════════════════════
 // TYPES & MOCK DATA
@@ -96,8 +97,21 @@ const VideoPlayer = ({ technique, onClose }: { technique: Technique, onClose: ()
 // MAIN COMPONENT
 // ════════════════════════════════════════
 export const Page_techniques = () => {
+    // ── Real API data ──
+    const { data: apiTechniques } = useTechniques()
     const [techs, setTechs] = useState<Technique[]>(MOCK_TECHS)
     const [search, setSearch] = useState('')
+
+    useEffect(() => {
+        if (apiTechniques && apiTechniques.length > 0) {
+            setTechs(apiTechniques.map(t => ({
+                id: t.id, name: t.name, category: (t.category || 'tan_phap') as TechCategory,
+                difficulty: (t.difficulty || 'co_ban') as any,
+                has_video: !!t.video_url, description: t.description || '',
+                tags: t.variations || [],
+            })))
+        }
+    }, [apiTechniques])
     const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
     const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })
     const [showModal, setShowModal] = useState(false)

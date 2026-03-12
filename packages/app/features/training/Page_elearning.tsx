@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useMemo } from 'react'
 import Image from 'next/image'
 import {
     VCT_Badge, VCT_Button, VCT_Stack, VCT_SearchInput,
@@ -9,6 +10,7 @@ import {
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useELearningCourses } from '../hooks/useTrainingAPI'
 
 // ════════════════════════════════════════
 // MOCK DATA
@@ -23,6 +25,21 @@ const MOCK_COURSES = [
 // MAIN COMPONENT
 // ════════════════════════════════════════
 export const Page_elearning = () => {
+    // ── Real API data ──
+    const { data: apiCourses, isLoading } = useELearningCourses()
+
+    const courses = useMemo(() => {
+        if (apiCourses && apiCourses.length > 0) {
+            return apiCourses.map(c => ({
+                id: c.id, title: c.title, progress: 0,
+                instructor: c.instructor || 'N/A',
+                modules: c.lessons_count, students: c.enrolled_count || 0,
+                thumbnail: c.thumbnail_url || 'https://images.unsplash.com/photo-1542360548-fbcd067d264f?auto=format&fit=crop&q=80&w=400',
+            }))
+        }
+        return MOCK_COURSES
+    }, [apiCourses])
+
     return (
         <VCT_PageContainer size="wide" animated>
             <VCT_PageHero
@@ -47,7 +64,7 @@ export const Page_elearning = () => {
                     <VCT_Icons.Book /> Khóa học nổi bật
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {MOCK_COURSES.map(course => (
+                    {courses.map(course => (
                         <div key={course.id} className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl overflow-hidden hover:border-[var(--vct-accent-cyan)] hover:shadow-[0_4px_24px_-8px_var(--vct-accent-cyan)] transition-all flex flex-col group cursor-pointer">
                             <div className="aspect-video relative overflow-hidden bg-[var(--vct-bg-card)]">
                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>

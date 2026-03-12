@@ -1,28 +1,23 @@
 'use client'
 
 import * as React from 'react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
     VCT_Button, VCT_Stack, VCT_SearchInput, VCT_Badge
 } from '../components/vct-ui'
 import { VCT_PageContainer, VCT_PageHero, VCT_StatRow } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useClubs, useCommunityEvents, useMembers } from '../hooks/useCommunityAPI'
 
 // ════════════════════════════════════════
-// MOCK DATA
+// FALLBACK DATA (shown while API loads or if empty)
 // ════════════════════════════════════════
-const MOCK_POSTS = [
+const FALLBACK_POSTS = [
     { id: 'P1', author: 'Liên đoàn Võ thuật VN', avatar: 'L', time: '2 giờ trước', content: 'Thông báo: Giải Vô địch Quốc gia 2024 chính thức mở đăng ký từ ngày 15/04/2024. Các CLB vui lòng chuẩn bị hồ sơ.', likes: 156, comments: 34, type: 'announcement' },
     { id: 'P2', author: 'CLB Sơn Long Quyền', avatar: 'S', time: '5 giờ trước', content: '🥋 Chúc mừng học viên Nguyễn Văn A đã xuất sắc đạt Huy chương Vàng giải trẻ Quốc gia! Tự hào lắm con ơi!', likes: 245, comments: 58, type: 'achievement' },
     { id: 'P3', author: 'HLV Trần Minh', avatar: 'T', time: '1 ngày trước', content: 'Chia sẻ kỹ thuật: Bài Quyền Thái Cực số 3 - Phân tích chi tiết từng thế thủ. Video đính kèm trong phần bình luận.', likes: 89, comments: 12, type: 'tutorial' },
     { id: 'P4', author: 'Võ Đường Thiên Long', avatar: 'V', time: '2 ngày trước', content: '📅 Lịch tập luyện tuần tới đã cập nhật. Lớp nâng cao sẽ chuyển sang sân B từ thứ 3-5. Mọi người lưu ý nhé!', likes: 45, comments: 8, type: 'update' },
-]
-
-const MOCK_EVENTS = [
-    { id: 'EV1', title: 'Giải Vô địch Quốc gia 2024', date: '15/06/2024', location: 'Hà Nội', status: 'upcoming' },
-    { id: 'EV2', title: 'Hội thảo Kỹ thuật Võ cổ truyền', date: '20/04/2024', location: 'TP.HCM', status: 'open' },
-    { id: 'EV3', title: 'Giao lưu Quốc tế VN - Hàn Quốc', date: '10/05/2024', location: 'Đà Nẵng', status: 'upcoming' },
 ]
 
 // ════════════════════════════════════════
@@ -31,11 +26,36 @@ const MOCK_EVENTS = [
 export const Page_community = () => {
     const [search, setSearch] = useState('')
 
+    // ── Real API data ──
+    const { data: clubs, isLoading: clubsLoading } = useClubs()
+    const { data: events, isLoading: eventsLoading } = useCommunityEvents()
+    const { data: members } = useMembers()
+
+    // Use fallback posts (community posts endpoint may not exist yet)
+    const posts = FALLBACK_POSTS
+
+    const eventsDisplay = useMemo(() => {
+        if (events && events.length > 0) {
+            return events.map(ev => ({
+                id: ev.id,
+                title: ev.title || 'Sự kiện',
+                date: ev.date || ev.start_date || '',
+                location: ev.location || '',
+                status: ev.status || 'upcoming',
+            }))
+        }
+        return [
+            { id: 'EV1', title: 'Giải Vô địch Quốc gia 2024', date: '15/06/2024', location: 'Hà Nội', status: 'upcoming' },
+            { id: 'EV2', title: 'Hội thảo Kỹ thuật Võ cổ truyền', date: '20/04/2024', location: 'TP.HCM', status: 'open' },
+            { id: 'EV3', title: 'Giao lưu Quốc tế VN - Hàn Quốc', date: '10/05/2024', location: 'Đà Nẵng', status: 'upcoming' },
+        ]
+    }, [events])
+
     const kpis: StatItem[] = [
-        { label: 'Thành viên', value: '12.5k', icon: <VCT_Icons.Users size={18} />, color: '#0ea5e9' },
-        { label: 'Bài viết hôm nay', value: 28, icon: <VCT_Icons.FileText size={18} />, color: '#10b981' },
-        { label: 'Sự kiện sắp tới', value: 5, icon: <VCT_Icons.Calendar size={18} />, color: '#f59e0b' },
-        { label: 'CLB hoạt động', value: 340, icon: <VCT_Icons.Flag size={18} />, color: '#8b5cf6' },
+        { label: 'Thành viên', value: members?.length || '12.5k', icon: <VCT_Icons.Users size={18} />, color: '#0ea5e9' },
+        { label: 'Bài viết hôm nay', value: posts.length, icon: <VCT_Icons.FileText size={18} />, color: '#10b981' },
+        { label: 'Sự kiện sắp tới', value: eventsDisplay.length, icon: <VCT_Icons.Calendar size={18} />, color: '#f59e0b' },
+        { label: 'CLB hoạt động', value: clubs?.length || 340, icon: <VCT_Icons.Flag size={18} />, color: '#8b5cf6' },
     ]
 
     return (
@@ -51,6 +71,12 @@ export const Page_community = () => {
 
             <VCT_StatRow items={kpis} className="mb-8" />
 
+            {(clubsLoading || eventsLoading) && (
+                <div className="text-center py-8 text-[var(--vct-text-tertiary)] text-sm animate-pulse">
+                    Đang tải dữ liệu cộng đồng...
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* ── NEWSFEED ── */}
                 <div className="lg:col-span-2 space-y-4">
@@ -58,7 +84,7 @@ export const Page_community = () => {
                         <VCT_SearchInput placeholder="Tìm kiếm bài viết, sự kiện..." value={search} onChange={setSearch} onClear={() => setSearch('')} />
                     </div>
 
-                    {MOCK_POSTS.map(post => (
+                    {posts.filter(p => !search || p.content.toLowerCase().includes(search.toLowerCase()) || p.author.toLowerCase().includes(search.toLowerCase())).map(post => (
                         <div key={post.id} className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-5 hover:border-[var(--vct-accent-cyan)] transition-all">
                             <div className="flex items-start gap-3 mb-3">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--vct-accent-cyan)] to-[#0ea5e9] flex items-center justify-center font-bold text-white text-sm shrink-0">
@@ -94,7 +120,7 @@ export const Page_community = () => {
                             <VCT_Icons.Calendar size={18} className="text-[var(--vct-accent-cyan)]" /> Sự kiện sắp tới
                         </h3>
                         <div className="space-y-3">
-                            {MOCK_EVENTS.map(ev => (
+                            {eventsDisplay.map(ev => (
                                 <div key={ev.id} className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)] hover:border-[var(--vct-accent-cyan)] transition-colors cursor-pointer">
                                     <div className="font-semibold text-sm text-[var(--vct-text-primary)] line-clamp-1">{ev.title}</div>
                                     <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--vct-text-tertiary)]">

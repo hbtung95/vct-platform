@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { VCT_Icons } from '../components/vct-icons'
+import { useCalendarEvents } from '../hooks/useCalendarAPI'
 
 // ════════════════════════════════════════
 // TYPES
@@ -82,11 +83,26 @@ export function Page_calendar() {
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
     const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar')
 
+    // ── Real API data ──
+    const { data: apiEvents } = useCalendarEvents()
+
+    const allEvents = useMemo(() => {
+        if (apiEvents && apiEvents.length > 0) {
+            return apiEvents.map(e => ({
+                id: e.id, title: e.title, type: (e.type || 'tournament') as any,
+                date: e.date || e.start_date, endDate: e.end_date,
+                location: e.location || '', status: (e.status || 'upcoming') as any,
+                participants: e.participants || 0, description: e.description,
+            }))
+        }
+        return MOCK_EVENTS
+    }, [apiEvents])
+
     const filteredEvents = useMemo(() => {
-        let events = MOCK_EVENTS
+        let events = allEvents
         if (selectedType !== 'all') events = events.filter(e => e.type === selectedType)
         return events
-    }, [selectedType])
+    }, [selectedType, allEvents])
 
     const eventsForMonth = useMemo(() => {
         return filteredEvents.filter(e => {
@@ -119,8 +135,8 @@ export function Page_calendar() {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth)
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
 
-    const upcomingCount = MOCK_EVENTS.filter(e => e.status === 'upcoming').length
-    const ongoingCount = MOCK_EVENTS.filter(e => e.status === 'ongoing').length
+    const upcomingCount = allEvents.filter(e => e.status === 'upcoming').length
+    const ongoingCount = allEvents.filter(e => e.status === 'ongoing').length
     const thisMonthCount = eventsForMonth.length
 
     return (
@@ -151,7 +167,7 @@ export function Page_calendar() {
             {/* ── KPI ── */}
             <div className="grid grid-cols-2 tablet:grid-cols-4 gap-3">
                 {[
-                    { label: 'Tổng sự kiện', value: MOCK_EVENTS.length, icon: '📅', color: '#0ea5e9' },
+                    { label: 'Tổng sự kiện', value: allEvents.length, icon: '📅', color: '#0ea5e9' },
                     { label: 'Sắp diễn ra', value: upcomingCount, icon: '🔜', color: '#f59e0b' },
                     { label: 'Đang diễn ra', value: ongoingCount, icon: '🔴', color: '#10b981' },
                     { label: 'Tháng này', value: thisMonthCount, icon: '📊', color: '#8b5cf6' },

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,6 +13,7 @@ import { VCT_Icons } from '../components/vct-icons';
 import { TournamentWorkflowStepper } from './TournamentWorkflowStepper';
 import { TOURNAMENT_CONFIG } from '../data/tournament-config';
 import { repositories, useEntityCollection } from '../data/repository';
+import { useWebSocket } from '../hooks/useWebSocket';
 import type { StatItem } from '../components/VCT_StatRow';
 
 const ACTIVITY_FEED: TimelineEvent[] = [
@@ -33,6 +34,45 @@ export const Page_dashboard = () => {
     const weighStore = useEntityCollection(repositories.weighIns.mock);
     const appealsStore = useEntityCollection(repositories.appeals.mock);
     const arenasStore = useEntityCollection(repositories.arenas.mock);
+
+    // ── WebSocket: Real-time entity change notifications ──
+    const [wsEvents, setWsEvents] = useState<TimelineEvent[]>([]);
+
+    const reloadAll = useCallback(() => {
+        void teamsStore.load();
+        void athletesStore.load();
+        void refereesStore.load();
+        void combatStore.load();
+        void formsStore.load();
+        void weighStore.load();
+        void appealsStore.load();
+        void arenasStore.load();
+    }, [teamsStore, athletesStore, refereesStore, combatStore, formsStore, weighStore, appealsStore, arenasStore]);
+
+    const { status: wsStatus } = useWebSocket({
+        channels: ['tournaments', 'matches', 'registrations', 'results', 'weigh-ins', 'appeals'],
+        onEntityChange: (event) => {
+            // Auto-refetch all stores on any tournament entity change
+            reloadAll();
+            // Add to live activity feed
+            setWsEvents(prev => [{
+                time: 'Vừa xong',
+                title: `${event.entity} — ${event.action}`,
+                description: `ID: ${event.itemId}`,
+                color: event.action === 'create' ? 'var(--vct-success)'
+                    : event.action === 'delete' ? 'var(--vct-danger)'
+                    : 'var(--vct-info)',
+            }, ...prev].slice(0, 10));
+        },
+    });
+
+    const wsStatusConfig = {
+        connected: { label: '🟢 Realtime', type: 'success' as const },
+        connecting: { label: '🟡 Đang kết nối', type: 'warning' as const },
+        disconnected: { label: '⚪ Offline', type: 'info' as const },
+        error: { label: '🔴 Lỗi kết nối', type: 'danger' as const },
+    };
+    const wsInfo = wsStatusConfig[wsStatus] || wsStatusConfig.disconnected;
 
     const DON_VIS = teamsStore.items;
     const VAN_DONG_VIENS = athletesStore.items;
@@ -103,8 +143,8 @@ export const Page_dashboard = () => {
                 icon={<span className="text-2xl">🏆</span>}
                 title={TOURNAMENT_CONFIG.ten_giai}
                 subtitle={`${TOURNAMENT_CONFIG.dia_diem} · ${TOURNAMENT_CONFIG.ngay_bat_dau} → ${TOURNAMENT_CONFIG.ngay_ket_thuc}`}
-                badge="🔴 LIVE"
-                badgeType="warning"
+                badge={wsInfo.label}
+                badgeType={wsInfo.type}
                 gradientFrom="rgba(34, 211, 238, 0.08)"
                 gradientTo="rgba(139, 92, 246, 0.05)"
                 actions={
@@ -240,9 +280,9 @@ export const Page_dashboard = () => {
                     </VCT_SectionCard>
                 </div>
 
-                {/* Activity Feed */}
+            {/* Activity Feed */}
                 <VCT_SectionCard title="📋 Hoạt động gần đây" accentColor="#0ea5e9">
-                    <VCT_Timeline events={ACTIVITY_FEED} maxHeight={280} />
+                    <VCT_Timeline events={[...wsEvents, ...ACTIVITY_FEED].slice(0, 10)} maxHeight={280} />
                 </VCT_SectionCard>
             </div>
 
