@@ -321,6 +321,13 @@ func New(cfg config.Config) *Server {
 		adapter.NewMemProvincialReportRepo(),
 	)
 
+	// Wire PR, International, Workflow in-memory stores
+	s.federationSvc.SetExtendedStores(
+		federation.NewMemPRStore(),
+		federation.NewMemIntlStore(),
+		federation.NewMemWorkflowStore(),
+	)
+
 	return s
 }
 
@@ -393,6 +400,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/teams-action/checkin", s.withAuth(s.handleTeamCheckin))
 	// ── Federation (National Level) ──────────────────────────
 	s.handleFederationRoutes(mux)
+	// ── Federation Extended (PR, International, Workflow) ────
+	s.handleExtendedFederationRoutes(mux)
 	// ── Official Documents ───────────────────────────────────
 	s.handleDocumentRoutes(mux)
 	// ── Discipline & Sanctions ───────────────────────────────

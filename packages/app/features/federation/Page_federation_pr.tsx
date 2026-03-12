@@ -1,11 +1,13 @@
 'use client'
 
 import * as React from 'react'
+import { useMemo } from 'react'
 import {
     VCT_Badge, VCT_Stack, VCT_PageContainer, VCT_StatRow
 } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { usePRArticles, type NewsArticle } from '../hooks/useFederationAPI'
 
 // ════════════════════════════════════════
 // FEDERATION — TRUYỀN THÔNG & PR
@@ -30,21 +32,40 @@ const CATEGORY_COLORS: Record<string, string> = {
     'Quy chế': '#f59e0b', 'Thành tích': '#ef4444', 'Chiến lược': '#6366f1',
 }
 
+const CATEGORY_ICONS: Record<string, string> = {
+    'Giải đấu': '🏆', 'Quốc tế': '🤝', 'Đào tạo': '📋',
+    'Quy chế': '📜', 'Thành tích': '🥇', 'Chiến lược': '📊',
+}
+
 export function Page_federation_pr() {
+    const { data: apiData, isLoading } = usePRArticles()
+
+    const articles = useMemo(() => {
+        if (apiData && Array.isArray(apiData)) return apiData
+        if (apiData && 'items' in (apiData as any)) return (apiData as any).items as NewsArticle[]
+        return NEWS_ITEMS.map(n => ({ ...n, summary: '', content: '', image_url: '', author: 'Ban TT', tags: [], created_at: '' } as any))
+    }, [apiData])
+
+    const publishedCount = articles.filter((a: any) => a.status === 'published').length
+    const totalViews = articles.reduce((s: number, a: any) => s + (a.view_count || a.views || 0), 0)
+
     return (
         <VCT_PageContainer size="wide" animated>
             <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Truyền thông & PR</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">
+                    Truyền thông & PR
+                    {isLoading && <span className="ml-2 text-sm font-normal text-[var(--vct-accent-cyan)]">Đang tải...</span>}
+                </h1>
                 <p className="text-sm text-[var(--vct-text-secondary)] mt-1">
                     Quản lý tin tức, bài viết, hình ảnh và truyền thông đối ngoại của Liên đoàn.
                 </p>
             </div>
 
             <VCT_StatRow items={[
-                { label: 'Tổng bài viết', value: MEDIA_STATS.totalArticles, icon: <VCT_Icons.FileText size={18} />, color: '#8b5cf6' },
-                { label: 'Xuất bản tháng này', value: MEDIA_STATS.publishedThisMonth, icon: <VCT_Icons.Check size={18} />, color: '#10b981' },
-                { label: 'Lượt xem', value: MEDIA_STATS.totalViews.toLocaleString('vi-VN'), icon: <VCT_Icons.Eye size={18} />, color: '#0ea5e9' },
-                { label: 'Theo dõi MXH', value: MEDIA_STATS.socialFollowers.toLocaleString('vi-VN'), icon: <VCT_Icons.Users size={18} />, color: '#f59e0b' },
+                { label: 'Tổng bài viết', value: articles.length, icon: <VCT_Icons.FileText size={18} />, color: '#8b5cf6' },
+                { label: 'Đã xuất bản', value: publishedCount, icon: <VCT_Icons.Check size={18} />, color: '#10b981' },
+                { label: 'Lượt xem', value: totalViews.toLocaleString('vi-VN'), icon: <VCT_Icons.Eye size={18} />, color: '#0ea5e9' },
+                { label: 'Theo dõi MXH', value: '28.400', icon: <VCT_Icons.Users size={18} />, color: '#f59e0b' },
             ] as StatItem[]} className="mb-6" />
 
             {/* ── News List ── */}
@@ -53,27 +74,34 @@ export function Page_federation_pr() {
                     <h2 className="text-sm font-bold text-[var(--vct-text-primary)] uppercase tracking-wide">📰 Bài viết & Tin tức</h2>
                 </VCT_Stack>
                 <div className="space-y-3">
-                    {NEWS_ITEMS.map(item => (
-                        <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl hover:bg-[var(--vct-bg-elevated)] transition-colors cursor-pointer border border-transparent hover:border-[var(--vct-border-subtle)]">
-                            <span className="text-2xl">{item.image}</span>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-[var(--vct-text-primary)] truncate">{item.title}</div>
-                                <VCT_Stack direction="row" gap={8} align="center" className="mt-1">
-                                    <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: (CATEGORY_COLORS[item.category] || '#666') + '20', color: CATEGORY_COLORS[item.category] }}>{item.category}</span>
-                                    <span className="text-xs text-[var(--vct-text-secondary)]">{item.date}</span>
-                                </VCT_Stack>
+                    {articles.map((item: any) =>  {
+                        const title = item.title
+                        const category = item.category
+                        const status = item.status
+                        const views = item.view_count || item.views || 0
+                        const icon = CATEGORY_ICONS[category] || '📋'
+                        return (
+                            <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl hover:bg-[var(--vct-bg-elevated)] transition-colors cursor-pointer border border-transparent hover:border-[var(--vct-border-subtle)]">
+                                <span className="text-2xl">{icon}</span>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-[var(--vct-text-primary)] truncate">{title}</div>
+                                    <VCT_Stack direction="row" gap={8} align="center" className="mt-1">
+                                        <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: (CATEGORY_COLORS[category] || '#666') + '20', color: CATEGORY_COLORS[category] }}>{category}</span>
+                                        {item.summary && <span className="text-xs text-[var(--vct-text-secondary)] truncate max-w-[200px]">{item.summary}</span>}
+                                    </VCT_Stack>
+                                </div>
+                                {views > 0 && (
+                                    <span className="text-xs text-[var(--vct-text-secondary)] hidden sm:flex items-center gap-1">
+                                        <VCT_Icons.Eye size={12} /> {views.toLocaleString('vi-VN')}
+                                    </span>
+                                )}
+                                <VCT_Badge
+                                    text={status === 'published' ? 'Đã xuất bản' : status === 'draft' ? 'Bản nháp' : 'Đang duyệt'}
+                                    type={status === 'published' ? 'success' : status === 'draft' ? 'neutral' : 'warning'}
+                                />
                             </div>
-                            {item.views > 0 && (
-                                <span className="text-xs text-[var(--vct-text-secondary)] hidden sm:flex items-center gap-1">
-                                    <VCT_Icons.Eye size={12} /> {item.views.toLocaleString('vi-VN')}
-                                </span>
-                            )}
-                            <VCT_Badge
-                                text={item.status === 'published' ? 'Đã xuất bản' : item.status === 'draft' ? 'Bản nháp' : 'Đang duyệt'}
-                                type={item.status === 'published' ? 'success' : item.status === 'draft' ? 'neutral' : 'warning'}
-                            />
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
             </div>
         </VCT_PageContainer>

@@ -1,65 +1,62 @@
 'use client'
 
 import * as React from 'react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
-    VCT_Badge, VCT_Button, VCT_Stack,
-    VCT_PageContainer, VCT_StatRow
+    VCT_Badge, VCT_Stack, VCT_PageContainer, VCT_StatRow
 } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
+import { useWorkflowDefs, type WorkflowDefinition } from '../hooks/useFederationAPI'
 
 // ════════════════════════════════════════
 // FEDERATION — CẤU HÌNH QUY TRÌNH (WORKFLOW)
+// (Wired to /api/v1/federation/workflows)
 // ════════════════════════════════════════
-
-interface WorkflowDef {
-    id: string; code: string; name: string; description: string
-    steps: number; isActive: boolean; category: string
-    lastUpdated: string
-}
-
-const WORKFLOWS: WorkflowDef[] = [
-    { id: '1', code: 'club_registration', name: 'Đăng ký CLB mới', description: 'Quy trình phê duyệt thành lập CLB Võ Cổ Truyền', steps: 3, isActive: true, category: 'CLB', lastUpdated: '2024-01-15' },
-    { id: '2', code: 'belt_promotion', name: 'Thi thăng đai', description: 'Quy trình xét duyệt kết quả thi đai từ CLB → Tỉnh → LĐ', steps: 4, isActive: true, category: 'Đai', lastUpdated: '2024-02-01' },
-    { id: '3', code: 'coach_certification', name: 'Cấp chứng chỉ HLV', description: 'Quy trình xét duyệt và cấp chứng chỉ huấn luyện viên', steps: 3, isActive: true, category: 'HLV', lastUpdated: '2024-01-20' },
-    { id: '4', code: 'referee_certification', name: 'Cấp thẻ Trọng tài', description: 'Quy trình đào tạo và cấp thẻ trọng tài quốc gia', steps: 5, isActive: true, category: 'Trọng tài', lastUpdated: '2024-03-01' },
-    { id: '5', code: 'tournament_approval', name: 'Phê duyệt Giải đấu', description: 'Quy trình phê duyệt tổ chức giải đấu cấp tỉnh/quốc gia', steps: 4, isActive: true, category: 'Giải đấu', lastUpdated: '2024-02-15' },
-    { id: '6', code: 'discipline_case', name: 'Xử lý Kỷ luật', description: 'Quy trình điều tra, xét xử và ra quyết định kỷ luật', steps: 6, isActive: false, category: 'Kỷ luật', lastUpdated: '2023-12-01' },
-    { id: '7', code: 'document_publish', name: 'Ban hành Văn bản', description: 'Quy trình soạn thảo, duyệt và ban hành công văn', steps: 3, isActive: true, category: 'Văn bản', lastUpdated: '2024-01-10' },
-]
 
 const CATEGORY_COLORS: Record<string, string> = {
     'CLB': '#10b981', 'Đai': '#f59e0b', 'HLV': '#8b5cf6',
     'Trọng tài': '#0ea5e9', 'Giải đấu': '#ef4444', 'Kỷ luật': '#f97316', 'Văn bản': '#6366f1',
 }
 
-const STEP_NAMES = ['Nộp hồ sơ', 'Xét duyệt cấp 1', 'Xét duyệt cấp 2', 'Phê duyệt cuối', 'Chứng nhận', 'Lưu trữ']
-
 export function Page_federation_workflow_config() {
     const [selectedId, setSelectedId] = useState<string | null>(null)
-    const selected = WORKFLOWS.find(w => w.id === selectedId)
+
+    const { data: rawData, isLoading } = useWorkflowDefs()
+
+    const workflows: WorkflowDefinition[] = useMemo(() => {
+        if (rawData && Array.isArray(rawData)) return rawData
+        if (rawData && 'items' in (rawData as any)) return (rawData as any).items
+        return []
+    }, [rawData])
+
+    const selected = workflows.find(w => w.id === selectedId)
+    const activeCount = workflows.filter(w => w.is_active).length
+    const totalSteps = workflows.reduce((s, w) => s + (w.steps?.length || 0), 0)
 
     return (
         <VCT_PageContainer size="wide" animated>
             <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Cấu hình Quy trình</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">
+                    Cấu hình Quy trình
+                    {isLoading && <span className="ml-2 text-sm font-normal text-[var(--vct-accent-cyan)]">Đang tải...</span>}
+                </h1>
                 <p className="text-sm text-[var(--vct-text-secondary)] mt-1">
                     Thiết lập và quản lý quy trình phê duyệt — bước xét duyệt, vai trò, điều kiện.
                 </p>
             </div>
 
             <VCT_StatRow items={[
-                { label: 'Tổng quy trình', value: WORKFLOWS.length, icon: <VCT_Icons.Settings size={18} />, color: '#8b5cf6' },
-                { label: 'Đang hoạt động', value: WORKFLOWS.filter(w => w.isActive).length, icon: <VCT_Icons.Check size={18} />, color: '#10b981' },
-                { label: 'Tạm ngưng', value: WORKFLOWS.filter(w => !w.isActive).length, icon: <VCT_Icons.AlertTriangle size={18} />, color: '#ef4444' },
-                { label: 'Tổng bước', value: WORKFLOWS.reduce((s, w) => s + w.steps, 0), icon: <VCT_Icons.List size={18} />, color: '#0ea5e9' },
+                { label: 'Tổng quy trình', value: workflows.length, icon: <VCT_Icons.Settings size={18} />, color: '#8b5cf6' },
+                { label: 'Đang hoạt động', value: activeCount, icon: <VCT_Icons.Check size={18} />, color: '#10b981' },
+                { label: 'Tạm ngưng', value: workflows.length - activeCount, icon: <VCT_Icons.AlertTriangle size={18} />, color: '#ef4444' },
+                { label: 'Tổng bước', value: totalSteps, icon: <VCT_Icons.List size={18} />, color: '#0ea5e9' },
             ] as StatItem[]} className="mb-6" />
 
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* ── Workflow List ── */}
                 <div className="lg:col-span-2 space-y-3">
-                    {WORKFLOWS.map(w => (
+                    {workflows.map(w => (
                         <div key={w.id}
                             onClick={() => setSelectedId(w.id === selectedId ? null : w.id)}
                             className={`p-4 rounded-2xl border transition-all cursor-pointer ${w.id === selectedId
@@ -70,7 +67,7 @@ export function Page_federation_workflow_config() {
                                 <VCT_Stack direction="row" gap={12} align="center">
                                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
                                         style={{ background: `linear-gradient(135deg, ${CATEGORY_COLORS[w.category] || '#666'}, ${CATEGORY_COLORS[w.category] || '#666'}88)` }}>
-                                        {w.steps}
+                                        {w.steps?.length || 0}
                                     </div>
                                     <div>
                                         <div className="font-bold text-sm text-[var(--vct-text-primary)]">{w.name}</div>
@@ -82,11 +79,14 @@ export function Page_federation_workflow_config() {
                                         style={{ backgroundColor: (CATEGORY_COLORS[w.category] || '#666') + '20', color: CATEGORY_COLORS[w.category] }}>
                                         {w.category}
                                     </span>
-                                    <VCT_Badge text={w.isActive ? 'Hoạt động' : 'Tạm ngưng'} type={w.isActive ? 'success' : 'neutral'} />
+                                    <VCT_Badge text={w.is_active ? 'Hoạt động' : 'Tạm ngưng'} type={w.is_active ? 'success' : 'neutral'} />
                                 </VCT_Stack>
                             </VCT_Stack>
                         </div>
                     ))}
+                    {workflows.length === 0 && !isLoading && (
+                        <p className="text-sm text-[var(--vct-text-secondary)] text-center py-8">Chưa có quy trình nào.</p>
+                    )}
                 </div>
 
                 {/* ── Detail Panel ── */}
@@ -101,15 +101,18 @@ export function Page_federation_workflow_config() {
                             </div>
                             <div className="space-y-2 mb-4">
                                 <div className="text-xs font-bold text-[var(--vct-text-primary)] uppercase">Các bước:</div>
-                                {Array.from({ length: selected.steps }, (_, i) => (
+                                {(selected.steps || []).map((step, i) => (
                                     <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--vct-bg-elevated)]">
-                                        <div className="w-6 h-6 rounded-full bg-[var(--vct-accent-cyan)] text-white text-xs font-bold flex items-center justify-center">{i + 1}</div>
-                                        <span className="text-sm text-[var(--vct-text-primary)]">{STEP_NAMES[i] || `Bước ${i + 1}`}</span>
+                                        <div className="w-6 h-6 rounded-full bg-[var(--vct-accent-cyan)] text-white text-xs font-bold flex items-center justify-center">{step.order || i + 1}</div>
+                                        <div className="flex-1">
+                                            <span className="text-sm text-[var(--vct-text-primary)]">{step.name}</span>
+                                            {step.role_code && (
+                                                <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-[var(--vct-bg-glass)] text-[var(--vct-text-secondary)]">{step.role_code}</span>
+                                            )}
+                                        </div>
+                                        {step.auto_approve && <VCT_Badge text="Tự động" type="info" />}
                                     </div>
                                 ))}
-                            </div>
-                            <div className="text-xs text-[var(--vct-text-secondary)]">
-                                Cập nhật: {selected.lastUpdated}
                             </div>
                         </div>
                     ) : (

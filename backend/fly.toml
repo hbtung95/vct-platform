@@ -19,6 +19,11 @@ primary_region = 'sin'
   VCT_CORS_ORIGINS = 'https://vct-platform.vercel.app,https://vct-platform-next.vercel.app'
   VCT_STORAGE_DRIVER = 'postgres'
 
+# Secrets (set via: flyctl secrets set KEY=VALUE)
+#   VCT_POSTGRES_URL   — Neon connection string
+#   VCT_JWT_SECRET     — JWT signing key
+#   UPSTASH_REDIS_URL  — Upstash Redis REST URL (Singapore)
+
 [http_service]
   internal_port = 8080
   force_https = true

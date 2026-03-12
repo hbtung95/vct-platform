@@ -196,15 +196,18 @@ type ProvincialReportRepository interface {
 // ── Service ──────────────────────────────────────────────────
 
 type Service struct {
-	provinces ProvinceRepository
-	units     FederationUnitRepository
-	personnel PersonnelRepository
-	master    MasterDataStore
-	clubs     ProvincialClubRepository
-	athletes  ProvincialAthleteRepository
-	coaches   ProvincialCoachRepository
-	reports   ProvincialReportRepository
-	idGen     func() string
+	provinces     ProvinceRepository
+	units         FederationUnitRepository
+	personnel     PersonnelRepository
+	master        MasterDataStore
+	clubs         ProvincialClubRepository
+	athletes      ProvincialAthleteRepository
+	coaches       ProvincialCoachRepository
+	reports       ProvincialReportRepository
+	prStore       PRStore
+	intlStore     InternationalStore
+	workflowStore WorkflowStore
+	idGen         func() string
 }
 
 func NewService(

@@ -155,3 +155,89 @@ export async function processApproval(id: string, action: 'APPROVE' | 'REJECT', 
     if (!res.ok) throw await res.json()
     return res.json()
 }
+
+// ── PR Types & Hooks ─────────────────────────────────────────
+
+export interface NewsArticle {
+    id: string; title: string; summary: string; content: string
+    category: string; image_url: string; author: string
+    status: 'draft' | 'review' | 'published'; view_count: number
+    tags?: string[]; published_at?: string; created_at: string
+}
+
+export function usePRArticles(status?: string) {
+    const qs = status ? `?status=${status}` : ''
+    return useApiQuery<NewsArticle[]>(`${API_BASE}/articles${qs}`)
+}
+
+export function usePRArticle(id: string) {
+    return useApiQuery<NewsArticle>(`${API_BASE}/articles/${id}`)
+}
+
+export async function createArticle(data: Partial<NewsArticle>) {
+    const res = await fetch(`${API_BASE}/articles`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    if (!res.ok) throw await res.json()
+    return res.json()
+}
+
+// ── International Types & Hooks ──────────────────────────────
+
+export interface InternationalPartner {
+    id: string; name: string; abbreviation: string; country: string
+    country_code: string; type: string; status: 'active' | 'pending' | 'expired'
+    partner_since: string; contact_name: string; contact_email: string; website: string
+}
+
+export interface InternationalEvent {
+    id: string; name: string; location: string; country: string
+    start_date: string; end_date: string; athlete_count: number
+    medal_gold: number; medal_silver: number; medal_bronze: number
+    status: 'planning' | 'confirmed' | 'ongoing' | 'completed'
+}
+
+export function useIntlPartners() {
+    return useApiQuery<InternationalPartner[]>(`${API_BASE}/partners`)
+}
+
+export function useIntlEvents() {
+    return useApiQuery<InternationalEvent[]>(`${API_BASE}/intl-events`)
+}
+
+export async function createPartner(data: Partial<InternationalPartner>) {
+    const res = await fetch(`${API_BASE}/partners`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    if (!res.ok) throw await res.json()
+    return res.json()
+}
+
+export async function createIntlEvent(data: Partial<InternationalEvent>) {
+    const res = await fetch(`${API_BASE}/intl-events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    if (!res.ok) throw await res.json()
+    return res.json()
+}
+
+// ── Workflow Types & Hooks ───────────────────────────────────
+
+export interface WorkflowStep {
+    order: number; name: string; description: string
+    role_code: string; auto_approve: boolean
+}
+
+export interface WorkflowDefinition {
+    id: string; code: string; name: string; description: string
+    category: string; steps: WorkflowStep[]; is_active: boolean
+    created_at: string
+}
+
+export function useWorkflowDefs() {
+    return useApiQuery<WorkflowDefinition[]>(`${API_BASE}/workflows`)
+}
+
+export function useWorkflowDef(id: string) {
+    return useApiQuery<WorkflowDefinition>(`${API_BASE}/workflows/${id}`)
+}
+
+export async function createWorkflow(data: Partial<WorkflowDefinition>) {
+    const res = await fetch(`${API_BASE}/workflows`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    if (!res.ok) throw await res.json()
+    return res.json()
+}

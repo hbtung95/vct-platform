@@ -24,6 +24,6 @@ COPY --from=builder /out/vct-backend /app/vct-backend
 EXPOSE 10000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD curl -sf http://localhost:${VCT_BACKEND_ADDR##*:}/healthz || exit 1
+  CMD curl -sf http://localhost:10000/healthz || exit 1
 
 ENTRYPOINT ["/app/vct-backend"]
