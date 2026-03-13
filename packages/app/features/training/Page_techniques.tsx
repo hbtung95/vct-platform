@@ -106,7 +106,7 @@ export const Page_techniques = () => {
         if (apiTechniques && apiTechniques.length > 0) {
             setTechs(apiTechniques.map(t => ({
                 id: t.id, name: t.name, category: (t.category || 'tan_phap') as TechCategory,
-                difficulty: (t.difficulty || 'co_ban') as any,
+                difficulty: (t.difficulty || 'co_ban') as Technique['difficulty'],
                 has_video: !!t.video_url, description: t.description || '',
                 tags: t.variations || [],
             })))

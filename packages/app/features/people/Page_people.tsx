@@ -60,7 +60,7 @@ export const Page_people = () => {
             apiAthletes.forEach(a => combined.push({
                 id: a.id, name: a.name || a.full_name || '',
                 role: 'athlete', org: a.club_name || '', belt: a.belt_rank,
-                status: (a.status || 'active') as any,
+                status: (a.status || 'active') as Person['status'],
                 phone: a.phone || '', email: a.email || '',
             }))
         }

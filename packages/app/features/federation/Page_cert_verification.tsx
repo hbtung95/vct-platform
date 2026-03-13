@@ -68,7 +68,7 @@ export function Page_cert_verification() {
 
         // Try real API first
         const apiResult = await certApi.execute(`/public/certifications/verify/${query.trim()}`);
-        if (apiResult && (apiResult as any).found !== false) {
+        if (apiResult && apiResult.found !== false) {
             setResult(apiResult);
             setSearching(false);
             return;

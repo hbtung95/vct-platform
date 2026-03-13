@@ -99,7 +99,7 @@ export const Page_clubs = () => {
                 org_id: c.org_id || '', type: (c.type || 'clb') as ClubType,
                 founded_date: c.founded_date || '', master_name: c.master_name || '',
                 phone: c.phone || '', address: c.address || '',
-                status: (c.status || 'active') as any,
+                status: (c.status || 'active') as Club['status'],
                 total_members: c.total_members || 0, active_classes: c.active_classes || 0,
             })))
         }
@@ -310,7 +310,7 @@ export const Page_clubs = () => {
                         <thead>
                             <tr className="border-b border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)]">
                                 {columns.map((col, i) => (
-                                    <th key={i} style={{ padding: '14px 16px', textAlign: (col.align || 'left') as any, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, position: 'sticky', top: 0, background: 'var(--vct-bg-card)', zIndex: 2 }}>
+                                    <th key={i} style={{ padding: '14px 16px', textAlign: (col.align || 'left') as React.CSSProperties['textAlign'], fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, position: 'sticky', top: 0, background: 'var(--vct-bg-card)', zIndex: 2 }}>
                                         {col.label}
                                     </th>
                                 ))}
@@ -322,8 +322,8 @@ export const Page_clubs = () => {
                                 return (
                                     <tr key={club.id} style={{ borderBottom: '1px solid var(--vct-border-subtle)', background: selectedIds.has(club.id) ? 'rgba(34, 211, 238, 0.05)' : idx % 2 === 0 ? 'transparent' : 'rgba(128,128,128,0.02)', borderLeft: `3px solid ${stColor}` }}>
                                         {columns.map((col, ci) => (
-                                            <td key={ci} style={{ padding: '14px 16px', fontSize: 13, textAlign: (col.align || 'left') as any }}>
-                                                {col.render ? col.render(club) : (club as any)[col.key]}
+                                            <td key={ci} style={{ padding: '14px 16px', fontSize: 13, textAlign: (col.align || 'left') as React.CSSProperties['textAlign'] }}>
+                                                {col.render ? col.render(club) : (club as unknown as Record<string, React.ReactNode>)[col.key]}
                                             </td>
                                         ))}
                                     </tr>

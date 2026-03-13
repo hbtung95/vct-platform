@@ -53,7 +53,7 @@ export const Page_belt_exams = () => {
                 id: e.id, title: e.name || e.id,
                 date: e.exam_date, location: e.location || '',
                 levels: [e.belt_level], candidates_count: e.registered_count || 0,
-                status: e.status as any,
+                status: e.status as Exam['status'],
             })))
         }
     }, [apiBeltExams])
@@ -111,7 +111,7 @@ export const Page_belt_exams = () => {
                     {filtered.map(exam => (
                         <div key={exam.id} className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-5 hover:border-[var(--vct-accent-cyan)] hover:shadow-[0_4px_24px_-8px_var(--vct-accent-cyan)] transition-all flex flex-col group">
                             <div className="flex items-start justify-between mb-4">
-                                {(STATUS_MAP as any)[exam.status].render}
+                                {STATUS_MAP[exam.status].render}
                                 <button className="p-1.5 text-[var(--vct-text-tertiary)] hover:text-white rounded-md transition-colors">
                                     <VCT_Icons.MoreVertical size={16} />
                                 </button>

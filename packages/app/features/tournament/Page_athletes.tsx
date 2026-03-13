@@ -431,7 +431,7 @@ export const Page_athletes = () => {
                                         </div>
                                     </div>
                                     <div onClick={() => setExpandedId(isExpanded ? null : v.id)} style={{ flex: 1.5, textAlign: 'right' }}>
-                                        <VCT_Badge text={ST_MAP[v.trang_thai]?.l || '...'} type={ST_MAP[v.trang_thai]?.t as any} />
+                                        <VCT_Badge text={ST_MAP[v.trang_thai]?.l || '...'} type={(ST_MAP[v.trang_thai]?.t || 'info') as 'info' | 'success' | 'warning' | 'danger'} />
                                     </div>
                                     <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} style={{ opacity: 0.5 }}><VCT_Icons.Chevron size={20} /></motion.div>
                                 </div>
@@ -496,7 +496,7 @@ export const Page_athletes = () => {
                                                                 return (
                                                                     <label key={doc.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', border: `1px solid ${checked ? 'rgba(16, 185, 129, 0.3)' : 'var(--vct-border-strong)'}`, background: checked ? 'rgba(16, 185, 129, 0.05)' : 'transparent', transition: 'all 0.2s' }}>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                                            <input type="checkbox" checked={checked} onChange={(e) => handleToggleDoc(v.id, doc.key as any, e.target.checked)} disabled={!permissions.canUpdate} style={{ width: 16, height: 16, accentColor: '#10b981' }} />
+                                                                            <input type="checkbox" checked={checked} onChange={(e) => handleToggleDoc(v.id, doc.key as keyof VanDongVien['ho_so'], e.target.checked)} disabled={!permissions.canUpdate} style={{ width: 16, height: 16, accentColor: '#10b981' }} />
                                                                             <span style={{ fontSize: 13, fontWeight: checked ? 700 : 500, opacity: checked ? 1 : 0.6 }}>{doc.label}</span>
                                                                         </div>
                                                                         {!checked && <span style={{ fontSize: 10, fontWeight: 800, color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: 4 }}>THIẾU</span>}

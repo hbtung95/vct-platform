@@ -242,7 +242,7 @@ export function Page_register() {
 
                   {/* Terms */}
                   <label className="v-ck">
-                    <input type="checkbox" checked={form.chuaDoc} onChange={e => handleField('chuaDoc', e.target.checked as any)} />
+                    <input type="checkbox" checked={form.chuaDoc} onChange={e => handleField('chuaDoc', e.target.checked)} />
                     <span className="v-ck__box"><VCT_Icons.Check size={10} /></span>
                     <span>{t('terms')} <a href="#" className="v-link">{t('termsLink')}</a> {t('and')} <a href="#" className="v-link">{t('privacyLink')}</a></span>
                   </label>

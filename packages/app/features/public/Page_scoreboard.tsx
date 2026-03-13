@@ -28,10 +28,10 @@ export function Page_Scoreboard() {
         if (!latestInfo) return
 
         if (latestInfo.action === 'score_update' && latestInfo.payload) {
-            const payload = latestInfo.payload as any
+            const payload = latestInfo.payload as { matchId?: string; redScore?: number; blueScore?: number }
             const matchId = payload.matchId
-            const redScore = payload.redScore as number | undefined
-            const blueScore = payload.blueScore as number | undefined
+            const redScore = payload.redScore
+            const blueScore = payload.blueScore
             setMatches(prev => prev.map(m =>
                 m.id === matchId
                     ? { ...m, scoreRed: redScore ?? m.scoreRed, scoreBlue: blueScore ?? m.scoreBlue }

@@ -64,7 +64,7 @@ export function VCT_Tooltip({
                     style={{
                         position: 'absolute',
                         ...positionStyles[position],
-                        zIndex: 'var(--vct-z-tooltip, 600)' as any,
+                        zIndex: 600,
                         padding: '6px 10px',
                         borderRadius: 'var(--vct-radius-sm)',
                         background: 'var(--vct-bg-elevated)',

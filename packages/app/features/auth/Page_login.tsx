@@ -62,7 +62,7 @@ export const Page_login = () => {
     if (!form.username.trim() || !form.password.trim()) return flash(t('errEmpty'), 'warning')
     setLoading(true)
     try {
-      await login({ username: form.username.trim(), password: form.password.trim(), role: '' as any, rememberMe: form.rememberMe })
+      await login({ username: form.username.trim(), password: form.password.trim(), rememberMe: form.rememberMe })
       flash(t('ok'), 'success')
       router.replace(redirectTarget)
     } catch (err) {

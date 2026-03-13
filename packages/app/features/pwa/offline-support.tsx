@@ -162,7 +162,7 @@ export async function queueOfflineAction(action: Omit<PendingAction, 'id' | 'tim
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
         const reg = await navigator.serviceWorker.ready
         try {
-            await (reg as any).sync.register(`sync-${action.type}`)
+            await (reg as unknown as { sync: { register: (tag: string) => Promise<void> } }).sync.register(`sync-${action.type}`)
         } catch {
             console.log('[Offline] Background sync not available')
         }
@@ -245,7 +245,7 @@ export async function subscribeToPush(vapidPublicKey: string): Promise<PushSubsc
     try {
         const subscription = await reg.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as any,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
         })
         console.log('[Push] Subscribed:', subscription.endpoint)
         return subscription

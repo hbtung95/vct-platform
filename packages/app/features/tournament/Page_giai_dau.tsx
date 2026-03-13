@@ -37,7 +37,7 @@ const toTournamentConfig = (row: TournamentConfigRecord): TournamentConfig => {
 };
 
 // ── CUSTOM COMPONENTS ──
-const CurrencyInput = ({ value, onChange, disabled, placeholder }: any) => {
+const CurrencyInput = ({ value, onChange, disabled, placeholder }: { value: number; onChange: (v: number) => void; disabled?: boolean; placeholder?: string }) => {
     // Hiển thị số có dấu chấm phân cách hàng nghìn (VD: 1.000.000)
     const displayValue = value ? new Intl.NumberFormat('vi-VN').format(value) : '';
 
@@ -526,12 +526,12 @@ export const Page_giai_dau = () => {
                 )}
             </VCT_Stack>
             <VCT_Table data={config.btc} columns={[
-                { key: 'chuc_vu', label: 'Chức vụ', render: (r: any) => <VCT_Text style={{ fontWeight: 700, color: r.cap === 1 ? 'var(--vct-accent-cyan)' : 'inherit' }}>{r.chuc_vu}</VCT_Text> },
-                { key: 'ten', label: 'Họ và tên', render: (r: any) => <VCT_Text className="font-bold">{r.ten}</VCT_Text> },
+                { key: 'chuc_vu', label: 'Chức vụ', render: (r: (typeof config.btc)[number]) => <VCT_Text style={{ fontWeight: 700, color: r.cap === 1 ? 'var(--vct-accent-cyan)' : 'inherit' }}>{r.chuc_vu}</VCT_Text> },
+                { key: 'ten', label: 'Họ và tên', render: (r: (typeof config.btc)[number]) => <VCT_Text className="font-bold">{r.ten}</VCT_Text> },
                 { key: 'dv', label: 'Đơn vị / Chuyên môn' },
-                { key: 'sdt', label: 'Liên hệ', render: (r: any) => <VCT_Text variant="mono">{r.sdt} <span style={{ opacity: 0.4 }}>|</span> {r.email}</VCT_Text> },
+                { key: 'sdt', label: 'Liên hệ', render: (r: (typeof config.btc)[number]) => <VCT_Text variant="mono">{r.sdt} <span style={{ opacity: 0.4 }}>|</span> {r.email}</VCT_Text> },
                 {
-                    key: 'actions', label: '', align: 'right', render: (r: any, idx: number) => isEditing ? (
+                    key: 'actions', label: '', align: 'right', render: (r: (typeof config.btc)[number], idx: number) => isEditing ? (
                         <VCT_Stack direction="row" gap={8} justify="flex-end">
                             <button
                                 onClick={() => permissions.canUpdate
@@ -624,7 +624,7 @@ export const Page_giai_dau = () => {
                     <div>
                         <VCT_Stack direction="row" gap={12} align="center" style={{ marginBottom: '12px' }}>
                             <span style={{ fontSize: '32px' }}>🏆</span>
-                            <VCT_Badge text={st.l} type={st.t as any} pulse={config.trang_thai === 'dang_ky' || config.trang_thai === 'thi_dau'} />
+                            <VCT_Badge text={st.l} type={st.t as 'info' | 'success' | 'warning' | 'danger'} pulse={config.trang_thai === 'dang_ky' || config.trang_thai === 'thi_dau'} />
                             <VCT_Badge text={`Cấp ${CAP_DO_LABELS[config.cap_do] || config.cap_do}`} type="info" pulse={false} style={{ paddingLeft: '24px', paddingRight: '24px' }} />
                         </VCT_Stack>
 
@@ -698,7 +698,7 @@ export const Page_giai_dau = () => {
             }}>
                 <VCT_Stack direction="row" align="center" gap={12}>
                     <VCT_Text variant="small">Tình trạng hệ thống:</VCT_Text>
-                    <VCT_Badge text={st.l} type={st.t as any} pulse={config.trang_thai === 'dang_ky' || config.trang_thai === 'thi_dau'} />
+                    <VCT_Badge text={st.l} type={st.t as 'info' | 'success' | 'warning' | 'danger'} pulse={config.trang_thai === 'dang_ky' || config.trang_thai === 'thi_dau'} />
                 </VCT_Stack>
                 <div style={{ width: 1, height: 24, background: 'var(--vct-border-subtle)' }} />
                 <VCT_Button

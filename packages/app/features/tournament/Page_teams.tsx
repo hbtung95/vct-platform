@@ -429,7 +429,7 @@ export const Page_teams = () => {
                         <thead>
                             <tr className="border-b border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)]">
                                 {columns.map((col, i) => (
-                                    <th key={i} style={{ padding: '14px 16px', textAlign: (col.align || 'left') as any, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, position: 'sticky', top: 0, background: 'var(--vct-bg-card)', zIndex: 2 }}>
+                                    <th key={i} style={{ padding: '14px 16px', textAlign: (col.align || 'left') as React.CSSProperties['textAlign'], fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, position: 'sticky', top: 0, background: 'var(--vct-bg-card)', zIndex: 2 }}>
                                         {col.label}
                                     </th>
                                 ))}
@@ -443,8 +443,8 @@ export const Page_teams = () => {
                                         <tr onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}
                                             style={{ borderBottom: '1px solid var(--vct-border-subtle)', cursor: 'pointer', background: selectedIds.has(team.id) ? 'rgba(34, 211, 238, 0.05)' : idx % 2 === 0 ? 'transparent' : 'rgba(128,128,128,0.02)', borderLeft: `3px solid ${stColor}`, transition: 'background 0.15s' }}>
                                             {columns.map((col, ci) => (
-                                                <td key={ci} style={{ padding: '14px 16px', fontSize: 13, textAlign: (col.align || 'left') as any }}>
-                                                    {col.render ? col.render(team) : (team as any)[col.key]}
+                                                <td key={ci} style={{ padding: '14px 16px', fontSize: 13, textAlign: (col.align || 'left') as React.CSSProperties['textAlign'] }}>
+                                                    {col.render ? col.render(team) : (team as unknown as Record<string, React.ReactNode>)[col.key]}
                                                 </td>
                                             ))}
                                         </tr>

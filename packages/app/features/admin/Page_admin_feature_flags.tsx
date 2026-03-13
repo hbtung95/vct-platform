@@ -126,8 +126,8 @@ export const Page_admin_feature_flags = () => {
     const updateRollout = (id: string, pct: number) => {
         setFlags(prev => prev.map(f => {
             if (f.id !== id) return f
-            const status = pct === 0 ? 'disabled' : pct === 100 ? 'enabled' : 'partial'
-            return { ...f, rollout_pct: pct, status: status as any, updated_at: new Date().toLocaleString('vi-VN') }
+            const status: FeatureFlag['status'] = pct === 0 ? 'disabled' : pct === 100 ? 'enabled' : 'partial'
+            return { ...f, rollout_pct: pct, status, updated_at: new Date().toLocaleString('vi-VN') }
         }))
     }
 

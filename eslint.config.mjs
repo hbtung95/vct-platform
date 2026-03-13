@@ -1,22 +1,27 @@
-import { FlatCompat } from '@eslint/eslintrc'
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const compat = new FlatCompat({ resolvePluginsRelativeTo: __dirname })
+import tsPlugin from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
+import reactHooksPlugin from 'eslint-plugin-react-hooks'
 
 export default [
-  ...compat.extends('next'),
   {
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+      'react-hooks': reactHooksPlugin,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
+      },
+    },
     settings: {
       next: {
         rootDir: 'apps/next/',
       },
     },
     rules: {
-      '@next/next/no-html-link-for-pages': 'off',
-
-      // ── Stricter rules ─────────────────────────────────
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       '@typescript-eslint/no-unused-vars': [
         'warn',
@@ -26,6 +31,9 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // React hooks — only classic recommended rules
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
   {

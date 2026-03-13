@@ -92,7 +92,7 @@ export function VCT_Drawer({
         [position]: 0,
         width: panelWidth,
         maxWidth: '100vw',
-        zIndex: 'var(--vct-z-drawer, 300)' as any,
+        zIndex: 300,
         display: 'flex',
         flexDirection: 'column',
         background: 'var(--vct-bg-elevated)',
@@ -117,7 +117,7 @@ export function VCT_Drawer({
                         style={{
                             position: 'fixed',
                             inset: 0,
-                            zIndex: 'var(--vct-z-drawer, 300)' as any,
+                            zIndex: 300,
                             background: 'rgba(0,0,0,0.45)',
                         }}
                     />

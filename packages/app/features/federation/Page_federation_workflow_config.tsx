@@ -26,7 +26,7 @@ export function Page_federation_workflow_config() {
 
     const workflows: WorkflowDefinition[] = useMemo(() => {
         if (rawData && Array.isArray(rawData)) return rawData
-        if (rawData && 'items' in (rawData as any)) return (rawData as any).items
+        if (rawData && typeof rawData === 'object' && 'items' in rawData) return (rawData as { items: WorkflowDefinition[] }).items
         return []
     }, [rawData])
 

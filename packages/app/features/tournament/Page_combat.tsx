@@ -131,7 +131,7 @@ export const Page_combat = () => {
         const oppSide = side === 'do' ? 'xanh' : 'do';
         setMatches(p => p.map(m => m.id === matchId ? {
             ...m,
-            [`diem_${oppSide}`]: (m as any)[`diem_${oppSide}`] + 1,
+            [`diem_${oppSide}`]: (oppSide === 'do' ? m.diem_do : m.diem_xanh) + 1,
         } : m));
 
         const event: MatchEvent = {

@@ -35,13 +35,13 @@ export function Page_federation_international() {
 
     const partners: InternationalPartner[] = useMemo(() => {
         if (partnersRaw && Array.isArray(partnersRaw)) return partnersRaw
-        if (partnersRaw && 'items' in (partnersRaw as any)) return (partnersRaw as any).items
+        if (partnersRaw && typeof partnersRaw === 'object' && 'items' in partnersRaw) return (partnersRaw as { items: InternationalPartner[] }).items
         return []
     }, [partnersRaw])
 
     const events: InternationalEvent[] = useMemo(() => {
         if (eventsRaw && Array.isArray(eventsRaw)) return eventsRaw
-        if (eventsRaw && 'items' in (eventsRaw as any)) return (eventsRaw as any).items
+        if (eventsRaw && typeof eventsRaw === 'object' && 'items' in eventsRaw) return (eventsRaw as { items: InternationalEvent[] }).items
         return []
     }, [eventsRaw])
 

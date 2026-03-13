@@ -59,7 +59,7 @@ const RegistrationModal = ({
     onClose: () => void,
     vdvId: string,
     existingRegs: DangKy[],
-    onSave: (vId: string, regs: any[]) => void,
+    onSave: (vId: string, regs: { loai: string; nd_id: string }[]) => void,
     isEdit: boolean,
     athletes: VanDongVien[],
     canSave: boolean,
@@ -70,7 +70,7 @@ const RegistrationModal = ({
 
     useEffect(() => {
         if (!isOpen || !vdvId) return;
-        const qMap: any = {};
+        const qMap: Record<string, boolean> = {};
         let dk = '';
         existingRegs.forEach((r) => {
             if (r.vdv_id !== vdvId) return;
@@ -104,7 +104,7 @@ const RegistrationModal = ({
         }
         if (newTotal === 0) return;
         if (overQuota) return;
-        const newRegs: any[] = [];
+        const newRegs: { loai: string; nd_id: string }[] = [];
         Object.keys(checkedQ).forEach(qId => {
             if (!checkedQ[qId]) return;
             const q = NOI_DUNG_QUYENS.find(x => x.id === qId);
@@ -275,7 +275,7 @@ export const Page_registration = () => {
         showToast(`Đã duyệt thành công ${toDuyet} đăng ký!`, 'success');
     };
 
-    const handleSaveRegs = (vdvId: string, newRegs: any[]) => {
+    const handleSaveRegs = (vdvId: string, newRegs: { loai: string; nd_id: string }[]) => {
         if (!canManageCard || !requireAction('update', 'cập nhật thẻ đăng ký')) return;
         const vdv = athletes.find(v => v.id === vdvId);
         if (!vdv) return;
@@ -384,7 +384,7 @@ export const Page_registration = () => {
                     <VCT_Table
                         columns={[
                             {
-                                key: 'vdv_ten', label: 'Vận động viên', render: (r: any) => (
+                                key: 'vdv_ten', label: 'Vận động viên', render: (r: (typeof enrichedData)[number]) => (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                         <VCT_AvatarLetter name={r.vdv_ten} size={40} color="var(--vct-accent-cyan)" />
                                         <div><VCT_Text style={{ fontWeight: 800, fontSize: 15 }}>{r.vdv_ten}</VCT_Text><VCT_Text variant="small" style={{ opacity: 0.6, marginTop: 2 }}>{r.doan_ten}</VCT_Text></div>
@@ -392,17 +392,17 @@ export const Page_registration = () => {
                                 )
                             },
                             {
-                                key: 'loai_noi_dung', label: 'Phân loại', render: (r: any) => (
+                                key: 'loai_noi_dung', label: 'Phân loại', render: (r: (typeof enrichedData)[number]) => (
                                     <span style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 800, background: r.loai === 'quyen' ? 'rgba(34,211,238,0.1)' : 'rgba(245,158,11,0.1)', color: r.loai === 'quyen' ? '#22d3ee' : '#f59e0b', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                                         {r.loai === 'quyen' ? '🥋 Quyền' : '🥊 Đối kháng'}
                                     </span>
                                 )
                             },
-                            { key: 'nd_ten', label: 'Nội dung đăng ký', render: (r: any) => <VCT_Text style={{ fontWeight: 700, fontSize: 14 }}>{r.nd_ten}</VCT_Text> },
-                            { key: 'ngay_dang_ky', label: 'Thời gian ĐK', render: (r: any) => <VCT_Text variant="mono" className="text-xs opacity-60">{new Date(r.ngay).toLocaleDateString('vi-VN')} {new Date(r.ngay).toLocaleTimeString('vi-VN')}</VCT_Text> },
-                            { key: 'trang_thai', label: 'Trạng thái', render: (r: any) => <VCT_Badge text={RST_MAP[r.trang_thai as TrangThaiDK].l} type={RST_MAP[r.trang_thai as TrangThaiDK].t as any} /> },
+                            { key: 'nd_ten', label: 'Nội dung đăng ký', render: (r: (typeof enrichedData)[number]) => <VCT_Text style={{ fontWeight: 700, fontSize: 14 }}>{r.nd_ten}</VCT_Text> },
+                            { key: 'ngay_dang_ky', label: 'Thời gian ĐK', render: (r: (typeof enrichedData)[number]) => <VCT_Text variant="mono" className="text-xs opacity-60">{new Date(r.ngay).toLocaleDateString('vi-VN')} {new Date(r.ngay).toLocaleTimeString('vi-VN')}</VCT_Text> },
+                            { key: 'trang_thai', label: 'Trạng thái', render: (r: (typeof enrichedData)[number]) => <VCT_Badge text={RST_MAP[r.trang_thai as TrangThaiDK].l} type={RST_MAP[r.trang_thai as TrangThaiDK].t as 'info' | 'success' | 'warning' | 'danger'} /> },
                             {
-                                key: 'actions', label: '', align: 'right', render: (r: any) => (
+                                key: 'actions', label: '', align: 'right', render: (r: (typeof enrichedData)[number]) => (
                                     <VCT_Button variant="secondary" onClick={() => openRegistrationEditor(r.vdv_id)} style={{ padding: '8px 14px', fontSize: '12px' }} icon={<VCT_Icons.Edit size={14} />} disabled={!canManageCard}>
                                         Sửa thẻ
                                     </VCT_Button>

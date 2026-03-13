@@ -89,9 +89,9 @@ export function Page_calendar() {
     const allEvents = useMemo(() => {
         if (apiEvents && apiEvents.length > 0) {
             return apiEvents.map(e => ({
-                id: e.id, title: e.title, type: (e.type || 'tournament') as any,
+                id: e.id, title: e.title, type: (e.type || 'tournament') as CalendarEvent['type'],
                 date: e.date || e.start_date || '', endDate: e.end_date || '',
-                location: e.location || '', status: (e.status || 'upcoming') as any,
+                location: e.location || '', status: (e.status || 'upcoming') as CalendarEvent['status'],
                 participants: e.participants || 0, description: e.description,
             }))
         }

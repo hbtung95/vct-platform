@@ -1,5 +1,5 @@
 'use client'
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable -- img tag used intentionally for cross-platform compatibility */
 import * as React from 'react'
 import type { CSSProperties, FC } from 'react'
 

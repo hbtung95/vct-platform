@@ -86,7 +86,7 @@ export function ProfileMobileScreen() {
                 <View style={styles.avatarCircle}>
                     <Text style={styles.avatarEmoji}>🥋</Text>
                 </View>
-                <Text style={styles.heroName}>{(currentUser as any).displayName || 'VĐV Demo'}</Text>
+                <Text style={styles.heroName}>{(currentUser as unknown as Record<string, string>).displayName || 'VĐV Demo'}</Text>
                 <Text style={styles.heroRole}>Vận động viên · {currentUser.role}</Text>
                 <View style={styles.heroBadge}>
                     <View style={styles.badge}><Text style={styles.badgeText}>🥋 Lam đai 2</Text></View>

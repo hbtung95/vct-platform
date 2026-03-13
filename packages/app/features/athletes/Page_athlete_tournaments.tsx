@@ -122,7 +122,7 @@ export function Page_athlete_tournaments() {
                     {filters.map(f => (
                         <button
                             key={f.v}
-                            onClick={() => setFilter(f.v as any)}
+                            onClick={() => setFilter(f.v as 'all' | 'upcoming' | 'past')}
                             className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 text-sm font-bold rounded-xl transition-all ${filter === f.v
                                 ? 'bg-vct-elevated text-vct-accent shadow border border-vct-border'
                                 : 'text-vct-text-muted hover:text-vct-text hover:bg-vct-input/50 border border-transparent'

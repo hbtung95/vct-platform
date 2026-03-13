@@ -320,7 +320,7 @@ export function VCT_DataGrid<T extends { id?: string;[key: string]: any }>({
                                                     width: col.width,
                                                 }}
                                             >
-                                                {col.render ? col.render(row, ri) : (row as any)[col.key]}
+                                                {col.render ? col.render(row, ri) : row[col.key]}
                                             </td>
                                         ))}
                                     </tr>

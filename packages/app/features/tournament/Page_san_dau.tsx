@@ -313,7 +313,7 @@ export const Page_san_dau = () => {
                                                 <VCT_Text variant="small" style={{ opacity: 0.5 }}>{arena.vi_tri} • {arena.loai === 'doi_khang' ? '🥊 Đối kháng' : arena.loai === 'quyen' ? '🥋 Quyền' : '⚔️ Cả hai'}</VCT_Text>
                                             </div>
                                         </VCT_Stack>
-                                        <VCT_Badge text={stMap.label} type={stMap.type as any} pulse={isLive} />
+                                        <VCT_Badge text={stMap.label} type={stMap.type as 'info' | 'success' | 'warning' | 'danger'} pulse={isLive} />
                                     </VCT_Stack>
 
                                     {/* PROGRESS HUB */}

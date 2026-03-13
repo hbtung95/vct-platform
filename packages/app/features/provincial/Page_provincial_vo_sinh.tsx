@@ -763,7 +763,7 @@ const DetailField = ({ label, value, span, badge, beltColor, badgeType }: {
                 {value || '—'}
             </span>
         ) : badge && badgeType ? (
-            <VCT_Badge text={String(value || '—')} type={badgeType as any} />
+            <VCT_Badge text={String(value || '—')} type={badgeType as 'info' | 'success' | 'warning' | 'danger'} />
         ) : (
             <div className="text-sm text-[var(--vct-text-primary)]">{value || '—'}</div>
         )}

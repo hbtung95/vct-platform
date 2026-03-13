@@ -53,7 +53,7 @@ export const Page_attendance = () => {
         if (apiAttendance && apiAttendance.length > 0) {
             setStudents(apiAttendance.map(a => ({
                 id: a.id, name: a.student_name || a.student_id,
-                belt: 'N/A', status: a.status as any, note: a.notes,
+                belt: 'N/A', status: a.status as Student['status'], note: a.notes,
             })))
         }
     }, [apiAttendance])

@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ActiveWorkspace, WorkspaceCard, WorkspaceType } from './workspace-types'
+import type { ActiveWorkspace, WorkspaceCard, WorkspaceScope, WorkspaceType } from './workspace-types'
 import { WORKSPACE_META } from './workspace-types'
 
 interface WorkspaceState {
@@ -97,7 +97,7 @@ export function generateWorkspaceCards(
         cards.push({
             id: key,
             type: wsType,
-            scope: { type: r.scope_type as any, id: r.scope_id, name: r.scope_name },
+            scope: { type: r.scope_type as WorkspaceScope['type'], id: r.scope_id, name: r.scope_name },
             label: r.scope_name || meta.label,
             description: meta.description,
             icon: meta.icon,

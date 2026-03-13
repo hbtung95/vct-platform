@@ -117,9 +117,9 @@ function EditProfileModal({ profile, onClose, onSave }: {
 }) {
     const [form, setForm] = useState({
         full_name: profile.full_name || '',
-        phone: (profile as any).phone || '',
-        weight: (profile as any).weight || '',
-        height: (profile as any).height || '',
+        phone: (profile as unknown as Record<string, string>).phone || '',
+        weight: (profile as unknown as Record<string, string>).weight || '',
+        height: (profile as unknown as Record<string, string>).height || '',
     })
     const [saving, setSaving] = useState(false)
     const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null)
@@ -132,8 +132,8 @@ function EditProfileModal({ profile, onClose, onSave }: {
             await onSave(form)
             setFeedback({ type: 'ok', msg: 'Cập nhật thành công!' })
             setTimeout(onClose, 800)
-        } catch (err: any) {
-            setFeedback({ type: 'err', msg: err?.message || 'Lỗi cập nhật' })
+        } catch (err: unknown) {
+            setFeedback({ type: 'err', msg: err instanceof Error ? err.message : 'Lỗi cập nhật' })
         } finally { setSaving(false) }
     }
 

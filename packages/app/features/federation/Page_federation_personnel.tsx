@@ -25,7 +25,7 @@ const FALLBACK_PERSONNEL: PersonnelAssignment[] = [
     { id: '6', user_id: 'u6', user_name: '', name: 'Đỗ Thị Lan', position: 'Phó ban Đào tạo', unit_id: 'bdt', unit_name: 'Ban Đào tạo', role_code: 'national_coach', start_date: '2023-03-15', is_active: true },
     { id: '7', user_id: 'u7', user_name: '', name: 'Hoàng Đức Anh', position: 'Ủy viên', unit_id: 'bch', unit_name: 'BCH Liên đoàn', role_code: 'federation_secretary', start_date: '2022-01-15', is_active: true },
     { id: '8', user_id: 'u8', user_name: '', name: 'Bùi Văn Thắng', position: 'Ủy viên', unit_id: 'bch', unit_name: 'BCH Liên đoàn', role_code: 'federation_secretary', start_date: '2020-01-01', is_active: false },
-] as any[]
+] as unknown as PersonnelAssignment[]
 
 const PERSONNEL_AUDIT_LOGS = [
     { time: '08:15 Hôm nay', title: 'Bổ nhiệm mới', description: 'Thêm ông Trần Văn C vào Ban Kỹ thuật', color: '#10b981', icon: '👤' },
@@ -33,7 +33,7 @@ const PERSONNEL_AUDIT_LOGS = [
     { time: '10:00 10/03/2026', title: 'Miễn nhiệm', description: 'Ông Bùi Văn Thắng thôi giữ chức vụ Ủy viên BCH do hết nhiệm kỳ', color: '#ef4444', icon: '⚠️' }
 ];
 
-const ROLE_LABELS: Record<string, { label: string; type: any }> = {
+const ROLE_LABELS: Record<string, { label: string; type: 'highlight' | 'info' | 'success' | 'warning' | 'neutral' }> = {
     federation_president: { label: 'Chủ tịch', type: 'highlight' },
     federation_secretary: { label: 'Thư ký/UV', type: 'info' },
     national_coach: { label: 'HLV', type: 'success' },
@@ -49,30 +49,30 @@ export function Page_federation_personnel() {
 
     const personnel = useMemo(() => {
         if (apiData && Array.isArray(apiData)) return apiData
-        if (apiData && 'items' in (apiData as any)) return (apiData as any).items
+        if (apiData && typeof apiData === 'object' && 'items' in apiData) return (apiData as { items: PersonnelAssignment[] }).items
         return FALLBACK_PERSONNEL
     }, [apiData])
 
-    const units = useMemo(() => Array.from(new Set(personnel.map((p: any) => p.unit_name))), [personnel])
+    const units = useMemo(() => Array.from(new Set(personnel.map((p: PersonnelAssignment) => p.unit_name))), [personnel])
 
     const filtered = useMemo(() => {
-        let data = personnel as any[]
+        let data = personnel as PersonnelAssignment[]
         if (search) {
             const q = search.toLowerCase()
             data = data.filter(p =>
-                (p.user_name || p.name || '').toLowerCase().includes(q) ||
+                (p.user_name || (p as unknown as Record<string, string>).name || '').toLowerCase().includes(q) ||
                 p.position.toLowerCase().includes(q)
             )
         }
         return data
     }, [personnel, search])
 
-    const activeCount = (personnel as any[]).filter(p => p.is_active).length
+    const activeCount = (personnel as PersonnelAssignment[]).filter(p => p.is_active).length
 
     const handleExportExcel = () => {
-        const exportData = filtered.map((p: any, idx) => ({
+        const exportData = filtered.map((p: PersonnelAssignment, idx) => ({
             'STT': idx + 1,
-            'Họ Tên': p.user_name || p.name || 'N/A',
+            'Họ Tên': p.user_name || (p as unknown as Record<string, string>).name || 'N/A',
             'Chức Vụ': p.position,
             'Đơn Vị': p.unit_name,
             'Vai Trò Hệ Thống': p.role_code,
@@ -95,10 +95,10 @@ export function Page_federation_personnel() {
             </div>
 
             <VCT_StatRow items={[
-                { label: 'Tổng nhân sự', value: (personnel as any[]).length, icon: <VCT_Icons.Users size={18} />, color: '#8b5cf6' },
+                { label: 'Tổng nhân sự', value: (personnel as PersonnelAssignment[]).length, icon: <VCT_Icons.Users size={18} />, color: '#8b5cf6' },
                 { label: 'Đang hoạt động', value: activeCount, icon: <VCT_Icons.Check size={18} />, color: '#10b981' },
                 { label: 'Đơn vị', value: units.length, icon: <VCT_Icons.Building2 size={18} />, color: '#0ea5e9' },
-                { label: 'Hết nhiệm kỳ', value: (personnel as any[]).length - activeCount, icon: <VCT_Icons.AlertTriangle size={18} />, color: '#ef4444' },
+                { label: 'Hết nhiệm kỳ', value: (personnel as PersonnelAssignment[]).length - activeCount, icon: <VCT_Icons.AlertTriangle size={18} />, color: '#ef4444' },
             ] as StatItem[]} className="mb-6" />
 
             <VCT_Stack direction="row" gap={12} align="center" className="mb-5">
@@ -121,8 +121,8 @@ export function Page_federation_personnel() {
                 <VCT_EmptyState title="Không tìm thấy nhân sự" description="Thử thay đổi bộ lọc." icon="👤" />
             ) : (
                 <div className="space-y-3">
-                    {filtered.map((p: any) => {
-                        const displayName = p.user_name || p.name || 'N/A'
+                    {filtered.map((p: PersonnelAssignment) => {
+                        const displayName = p.user_name || (p as unknown as Record<string, string>).name || 'N/A'
                         return (
                             <div key={p.id} className="flex items-center gap-4 p-4 rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)] hover:border-[var(--vct-accent-cyan)] transition-colors cursor-pointer">
                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#6d28d9] flex items-center justify-center text-white font-bold text-sm">

@@ -42,8 +42,8 @@ export function Page_federation_pr() {
 
     const articles = useMemo(() => {
         if (apiData && Array.isArray(apiData)) return apiData
-        if (apiData && 'items' in (apiData as any)) return (apiData as any).items as NewsArticle[]
-        return NEWS_ITEMS.map(n => ({ ...n, summary: '', content: '', image_url: '', author: 'Ban TT', tags: [], created_at: '' } as any))
+        if (apiData && typeof apiData === 'object' && 'items' in apiData) return (apiData as { items: NewsArticle[] }).items
+        return NEWS_ITEMS.map(n => ({ ...n, summary: '', content: '', image_url: '', author: 'Ban TT', tags: [] as string[], created_at: '', view_count: n.views || 0 }) as unknown as NewsArticle)
     }, [apiData])
 
     const publishedCount = articles.filter((a: any) => a.status === 'published').length

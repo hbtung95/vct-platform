@@ -67,7 +67,7 @@ export const Page_medals = () => {
     const combatStore = useEntityCollection(repositories.combatMatches.mock);
     const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
     const [filterMedal, setFilterMedal] = useState('all');
-    const [certModal, setCertModal] = useState<any>(null);
+    const [certModal, setCertModal] = useState<{ vdv_ten: string; doan_ten: string; loai_hc: string; nd_ten: string; diem_so: string } | null>(null);
 
     const medalTable = useMemo(
         () => buildMedalTable(teamStore.items, formStore.items, combatStore.items),
@@ -295,16 +295,16 @@ export const Page_medals = () => {
                             <div style={{ fontSize: 20, color: '#d4af37', fontWeight: 800, textTransform: 'uppercase', marginBottom: 40, letterSpacing: 2 }}>THÀNH TÍCH THI ĐẤU</div>
 
                             <div style={{ fontSize: 18, marginBottom: 15 }}>Chứng nhận Vận động viên:</div>
-                            <div style={{ fontSize: 40, fontWeight: 900, color: '#1e3a8a', textTransform: 'uppercase', marginBottom: 15, fontFamily: 'serif' }}>{(certModal as any).vdv_ten}</div>
+                            <div style={{ fontSize: 40, fontWeight: 900, color: '#1e3a8a', textTransform: 'uppercase', marginBottom: 15, fontFamily: 'serif' }}>{certModal.vdv_ten}</div>
 
-                            <div style={{ fontSize: 20, marginBottom: 30, fontWeight: 'bold' }}>Đơn vị: {(certModal as any).doan_ten}</div>
+                            <div style={{ fontSize: 20, marginBottom: 30, fontWeight: 'bold' }}>Đơn vị: {certModal.doan_ten}</div>
 
                             <div style={{ fontSize: 18, marginBottom: 15 }}>Đã đạt thành tích:</div>
                             <div style={{ fontSize: 32, fontWeight: 900, color: '#d4af37', textTransform: 'uppercase', marginBottom: 15 }}>
-                                {(certModal as any).loai_hc === 'vang' ? 'HUY CHƯƠNG VÀNG' : (certModal as any).loai_hc === 'bac' ? 'HUY CHƯƠNG BẠC' : 'HUY CHƯƠNG ĐỒNG'}
+                                {certModal.loai_hc === 'vang' ? 'HUY CHƯƠNG VÀNG' : certModal.loai_hc === 'bac' ? 'HUY CHƯƠNG BẠC' : 'HUY CHƯƠNG ĐỒNG'}
                             </div>
 
-                            <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 50 }}>Nội dung: {(certModal as any).nd_ten}</div>
+                            <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 50 }}>Nội dung: {certModal.nd_ten}</div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 80px', marginTop: 'auto' }}>
                                 <div className="text-center">

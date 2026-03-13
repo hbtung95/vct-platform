@@ -52,7 +52,7 @@ export const Page_federation_provinces = () => {
     const allProvinces: Province[] = useMemo(() => {
         if (apiData && Array.isArray(apiData)) return apiData
         // Handle paginated response shape
-        if (apiData && 'items' in (apiData as any)) return (apiData as any).items
+        if (apiData && typeof apiData === 'object' && 'items' in apiData) return (apiData as { items: Province[] }).items
         return FALLBACK_PROVINCES
     }, [apiData])
 
@@ -70,7 +70,7 @@ export const Page_federation_provinces = () => {
     const totalClubs = allProvinces.reduce((s, p) => s + p.club_count, 0)
     const totalVDV = allProvinces.reduce((s, p) => s + p.vdv_count, 0)
     const activeProvinces = allProvinces.filter(p => p.has_fed).length
-    const totalPages = apiData && 'total_pages' in (apiData as any) ? (apiData as any).total_pages : 1
+    const totalPages = apiData && typeof apiData === 'object' && 'total_pages' in apiData ? (apiData as { total_pages: number }).total_pages : 1
 
     return (
         <VCT_PageContainer size="wide" animated>

@@ -59,7 +59,7 @@ export const Page_training_plans = () => {
                 id: `${p.id}-${i}`, date: s.day, time: s.time,
                 club_name: s.location || 'N/A', class_name: p.name,
                 instructor: s.instructor || 'N/A', topic: s.focus,
-                status: (p.status === 'active' ? 'upcoming' : 'completed') as any,
+                status: (p.status === 'active' ? 'upcoming' : 'completed') as TrainingSession['status'],
                 attendees: 0, capacity: 30,
             })))
         }
@@ -142,7 +142,7 @@ export const Page_training_plans = () => {
                                 {/* Info */}
                                 <div className="flex-1">
                                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                                        {(STATUS_MAP as any)[session.status].render}
+                                        {STATUS_MAP[session.status].render}
                                         <span className="text-[12px] text-[var(--vct-text-secondary)] font-medium flex items-center gap-1"><VCT_Icons.Clock size={13} /> {session.time}</span>
                                     </div>
                                     <h3 className="text-lg font-bold text-[var(--vct-text-primary)] mb-1">{session.topic}</h3>

@@ -7,7 +7,7 @@
     "prebuild": "node ../../scripts/generate-authz-contract.mjs --check",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "next lint"
   },
   "dependencies": {
     "app": "*",

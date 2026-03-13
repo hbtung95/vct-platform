@@ -198,7 +198,7 @@ export function VCT_DatePicker({
                         top: '100%',
                         left: 0,
                         marginTop: 6,
-                        zIndex: 'var(--vct-z-dropdown, 100)' as any,
+                        zIndex: 100,
                         padding: 12,
                         minWidth: 280,
                         borderRadius: 'var(--vct-radius-md)',

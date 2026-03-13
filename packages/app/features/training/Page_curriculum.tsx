@@ -43,7 +43,7 @@ const BELT_MAP: Record<BeltLevel, { label: string; color: string; bg: string }> 
     den_2: { label: 'Đai Đen 2 Đẳng', color: '#fff', bg: '#000000' },
 }
 
-const STATUS_MAP: Record<string, { label: string; type: any; color: string }> = {
+const STATUS_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'neutral'; color: string }> = {
     published: { label: 'Ban hành', type: 'success', color: '#10b981' },
     draft: { label: 'Bản nháp', type: 'warning', color: '#f59e0b' },
     archived: { label: 'Lưu trữ', type: 'neutral', color: '#94a3b8' }
@@ -93,7 +93,7 @@ export const Page_curriculum = () => {
                 belt_level: (c.belt_level || 'trang') as BeltLevel,
                 estimated_months: c.estimated_months || 3,
                 forms: c.forms || [], techniques_count: c.techniques_count || 0,
-                status: c.status as any || 'draft',
+                status: (c.status || 'draft') as Curriculum['status'],
                 last_updated: c.last_updated || ''
             })))
         }
@@ -104,7 +104,7 @@ export const Page_curriculum = () => {
     const [showModal, setShowModal] = useState(false)
     const [editingCiv, setEditingCiv] = useState<Curriculum | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Curriculum | null>(null)
-    const [form, setForm] = useState<any>({ ...BLANK_FORM, formInput: '' })
+    const [form, setForm] = useState<Partial<Curriculum> & { formInput: string }>({ ...BLANK_FORM, formInput: '' })
 
     const showToast = useCallback((msg: string, type = 'success') => {
         setToast({ show: true, msg, type })
@@ -157,16 +157,20 @@ export const Page_curriculum = () => {
     const handleSave = () => {
         if (!form.title || !form.code) { showToast('Vui lòng nhập tên và mã giáo trình', 'error'); return }
 
-        const formList = form.formInput ? form.formInput.split(',').map((s: string) => s.trim()).filter(Boolean) : []
-        const dataToSave = { ...form, forms: formList }
-        delete dataToSave.formInput
+        const { formInput: _formInput, ...dataToSave } = form
+        const formList = _formInput ? _formInput.split(',').map((s: string) => s.trim()).filter(Boolean) : []
+        const saveCiv = { ...dataToSave, forms: formList }
 
         if (editingCiv) {
-            setCivs(prev => prev.map(t => t.id === editingCiv.id ? { ...t, ...dataToSave, last_updated: new Date().toISOString().split('T')[0] } : t))
+            setCivs(prev => prev.map(t => t.id === editingCiv.id ? { ...t, ...saveCiv, last_updated: saveCiv.last_updated || new Date().toISOString().split('T')[0] } as Curriculum : t))
             showToast(`Đã cập nhật "${form.title}"`)
         } else {
             const newCiv: Curriculum = {
-                ...dataToSave, id: `CUR-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+                id: `CUR-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+                title: saveCiv.title || '', code: saveCiv.code || '',
+                belt_level: saveCiv.belt_level || 'trang',
+                estimated_months: saveCiv.estimated_months || 3,
+                forms: formList, techniques_count: saveCiv.techniques_count || 0,
                 status: 'draft', last_updated: new Date().toISOString().split('T')[0]
             }
             setCivs(prev => [newCiv, ...prev])
@@ -213,7 +217,7 @@ export const Page_curriculum = () => {
     const columns = [
         {
             key: 'checkbox', label: <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />, align: 'center' as const,
-            render: (r: Curriculum) => <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} onClick={(e: any) => e.stopPropagation()} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />
+            render: (r: Curriculum) => <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />
         },
         {
             key: 'title', label: 'Tên Giáo Trình', render: (r: Curriculum) => (
@@ -326,7 +330,7 @@ export const Page_curriculum = () => {
                         <thead>
                             <tr className="border-b border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)]">
                                 {columns.map((col, i) => (
-                                    <th key={i} style={{ padding: '14px 16px', textAlign: (col.align || 'left') as any, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, position: 'sticky', top: 0, background: 'var(--vct-bg-card)', zIndex: 2 }}>
+                                    <th key={i} style={{ padding: '14px 16px', textAlign: (col.align || 'left') as React.CSSProperties['textAlign'], fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, position: 'sticky', top: 0, background: 'var(--vct-bg-card)', zIndex: 2 }}>
                                         {col.label}
                                     </th>
                                 ))}
@@ -338,8 +342,8 @@ export const Page_curriculum = () => {
                                 return (
                                     <tr key={civ.id} style={{ borderBottom: '1px solid var(--vct-border-subtle)', background: selectedIds.has(civ.id) ? 'rgba(34, 211, 238, 0.05)' : idx % 2 === 0 ? 'transparent' : 'rgba(128,128,128,0.02)', borderLeft: `3px solid ${stColor}` }}>
                                         {columns.map((col, ci) => (
-                                            <td key={ci} style={{ padding: '14px 16px', fontSize: 13, textAlign: (col.align || 'left') as any }}>
-                                                {col.render ? col.render(civ) : (civ as any)[col.key]}
+                                            <td key={ci} style={{ padding: '14px 16px', fontSize: 13, textAlign: (col.align || 'left') as React.CSSProperties['textAlign'] }}>
+                                                {col.render ? col.render(civ) : (civ as unknown as Record<string, React.ReactNode>)[col.key]}
                                             </td>
                                         ))}
                                     </tr>
@@ -363,24 +367,24 @@ export const Page_curriculum = () => {
                 </>
             }>
                 <VCT_Stack gap={16}>
-                    <VCT_Field label="Tên Giáo trình / Modules *"><VCT_Input value={form.title} onChange={(e: any) => setForm({ ...form, title: e.target.value })} placeholder="VD: Khởi quyền (Cấp 1)" /></VCT_Field>
+                    <VCT_Field label="Tên Giáo trình / Modules *"><VCT_Input value={form.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, title: e.target.value })} placeholder="VD: Khởi quyền (Cấp 1)" /></VCT_Field>
                     <VCT_Stack direction="row" gap={16}>
-                        <VCT_Field label="Mã định danh *" className="flex-1"><VCT_Input value={form.code} onChange={(e: any) => setForm({ ...form, code: e.target.value })} placeholder="VD: KQ-1" /></VCT_Field>
-                        <VCT_Field label="Áp dụng cho Cấp đai" className="flex-1"><VCT_Select options={Object.entries(BELT_MAP).map(([k, v]) => ({ value: k, label: v.label }))} value={form.belt_level} onChange={(v: any) => setForm({ ...form, belt_level: v })} /></VCT_Field>
+                        <VCT_Field label="Mã định danh *" className="flex-1"><VCT_Input value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, code: e.target.value })} placeholder="VD: KQ-1" /></VCT_Field>
+                        <VCT_Field label="Áp dụng cho Cấp đai" className="flex-1"><VCT_Select options={Object.entries(BELT_MAP).map(([k, v]) => ({ value: k, label: v.label }))} value={form.belt_level} onChange={(v: string) => setForm({ ...form, belt_level: v as BeltLevel })} /></VCT_Field>
                     </VCT_Stack>
 
                     <div className="h-px w-full bg-[var(--vct-border-subtle)] my-2"></div>
                     <div className="text-sm font-bold opacity-70">Nội dung chi tiết</div>
 
                     <VCT_Stack direction="row" gap={16}>
-                        <VCT_Field label="Thời gian đào tạo dự kiến (Tháng)" className="flex-1"><VCT_Input type="number" value={form.estimated_months} onChange={(e: any) => setForm({ ...form, estimated_months: parseInt(e.target.value) || 0 })} placeholder="Số tháng..." /></VCT_Field>
-                        <VCT_Field label="Số lượng Kỹ thuật căn bản" className="flex-1"><VCT_Input type="number" value={form.techniques_count} onChange={(e: any) => setForm({ ...form, techniques_count: parseInt(e.target.value) || 0 })} placeholder="0" /></VCT_Field>
+                        <VCT_Field label="Thời gian đào tạo dự kiến (Tháng)" className="flex-1"><VCT_Input type="number" value={form.estimated_months} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, estimated_months: parseInt(e.target.value) || 0 })} placeholder="Số tháng..." /></VCT_Field>
+                        <VCT_Field label="Số lượng Kỹ thuật căn bản" className="flex-1"><VCT_Input type="number" value={form.techniques_count} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, techniques_count: parseInt(e.target.value) || 0 })} placeholder="0" /></VCT_Field>
                     </VCT_Stack>
 
                     <VCT_Field label="Các bài Quyền yêu cầu (cách nhau dấu phẩy)">
                         <textarea
                             value={form.formInput}
-                            onChange={(e: any) => setForm({ ...form, formInput: e.target.value })}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, formInput: e.target.value })}
                             placeholder="VD: Căn bản công tay không, Thập thế bát thức..."
                             className="w-full bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-subtle)] rounded-lg p-3 text-[var(--vct-text-primary)] text-sm outline-none focus:border-[var(--vct-accent-cyan)] transition-colors min-h-[80px] resize-y"
                         />

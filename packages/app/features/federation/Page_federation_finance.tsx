@@ -81,13 +81,13 @@ export function Page_federation_finance() {
             'Cân Đối (VNĐ)': r.income - r.expense
         }));
         exportData.push({
-            'STT': '',
+            'STT': '' as unknown as number,
             'Khoản Mục': 'TỔNG CỘNG',
             'Phân Loại': '',
             'Thu (VNĐ)': totalIncome,
             'Chi (VNĐ)': totalExpense,
             'Cân Đối (VNĐ)': balance
-        } as any);
+        });
         exportToExcel(exportData, `bao_cao_tai_chinh_${period}`);
     };
 

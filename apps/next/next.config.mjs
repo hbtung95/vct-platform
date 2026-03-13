@@ -35,10 +35,32 @@ const nextConfig = {
 
   // ── Security Headers ────────────────────────────────────────
   async headers() {
+    const isProd = process.env.NODE_ENV === 'production'
+
+    // CSP: tighter in production, relaxed in dev for HMR / eval
+    const cspDirectives = [
+      "default-src 'self'",
+      isProd
+        ? "script-src 'self' 'unsafe-inline'"          // prod: no eval
+        : "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // dev: Next.js HMR
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https://images.unsplash.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      `connect-src 'self' ws: wss:${isProd ? '' : ' http://localhost:*'}`,
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+    ]
+
     return [
       {
         source: '/(.*)',
         headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: cspDirectives.join('; '),
+          },
           {
             key: 'X-Frame-Options',
             value: 'DENY',
@@ -59,7 +81,7 @@ const nextConfig = {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
           },
-          ...(process.env.NODE_ENV === 'production'
+          ...(isProd
             ? [
                 {
                   key: 'Strict-Transport-Security',
