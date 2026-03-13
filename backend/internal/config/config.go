@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-const DefaultJWTSecret = "change-me-before-production-vct-2026"
+// DefaultJWTSecret is a placeholder for development only.
+// The server will refuse to start in production/staging with this value.
+// NEVER deploy with this default — always set VCT_JWT_SECRET env var.
+const DefaultJWTSecret = "INSECURE-DEV-ONLY-MUST-OVERRIDE"
 
 type Config struct {
 	Environment        string
@@ -86,6 +89,9 @@ func (c Config) Validate() error {
 	if secret == "" {
 		return fmt.Errorf("VCT_JWT_SECRET must not be empty")
 	}
+	if len(secret) < 32 {
+		return fmt.Errorf("VCT_JWT_SECRET must be at least 32 characters")
+	}
 
 	env := strings.TrimSpace(strings.ToLower(c.Environment))
 	if env == "production" && c.AllowDemoUsers {
@@ -93,6 +99,9 @@ func (c Config) Validate() error {
 	}
 	if (env == "production" || env == "staging") && secret == DefaultJWTSecret {
 		return fmt.Errorf("VCT_JWT_SECRET must be overridden for %s", env)
+	}
+	if c.PostgresURL == "" && c.StorageDriver == "postgres" {
+		return fmt.Errorf("VCT_POSTGRES_URL is required when storage driver is postgres")
 	}
 
 	return nil

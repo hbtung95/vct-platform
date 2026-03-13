@@ -1,9 +1,9 @@
 'use client'
-/* eslint-disable -- img tag used intentionally for cross-platform compatibility */
 import * as React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import type { FC } from 'react'
+import { VCT_Image } from './VCT_Image'
 
 const cn = (...tokens: Array<string | false | null | undefined>) =>
     tokens.filter(Boolean).join(' ')
@@ -95,11 +95,14 @@ export const VCT_ImageGallery = ({
                             ASPECT[aspectRatio]
                         )}
                     >
-                        <img
+                        <VCT_Image
                             src={img.src}
                             alt={img.alt ?? ''}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full transition-transform duration-300 group-hover:scale-105"
+                            fill
+                            objectFit="cover"
                             loading="lazy"
+                            sizes="(max-width: 768px) 50vw, 33vw"
                         />
                         {img.caption ? (
                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-6 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">

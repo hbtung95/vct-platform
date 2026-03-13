@@ -108,6 +108,18 @@ func (s *Service) CreateClub(ctx context.Context, c Club) (*Club, error) {
 	return s.clubRepo.Create(ctx, c)
 }
 
+func (s *Service) UpdateClub(ctx context.Context, id string, patch map[string]interface{}) (*Club, error) {
+	updated, err := s.clubRepo.Update(ctx, id, patch)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
+}
+
+func (s *Service) DeleteClub(ctx context.Context, id string) error {
+	return s.clubRepo.Delete(ctx, id)
+}
+
 // Member operations
 func (s *Service) ListMembers(ctx context.Context) ([]Member, error) {
 	return s.memberRepo.List(ctx)

@@ -12,7 +12,7 @@ services:
     dockerfilePath: ./backend/Dockerfile.render
     region: singapore
     plan: free
-    branch: main
+    branch: develop
     envVars:
       - key: VCT_ENV
         value: staging
@@ -29,7 +29,7 @@ services:
       - key: VCT_CORS_ORIGINS
         value: "https://vct-platform.vercel.app,https://vct-platform-next.vercel.app,https://*.onrender.com"
       - key: VCT_ALLOW_DEMO_USERS
-        value: "true"
+        value: "false"
       - key: VCT_DB_AUTO_MIGRATE
         value: "true"
       - key: VCT_CACHE_TTL

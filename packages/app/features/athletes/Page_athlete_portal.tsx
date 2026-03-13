@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useCallback } from 'react'
 import { VCT_Icons } from '../components/vct-icons'
+import { VCT_Image } from '../components/VCT_Image'
 import { VCT_PageContainer, VCT_SectionCard, VCT_EmptyState, VCT_StatRow, VCT_Badge } from '../components/vct-ui'
 import { useApiQuery } from '../hooks/useApiQuery'
 import { AthleteProfile, ClubMembership, TournamentEntry } from '@vct/shared-types'
@@ -278,7 +279,7 @@ export function Page_athlete_portal() {
 
                 <div className="relative flex flex-col md:flex-row gap-8 items-center md:items-start z-10">
                     <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-5xl border border-vct-border-strong shadow-inner overflow-hidden flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
-                        {profile.photo_url ? <img src={profile.photo_url} className="w-full h-full object-cover" alt="avatar" /> : '🥋'}
+                        {profile.photo_url ? <VCT_Image src={profile.photo_url} className="w-full h-full" fill objectFit="cover" alt="avatar" sizes="96px" /> : '🥋'}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
 

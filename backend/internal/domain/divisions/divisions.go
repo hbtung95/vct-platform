@@ -45,9 +45,9 @@ type Ward struct {
 
 // Store holds the loaded administrative division data.
 type Store struct {
-	provinces    []Province
-	provinceMap  map[int]*Province // code → Province
-	once         sync.Once
+	provinces   []Province
+	provinceMap map[int]*Province // code → Province
+	once        sync.Once
 }
 
 var defaultStore = &Store{}

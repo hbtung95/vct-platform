@@ -107,8 +107,11 @@ func (s *Server) withCORS(next http.Handler) http.Handler {
 			if s.isAllowedOrigin(origin) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Vary", "Origin")
-				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-CSRF-Token, X-Request-ID")
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				w.Header().Set("Access-Control-Max-Age", "86400")
+				w.Header().Set("Access-Control-Expose-Headers", "X-Request-ID, X-RateLimit-Remaining")
 			}
 		}
 		if r.Method == http.MethodOptions {
@@ -120,11 +123,91 @@ func (s *Server) withCORS(next http.Handler) http.Handler {
 }
 
 func (s *Server) isAllowedOrigin(origin string) bool {
+	// In production, wildcard origins are not allowed
 	if _, ok := s.allowedOrigins["*"]; ok {
+		env := strings.ToLower(s.cfg.Environment)
+		if env == "production" || env == "staging" {
+			log.Printf(`{"level":"warn","msg":"wildcard CORS origin rejected in %s"}`, env)
+			return false
+		}
 		return true
 	}
-	_, ok := s.allowedOrigins[origin]
-	return ok
+	// Case-insensitive origin matching
+	normalised := strings.ToLower(origin)
+	for allowed := range s.allowedOrigins {
+		if strings.ToLower(allowed) == normalised {
+			return true
+		}
+	}
+	return false
+}
+
+// ── CSRF Protection (Double Submit Cookie) ───────────────────
+
+func (s *Server) withCSRF(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip CSRF for safe methods and WebSocket upgrade
+		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// For state-changing requests, validate Origin header against allowed origins
+		origin := strings.TrimSpace(r.Header.Get("Origin"))
+		if origin == "" {
+			// Fall back to Referer if Origin is missing (some browsers)
+			referer := strings.TrimSpace(r.Header.Get("Referer"))
+			if referer != "" {
+				// Extract origin from referer URL
+				if idx := strings.Index(referer, "://"); idx >= 0 {
+					rest := referer[idx+3:]
+					if slashIdx := strings.Index(rest, "/"); slashIdx >= 0 {
+						origin = referer[:idx+3+slashIdx]
+					} else {
+						origin = referer
+					}
+				}
+			}
+		}
+
+		// Reject state-changing requests with no origin info (prevent CSRF)
+		if origin == "" {
+			// Allow requests with valid Authorization bearer tokens (API clients)
+			if strings.HasPrefix(strings.ToLower(r.Header.Get("Authorization")), "bearer ") {
+				next.ServeHTTP(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"missing origin header for state-changing request"}`))
+			return
+		}
+
+		if !s.isAllowedOrigin(origin) {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"origin not allowed"}`))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ── Security Headers Middleware ──────────────────────────────
+
+func withSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // ── Structured Logging Middleware ─────────────────────────────

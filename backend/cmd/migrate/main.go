@@ -110,13 +110,22 @@ func runUp(ctx context.Context, pool *pgxpool.Pool, migrationsDir string) error 
 	if err != nil {
 		return err
 	}
+	prefixCounts := countUpMigrationsByPrefix(migrations)
 
 	appliedCount := 0
 	for _, m := range migrations {
 		if m.IsDown {
 			continue
 		}
-		if _, ok := applied[m.Version]; ok {
+		if isMigrationApplied(applied, m.Version) {
+			prefix := migrationPrefix(m.Version)
+			if _, legacyApplied := applied[prefix]; legacyApplied && prefixCounts[prefix] > 1 {
+				return fmt.Errorf(
+					"legacy migration version %s detected with %d files sharing the same prefix; manual reconciliation required before continuing",
+					prefix,
+					prefixCounts[prefix],
+				)
+			}
 			continue
 		}
 		if err := applySQLFile(ctx, pool, m.Path); err != nil {
@@ -144,7 +153,7 @@ func runDown(ctx context.Context, pool *pgxpool.Pool, migrationsDir string) erro
 	var version, name string
 	err := pool.QueryRow(
 		ctx,
-		`SELECT version, name FROM schema_migrations ORDER BY version DESC LIMIT 1`,
+		`SELECT version, name FROM schema_migrations ORDER BY applied_at DESC, version DESC LIMIT 1`,
 	).Scan(&version, &name)
 	if err != nil {
 		return errors.New("no applied migration to roll back")
@@ -187,7 +196,7 @@ func runStatus(ctx context.Context, pool *pgxpool.Pool, migrationsDir string) er
 			continue
 		}
 		state := "pending"
-		if _, ok := applied[m.Version]; ok {
+		if isMigrationApplied(applied, m.Version) {
 			state = "applied"
 		}
 		fmt.Printf("- [%s] %s\n", state, m.Name)
@@ -225,6 +234,7 @@ func listMigrations(dir string) ([]migration, error) {
 	}
 
 	result := make([]migration, 0, len(entries))
+	seen := make(map[string]struct{}, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -234,16 +244,22 @@ func listMigrations(dir string) ([]migration, error) {
 			continue
 		}
 
-		version := migrationVersionFromFile(name)
+		version := migrationIDFromFile(name)
 		if version == "" {
 			continue
 		}
+		isDown := strings.HasSuffix(strings.ToLower(strings.TrimSuffix(name, ".sql")), "_down")
+		identity := fmt.Sprintf("%s|%t", strings.ToLower(version), isDown)
+		if _, exists := seen[identity]; exists {
+			return nil, fmt.Errorf("duplicate migration id detected for %s", version)
+		}
+		seen[identity] = struct{}{}
 
 		result = append(result, migration{
 			Version: version,
 			Name:    name,
 			Path:    filepath.Join(dir, name),
-			IsDown:  strings.HasSuffix(strings.ToLower(strings.TrimSuffix(name, ".sql")), "_down"),
+			IsDown:  isDown,
 		})
 	}
 
@@ -286,7 +302,27 @@ func findDownMigrationFile(dir, version string) (migration, error) {
 			return m, nil
 		}
 	}
-	return migration{}, fmt.Errorf("no down migration for version %s (expected file %s_*_down.sql)", version, version)
+
+	legacyMatches := make([]migration, 0, 2)
+	for _, m := range migrations {
+		if !m.IsDown {
+			continue
+		}
+		if strings.HasPrefix(m.Version, version+"_") {
+			legacyMatches = append(legacyMatches, m)
+		}
+	}
+	if len(legacyMatches) == 1 {
+		return legacyMatches[0], nil
+	}
+	if len(legacyMatches) > 1 {
+		return migration{}, fmt.Errorf(
+			"legacy version %s maps to multiple down migrations; manual rollback required",
+			version,
+		)
+	}
+
+	return migration{}, fmt.Errorf("no down migration for version %s (expected file %s_down.sql)", version, version)
 }
 
 func loadAppliedVersions(ctx context.Context, pool *pgxpool.Pool) (map[string]struct{}, error) {
@@ -307,25 +343,58 @@ func loadAppliedVersions(ctx context.Context, pool *pgxpool.Pool) (map[string]st
 	return result, rows.Err()
 }
 
-func migrationVersionFromFile(name string) string {
-	if len(name) < 4 {
-		return ""
-	}
+func migrationIDFromFile(name string) string {
 	base := strings.TrimSuffix(name, filepath.Ext(name))
+	if strings.HasSuffix(strings.ToLower(base), "_down") {
+		base = strings.TrimSuffix(base, "_down")
+	}
+
 	parts := strings.Split(base, "_")
 	if len(parts) < 2 {
 		return ""
 	}
-	version := strings.TrimSpace(parts[0])
-	if version == "" {
+	prefix := strings.TrimSpace(parts[0])
+	if prefix == "" {
 		return ""
 	}
-	for _, char := range version {
+	for _, char := range prefix {
 		if char < '0' || char > '9' {
 			return ""
 		}
 	}
-	return version
+	return base
+}
+
+func migrationPrefix(version string) string {
+	parts := strings.SplitN(version, "_", 2)
+	return strings.TrimSpace(parts[0])
+}
+
+func isMigrationApplied(applied map[string]struct{}, version string) bool {
+	if _, ok := applied[version]; ok {
+		return true
+	}
+	prefix := migrationPrefix(version)
+	if prefix == "" || prefix == version {
+		return false
+	}
+	_, ok := applied[prefix]
+	return ok
+}
+
+func countUpMigrationsByPrefix(migrations []migration) map[string]int {
+	counts := make(map[string]int, len(migrations))
+	for _, m := range migrations {
+		if m.IsDown {
+			continue
+		}
+		prefix := migrationPrefix(m.Version)
+		if prefix == "" {
+			continue
+		}
+		counts[prefix]++
+	}
+	return counts
 }
 
 func applySQLFile(ctx context.Context, pool *pgxpool.Pool, path string) error {

@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import type { ComponentType, ReactNode } from 'react'
 
 import { AuthProvider, useAuth } from 'app/features/auth/AuthProvider'
-import { HomeScreen } from 'app/features/home/screen'
 import { type RouteId } from 'app/features/layout/route-types'
 import {
   canAccessMobileRoute,
@@ -26,8 +25,16 @@ import {
   TournamentConfigMobileScreen,
   WeighInMobileScreen,
 } from 'app/features/mobile/tournament-screens'
-import { ProfileMobileScreen } from 'app/features/mobile/profile-screen'
+import {
+  AthletePortalMobileScreen,
+  AthleteTournamentsMobileScreen,
+  AthleteTrainingMobileScreen,
+  AthleteResultsMobileScreen,
+  AthleteRankingsMobileScreen,
+} from 'app/features/mobile/athlete'
+import { LoginMobileScreen } from 'app/features/mobile/login-screen'
 import { UserDetailScreen } from 'app/features/user/detail-screen'
+import { TabNavigator } from './tab-navigator'
 
 const Stack = createNativeStackNavigator()
 
@@ -80,37 +87,89 @@ function renderModuleScreen(route: (typeof MOBILE_ROUTE_REGISTRY)[number]) {
   )
 }
 
+/**
+ * App content when user is authenticated.
+ * Tab navigator is the root, with detail screens pushed on top.
+ */
+function AuthenticatedStack() {
+  return (
+    <Stack.Navigator>
+      {/* Tab Navigator as main screen */}
+      <Stack.Screen
+        name="main-tabs"
+        component={TabNavigator}
+        options={{ headerShown: false }}
+      />
+
+      {/* MODULE SCREENS — pushed on top of tabs */}
+      {MOBILE_ROUTE_REGISTRY.map((route) => (
+        <Stack.Screen key={route.key} name={route.key} options={{ title: route.title }}>
+          {() => renderModuleScreen(route)}
+        </Stack.Screen>
+      ))}
+
+      {/* DETAIL SCREENS */}
+      <Stack.Screen
+        name="user-detail"
+        component={UserDetailScreen}
+        options={{ title: 'User' }}
+      />
+
+      {/* ATHLETE SCREENS */}
+      <Stack.Screen
+        name="athlete-portal"
+        component={AthletePortalMobileScreen}
+        options={{ title: 'Cổng VĐV' }}
+      />
+      <Stack.Screen
+        name="athlete-tournaments"
+        component={AthleteTournamentsMobileScreen}
+        options={{ title: 'Giải đấu' }}
+      />
+      <Stack.Screen
+        name="athlete-training"
+        component={AthleteTrainingMobileScreen}
+        options={{ title: 'Lịch tập' }}
+      />
+      <Stack.Screen
+        name="athlete-results"
+        component={AthleteResultsMobileScreen}
+        options={{ title: 'Kết quả' }}
+      />
+      <Stack.Screen
+        name="athlete-rankings"
+        component={AthleteRankingsMobileScreen}
+        options={{ title: 'Xếp hạng' }}
+      />
+    </Stack.Navigator>
+  )
+}
+
+/**
+ * Root navigation — checks auth state to show Login or main app.
+ */
+function RootNavigator() {
+  const { isAuthenticated } = useAuth()
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {isAuthenticated ? (
+        <Stack.Screen name="app" component={AuthenticatedStack} />
+      ) : (
+        <Stack.Screen
+          name="login"
+          component={LoginMobileScreen}
+          options={{ animationTypeForReplace: 'pop' }}
+        />
+      )}
+    </Stack.Navigator>
+  )
+}
+
 export function NativeNavigation() {
   return (
     <AuthProvider>
-      <Stack.Navigator>
-        <Stack.Screen
-          name="home"
-          component={HomeScreen}
-          options={{
-            title: 'VCT Platform',
-          }}
-        />
-        {MOBILE_ROUTE_REGISTRY.map((route) => (
-          <Stack.Screen key={route.key} name={route.key} options={{ title: route.title }}>
-            {() => renderModuleScreen(route)}
-          </Stack.Screen>
-        ))}
-        <Stack.Screen
-          name="user-detail"
-          component={UserDetailScreen}
-          options={{
-            title: 'User',
-          }}
-        />
-        <Stack.Screen
-          name="profile"
-          component={ProfileMobileScreen}
-          options={{
-            title: 'Hồ sơ VĐV',
-          }}
-        />
-      </Stack.Navigator>
+      <RootNavigator />
     </AuthProvider>
   )
 }

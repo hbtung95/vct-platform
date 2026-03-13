@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
+import { useRouter } from 'solito/navigation'
 import { useAuth } from '../auth/AuthProvider'
 
 // ═══════════════════════════════════════════════════════════════
@@ -78,6 +79,7 @@ const SKILLS = [
 
 export function ProfileMobileScreen() {
     const { currentUser } = useAuth()
+    const router = useRouter()
 
     return (
         <ScrollView style={styles.page} contentContainerStyle={styles.content}>
@@ -114,17 +116,21 @@ export function ProfileMobileScreen() {
 
             {/* QUICK ACTIONS */}
             <View style={styles.actionRow}>
-                <Pressable style={styles.actionBtn}>
+                <Pressable style={styles.actionBtn} onPress={() => router.push('/athlete-portal')}>
+                    <Text style={styles.actionIcon}>🏠</Text>
+                    <Text style={styles.actionLabel}>Cổng VĐV</Text>
+                </Pressable>
+                <Pressable style={styles.actionBtn} onPress={() => router.push('/athlete-training')}>
                     <Text style={styles.actionIcon}>📋</Text>
                     <Text style={styles.actionLabel}>Lịch tập</Text>
                 </Pressable>
-                <Pressable style={styles.actionBtn}>
+                <Pressable style={styles.actionBtn} onPress={() => router.push('/athlete-results')}>
                     <Text style={styles.actionIcon}>🏆</Text>
                     <Text style={styles.actionLabel}>Thành tích</Text>
                 </Pressable>
-                <Pressable style={styles.actionBtn}>
-                    <Text style={styles.actionIcon}>⚖️</Text>
-                    <Text style={styles.actionLabel}>Cân nặng</Text>
+                <Pressable style={styles.actionBtn} onPress={() => router.push('/athlete-rankings')}>
+                    <Text style={styles.actionIcon}>📊</Text>
+                    <Text style={styles.actionLabel}>Xếp hạng</Text>
                 </Pressable>
             </View>
 

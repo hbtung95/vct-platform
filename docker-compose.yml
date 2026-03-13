@@ -10,16 +10,16 @@ services:
     container_name: vct-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-vct_platform}
-      POSTGRES_USER: ${POSTGRES_USER:-vct_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vct_secret_2026}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vct_admin} -d ${POSTGRES_DB:-vct_platform}" ]
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,13 +39,13 @@ services:
       VCT_BACKEND_ADDR: ':18080'
       VCT_CORS_ORIGINS: ${VCT_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:3101,http://127.0.0.1:3101}
       VCT_ALLOW_DEMO_USERS: ${VCT_ALLOW_DEMO_USERS:-true}
-      VCT_JWT_SECRET: ${VCT_JWT_SECRET:-change-me-in-production}
+      VCT_JWT_SECRET: ${VCT_JWT_SECRET:?Set VCT_JWT_SECRET in .env (min 32 chars)}
       VCT_JWT_ISSUER: ${VCT_JWT_ISSUER:-vct-backend}
       VCT_ACCESS_TTL: ${VCT_ACCESS_TTL:-15m}
       VCT_REFRESH_TTL: ${VCT_REFRESH_TTL:-168h}
       VCT_STORAGE_DRIVER: ${VCT_STORAGE_DRIVER:-postgres}
       VCT_POSTGRES_PROVIDER: ${VCT_POSTGRES_PROVIDER:-selfhost}
-      VCT_POSTGRES_URL: postgres://${POSTGRES_USER:-vct_admin}:${POSTGRES_PASSWORD:-vct_secret_2026}@postgres:5432/${POSTGRES_DB:-vct_platform}?sslmode=disable
+      VCT_POSTGRES_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       VCT_DB_AUTO_MIGRATE: ${VCT_DB_AUTO_MIGRATE:-true}
       VCT_CACHE_TTL: ${VCT_CACHE_TTL:-30s}
       VCT_CACHE_MAX_ENTRIES: ${VCT_CACHE_MAX_ENTRIES:-2000}

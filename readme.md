@@ -52,7 +52,7 @@ vct-platform/
 |-------|-----------|
 | Frontend | Next.js (App Router), TypeScript, React 19 |
 | Backend | Go 1.26+ (Clean Architecture) |
-| Database | PostgreSQL 18+, Supabase, Neon |
+| Database | PostgreSQL 16+, Supabase, Neon |
 | Cache | Redis 7+ |
 | Search | Meilisearch |
 | Storage | MinIO / Supabase Storage |

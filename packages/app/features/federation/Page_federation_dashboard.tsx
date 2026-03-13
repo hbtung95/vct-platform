@@ -98,11 +98,11 @@ export function Page_federation_dashboard() {
                                     </VCT_Stack>
                                     <div className="h-3 rounded-full bg-(--vct-bg-elevated) overflow-hidden">
                                         <div
-                                            className="h-full rounded-full transition-all duration-700"
-                                            style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${r.color}, ${r.color}88)` }}
+                                            className="vct-progress-fill"
+                                            {...{ style: { '--vct-bar-gradient': `linear-gradient(90deg, ${r.color}, ${r.color}88)`, width: `${pct}%` } as React.CSSProperties }}
                                         />
                                     </div>
-                                    <div className="text-right text-[10px] font-bold mt-1" style={{ color: r.color }}>{pct}%</div>
+                                    <div className="vct-pct-label" {...{ style: { '--vct-dynamic-color': r.color } as React.CSSProperties }}>{pct}%</div>
                                 </div>
                             )
                         })}
@@ -138,7 +138,7 @@ export function Page_federation_dashboard() {
                                 <div className="flex-1">
                                     <div className="text-sm font-semibold text-(--vct-text-primary)">{a.label}</div>
                                 </div>
-                                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: a.color }}>
+                                <div className="vct-count-badge" {...{ style: { '--vct-dynamic-color': a.color } as React.CSSProperties }}>
                                     {a.count}
                                 </div>
                             </div>
@@ -155,7 +155,7 @@ export function Page_federation_dashboard() {
                 <div className="space-y-3">
                     {RECENT_ACTIVITY.map(a => (
                         <div key={a.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-(--vct-bg-elevated) transition-colors">
-                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
+                            <div className="vct-status-dot" {...{ style: { '--vct-dynamic-color': a.color } as React.CSSProperties }} />
                             <div className="flex-1 min-w-0">
                                 <div className="text-sm font-semibold text-(--vct-text-primary) truncate">{a.label}</div>
                                 <div className="text-xs text-(--vct-text-secondary)">{a.type}</div>

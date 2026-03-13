@@ -6,8 +6,12 @@
  */
 
 import { useState, useCallback } from 'react'
+import { getAccessToken } from '../auth/token-storage'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+const API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ||
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ||
+    '/api/v1'
 
 interface ApiState<T> {
     data: T | null
@@ -42,9 +46,7 @@ export function useApiFetch<T = unknown>() {
 
         try {
             const url = `${API_BASE}${path}`
-            const token = typeof window !== 'undefined'
-                ? localStorage.getItem('vct_access_token') || ''
-                : ''
+            const token = getAccessToken()
 
             const res = await fetch(url, {
                 method: options?.method || 'GET',

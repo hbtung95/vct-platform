@@ -32,7 +32,7 @@ const (
 type CompetitionCategory string
 
 const (
-	CategoryDoiKhang CompetitionCategory = "doi_khang"   // Đối kháng
+	CategoryDoiKhang   CompetitionCategory = "doi_khang"   // Đối kháng
 	CategoryQuyenThuat CompetitionCategory = "quyen_thuat" // Quyền thuật
 )
 
@@ -40,9 +40,9 @@ const (
 // phân biệt nhóm tuổi theo loại giải và cấp giải.
 type AgeGroupAmended struct {
 	MasterAgeGroup
-	Category    CompetitionCategory `json:"category"`     // doi_khang hoặc quyen_thuat
-	TierCode    string              `json:"tier_code"`     // "championship" hoặc "youth"
-	AmendedBy   string              `json:"amended_by"`    // Mã văn bản sửa đổi
+	Category  CompetitionCategory `json:"category"`   // doi_khang hoặc quyen_thuat
+	TierCode  string              `json:"tier_code"`  // "championship" hoặc "youth"
+	AmendedBy string              `json:"amended_by"` // Mã văn bản sửa đổi
 }
 
 // Amendment2024AgeGroups trả về nhóm tuổi đã sửa đổi theo Luật 128/2024.
@@ -58,19 +58,19 @@ func Amendment2024AgeGroups() []AgeGroupAmended {
 		// ═══════════════════════════════════════════════════
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "dk-senior", Name: "Vô địch (17-40)", MinAge: 17, MaxAge: 40, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryDoiKhang, TierCode: "championship", AmendedBy: amd,
+			Category:       CategoryDoiKhang, TierCode: "championship", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "dk-u13", Name: "Trẻ 12-13", MinAge: 12, MaxAge: 13, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryDoiKhang, TierCode: "youth", AmendedBy: amd,
+			Category:       CategoryDoiKhang, TierCode: "youth", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "dk-u15", Name: "Trẻ 14-15", MinAge: 14, MaxAge: 15, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryDoiKhang, TierCode: "youth", AmendedBy: amd,
+			Category:       CategoryDoiKhang, TierCode: "youth", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "dk-u17", Name: "Trẻ 16-17", MinAge: 16, MaxAge: 17, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryDoiKhang, TierCode: "youth", AmendedBy: amd,
+			Category:       CategoryDoiKhang, TierCode: "youth", AmendedBy: amd,
 		},
 
 		// ═══════════════════════════════════════════════════
@@ -78,27 +78,27 @@ func Amendment2024AgeGroups() []AgeGroupAmended {
 		// ═══════════════════════════════════════════════════
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "qt-senior", Name: "VĐ 17-40", MinAge: 17, MaxAge: 40, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryQuyenThuat, TierCode: "championship", AmendedBy: amd,
+			Category:       CategoryQuyenThuat, TierCode: "championship", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "qt-masters-a", Name: "VĐ 41-50", MinAge: 41, MaxAge: 50, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryQuyenThuat, TierCode: "championship", AmendedBy: amd,
+			Category:       CategoryQuyenThuat, TierCode: "championship", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "qt-masters-b", Name: "VĐ 51-60", MinAge: 51, MaxAge: 60, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryQuyenThuat, TierCode: "championship", AmendedBy: amd,
+			Category:       CategoryQuyenThuat, TierCode: "championship", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "qt-u10", Name: "Trẻ 6-10", MinAge: 6, MaxAge: 10, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryQuyenThuat, TierCode: "youth", AmendedBy: amd,
+			Category:       CategoryQuyenThuat, TierCode: "youth", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "qt-u14", Name: "Trẻ 11-14", MinAge: 11, MaxAge: 14, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryQuyenThuat, TierCode: "youth", AmendedBy: amd,
+			Category:       CategoryQuyenThuat, TierCode: "youth", AmendedBy: amd,
 		},
 		{
 			MasterAgeGroup: MasterAgeGroup{ID: "qt-u17", Name: "Trẻ 15-17", MinAge: 15, MaxAge: 17, Scope: scope, CreatedAt: now, UpdatedAt: now},
-			Category: CategoryQuyenThuat, TierCode: "youth", AmendedBy: amd,
+			Category:       CategoryQuyenThuat, TierCode: "youth", AmendedBy: amd,
 		},
 	}
 }
@@ -304,12 +304,12 @@ func Amendment2024FoulRules() []FoulRule {
 type PenaltyLevel string
 
 const (
-	PenaltyReminder   PenaltyLevel = "nhac_nho"        // Nhắc nhở
-	PenaltyReprimand1 PenaltyLevel = "khien_trach_1"    // Khiển trách lần 1
-	PenaltyReprimand2 PenaltyLevel = "khien_trach_2"    // Khiển trách lần 2
-	PenaltyWarning1   PenaltyLevel = "canh_cao_1"       // Cảnh cáo lần 1
-	PenaltyWarning2   PenaltyLevel = "canh_cao_2"       // Cảnh cáo lần 2
-	PenaltyDQ         PenaltyLevel = "truat_quyen"      // Truất quyền thi đấu
+	PenaltyReminder   PenaltyLevel = "nhac_nho"      // Nhắc nhở
+	PenaltyReprimand1 PenaltyLevel = "khien_trach_1" // Khiển trách lần 1
+	PenaltyReprimand2 PenaltyLevel = "khien_trach_2" // Khiển trách lần 2
+	PenaltyWarning1   PenaltyLevel = "canh_cao_1"    // Cảnh cáo lần 1
+	PenaltyWarning2   PenaltyLevel = "canh_cao_2"    // Cảnh cáo lần 2
+	PenaltyDQ         PenaltyLevel = "truat_quyen"   // Truất quyền thi đấu
 )
 
 // PenaltyRule mô tả hình thức phạt
@@ -362,9 +362,9 @@ func Amendment2024MatSpec() MatSpec {
 type TargetZone string
 
 const (
-	ZoneScorable   TargetZone = "scorable"    // Được tính điểm: đầu/mặt, ngực/bụng/lườn
-	ZoneLegal      TargetZone = "legal"       // Hợp lệ, không tính điểm: bắp tay, cẳng tay, đùi ngoài, bắp chân
-	ZoneForbidden  TargetZone = "forbidden"   // Cấm đánh: đỉnh đầu, gáy, cổ, khớp gối, hạ bộ
+	ZoneScorable  TargetZone = "scorable"  // Được tính điểm: đầu/mặt, ngực/bụng/lườn
+	ZoneLegal     TargetZone = "legal"     // Hợp lệ, không tính điểm: bắp tay, cẳng tay, đùi ngoài, bắp chân
+	ZoneForbidden TargetZone = "forbidden" // Cấm đánh: đỉnh đầu, gáy, cổ, khớp gối, hạ bộ
 )
 
 // ────────────────────────────────────────────────────────────────

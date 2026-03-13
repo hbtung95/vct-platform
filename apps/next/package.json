@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "node ../../scripts/generate-authz-contract.mjs --check",
-    "build": "next build",
+    "build": "node ../../scripts/next-build.mjs",
+    "build:full": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint app --ext .ts,.tsx"
   },
   "dependencies": {
     "app": "*",

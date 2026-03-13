@@ -12,6 +12,11 @@ import {
 import { ENTITY_AUTHZ_ROLES } from './entity-authz.generated'
 import { isRouteAccessible } from '../layout/route-registry'
 import { authClient, isAuthClientError } from './auth-client'
+import {
+  clearLegacyTokens,
+  persistLegacyTokens,
+  readStoredTokens,
+} from './token-storage'
 import type { AuthSession, AuthUser, LoginInput, UserRole, WorkspaceAccess } from './types'
 
 interface AuthContextValue {
@@ -249,7 +254,19 @@ const AuthContext = createContext<AuthContextValue>({
 
 const readStoredSession = (): AuthSession | null => {
   const raw = readPersisted(STORAGE_KEY)
-  if (!raw) return null
+  if (!raw) {
+    const legacy = readStoredTokens()
+    if (!legacy.accessToken || !legacy.refreshToken) return null
+    return {
+      token: legacy.accessToken,
+      accessToken: legacy.accessToken,
+      refreshToken: legacy.refreshToken,
+      tokenType: 'Bearer',
+      user: DEFAULT_USER,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      refreshExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    }
+  }
 
   try {
     return normalizeStoredSession(JSON.parse(raw))
@@ -289,6 +306,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     removePersisted(STORAGE_KEY)
     removePersisted(WORKSPACE_STORAGE_KEY)
     removePersisted(LEGACY_WORKSPACE_STORAGE_KEY)
+    clearLegacyTokens()
   }, [])
 
   const refreshSession = useCallback(async (source: AuthSession) => {
@@ -425,9 +443,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (isHydrating) return
     if (!session) {
       removePersisted(STORAGE_KEY)
+      clearLegacyTokens()
       return
     }
     writePersisted(STORAGE_KEY, JSON.stringify(session))
+    persistLegacyTokens(session.accessToken, session.refreshToken)
   }, [isHydrating, session])
 
   const login = useCallback(async (input: LoginInput) => {
@@ -436,6 +456,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setGuestRole(nextSession.user.role)
     writePersisted(STORAGE_KEY, JSON.stringify(nextSession))
     writePersisted(GUEST_ROLE_KEY, nextSession.user.role)
+    persistLegacyTokens(nextSession.accessToken, nextSession.refreshToken)
   }, [])
 
   const logout = useCallback(async () => {

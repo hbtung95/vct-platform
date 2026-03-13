@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useCallback } from 'react'
 import { VCT_Icons } from '../components/vct-icons'
+import { VCT_Image } from '../components/VCT_Image'
 import { VCT_PageContainer, VCT_SectionCard, VCT_EmptyState, VCT_StatRow, VCT_Badge } from '../components/vct-ui'
 import { useApiQuery } from '../hooks/useApiQuery'
 import { AthleteProfile } from '@vct/shared-types'
@@ -144,7 +145,7 @@ export function Page_athlete_profile() {
                     <div className="relative p-6 rounded-3xl border border-vct-border bg-vct-elevated text-center overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-[#3b82f6]/20 to-[#8b5cf6]/20"></div>
                         <div className="relative w-32 h-32 mx-auto mt-4 mb-4 rounded-full border-4 border-vct-bg shadow-lg bg-vct-border overflow-hidden">
-                            {profile.photo_url ? <img src={profile.photo_url} className="w-full h-full object-cover" alt="avatar" /> : <div className="w-full h-full flex items-center justify-center text-4xl">🥋</div>}
+                            {profile.photo_url ? <VCT_Image src={profile.photo_url} className="w-full h-full" fill objectFit="cover" alt="avatar" sizes="128px" /> : <div className="w-full h-full flex items-center justify-center text-4xl">🥋</div>}
                             {isEditing && (
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer hover:bg-black/60 transition">
                                     <VCT_Icons.Camera size={24} className="text-white" />

@@ -1,7 +1,7 @@
 'use client'
-/* eslint-disable -- img tag used intentionally for cross-platform compatibility */
 import * as React from 'react'
 import type { CSSProperties, FC } from 'react'
+import { VCT_Image } from './VCT_Image'
 
 const cn = (...tokens: Array<string | false | null | undefined>) =>
     tokens.filter(Boolean).join(' ')
@@ -100,12 +100,15 @@ export const VCT_Avatar = ({
             aria-label={name}
         >
             {showImage ? (
-                <img
+                <VCT_Image
                     src={src}
                     alt={name}
                     onError={() => setImgError(true)}
-                    className={cn('h-full w-full object-cover', shapeClass)}
+                    className={cn('h-full w-full', shapeClass)}
+                    fill
+                    objectFit="cover"
                     draggable={false}
+                    sizes={`${size}px`}
                 />
             ) : (
                 <span

@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import assert from 'node:assert/strict'
-import { execSync } from 'node:child_process'
 
 const root = process.cwd()
 
@@ -44,10 +44,14 @@ requiredFiles.forEach((file) => {
   assert.ok(existsSync(resolve(root, file)), `Missing file: ${file}`)
 })
 
-execSync('node scripts/generate-authz-contract.mjs --check', {
-  cwd: root,
-  stdio: 'pipe',
-})
+const hadCheckArg = process.argv.includes('--check')
+if (!hadCheckArg) {
+  process.argv.push('--check')
+}
+await import(pathToFileURL(resolve(root, 'scripts/generate-authz-contract.mjs')).href)
+if (!hadCheckArg) {
+  process.argv.pop()
+}
 
 const routeRegistry = readFileSync(resolve(root, 'packages/app/features/layout/route-registry.ts'), 'utf8')
 const routesFile = readFileSync(resolve(root, 'packages/app/features/layout/routes.ts'), 'utf8')

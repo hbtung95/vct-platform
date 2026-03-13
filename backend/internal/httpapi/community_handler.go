@@ -57,16 +57,50 @@ func (s *Server) handleClubRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := strings.Split(path, "/")[0]
-	if err := s.authorizeEntityAction(&principal, "clubs", authz.ActionView); err != nil {
-		writeAuthError(w, err)
-		return
+	switch r.Method {
+	case http.MethodGet:
+		if err := s.authorizeEntityAction(&principal, "clubs", authz.ActionView); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		club, err := s.communityService.GetClub(r.Context(), id)
+		if err != nil {
+			notFound(w)
+			return
+		}
+		success(w, http.StatusOK, club)
+	case http.MethodPatch:
+		if err := s.authorizeEntityAction(&principal, "clubs", authz.ActionUpdate); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		patch := map[string]interface{}{}
+		if err := decodeJSON(r, &patch); err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		updated, err := s.communityService.UpdateClub(r.Context(), id, patch)
+		if err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		raw, _ := toMap(updated)
+		s.broadcastEntityChange("clubs", "updated", id, raw, nil)
+		success(w, http.StatusOK, updated)
+	case http.MethodDelete:
+		if err := s.authorizeEntityAction(&principal, "clubs", authz.ActionDelete); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		if err := s.communityService.DeleteClub(r.Context(), id); err != nil {
+			internalError(w, err)
+			return
+		}
+		s.broadcastEntityChange("clubs", "deleted", id, nil, nil)
+		success(w, http.StatusOK, map[string]any{"message": "deleted"})
+	default:
+		methodNotAllowed(w)
 	}
-	club, err := s.communityService.GetClub(r.Context(), id)
-	if err != nil {
-		notFound(w)
-		return
-	}
-	success(w, http.StatusOK, club)
 }
 
 // handleMemberRoutes handles /api/v1/members

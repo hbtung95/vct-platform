@@ -13,10 +13,10 @@ import (
 
 // BatchResult captures the outcome of a batch operation.
 type BatchResult struct {
-	Total    int            `json:"total"`
-	Success  int            `json:"success"`
-	Failed   int            `json:"failed"`
-	Errors   []BatchError   `json:"errors,omitempty"`
+	Total   int          `json:"total"`
+	Success int          `json:"success"`
+	Failed  int          `json:"failed"`
+	Errors  []BatchError `json:"errors,omitempty"`
 }
 
 // BatchError details a single failure in a batch operation.

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useI18n } from '../i18n'
+import { readStoredTokens, persistLegacyTokens } from './token-storage'
 
 // ═══════════════════════════════════════════════════════════════
 // VCT PLATFORM — CONTEXT SWITCHER COMPONENT
@@ -82,7 +83,7 @@ export function ContextSwitcher({
     useEffect(() => {
         const fetchRoles = async () => {
             try {
-                const token = localStorage.getItem('access_token') || ''
+                const token = readStoredTokens().accessToken
                 const res = await fetch(`${apiBase}/auth/my-roles`, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
@@ -111,7 +112,7 @@ export function ContextSwitcher({
             setIsLoading(true)
             setError(null)
             try {
-                const token = localStorage.getItem('access_token') || ''
+                const token = readStoredTokens().accessToken
                 const res = await fetch(`${apiBase}/auth/switch-context`, {
                     method: 'POST',
                     headers: {
@@ -129,12 +130,42 @@ export function ContextSwitcher({
 
                 const result = await res.json()
 
-                // Update stored tokens
-                if (result.accessToken) {
-                    localStorage.setItem('access_token', result.accessToken)
-                }
-                if (result.refreshToken) {
-                    localStorage.setItem('refresh_token', result.refreshToken)
+                // Keep legacy keys + canonical session in sync after context switch.
+                if (typeof window !== 'undefined') {
+                    const nextAccessToken =
+                        (typeof result.accessToken === 'string' && result.accessToken.trim()) ||
+                        (typeof result.token === 'string' && result.token.trim()) ||
+                        ''
+                    const nextRefreshToken =
+                        typeof result.refreshToken === 'string'
+                            ? result.refreshToken.trim()
+                            : ''
+
+                    if (nextAccessToken) {
+                        persistLegacyTokens(nextAccessToken, nextRefreshToken)
+
+                        const rawSession = localStorage.getItem('vct:auth-session')
+                        if (rawSession) {
+                            try {
+                                const parsed = JSON.parse(rawSession) as Record<string, unknown>
+                                localStorage.setItem(
+                                    'vct:auth-session',
+                                    JSON.stringify({
+                                        ...parsed,
+                                        token: nextAccessToken,
+                                        accessToken: nextAccessToken,
+                                        refreshToken:
+                                            nextRefreshToken ||
+                                            (typeof parsed.refreshToken === 'string'
+                                                ? parsed.refreshToken
+                                                : ''),
+                                    })
+                                )
+                            } catch {
+                                // Ignore malformed session payload.
+                            }
+                        }
+                    }
                 }
 
                 setIsOpen(false)

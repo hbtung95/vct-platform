@@ -260,13 +260,13 @@ func (s *Service) GetDashboard(ctx context.Context, clubID string) (*ClubDashboa
 	return &ClubDashboardV2{
 		ClubID:           clubID,
 		AttendanceRate:   attSummary.Rate,
-		TotalSessions:   attSummary.TotalRecords,
-		TotalEquipment:  eqSummary.TotalItems,
-		EquipmentValue:  eqSummary.TotalValue,
-		NeedReplacement: eqSummary.NeedReplacement,
+		TotalSessions:    attSummary.TotalRecords,
+		TotalEquipment:   eqSummary.TotalItems,
+		EquipmentValue:   eqSummary.TotalValue,
+		NeedReplacement:  eqSummary.NeedReplacement,
 		TotalFacilities:  facSummary.TotalFacilities,
 		ActiveFacilities: facSummary.ActiveCount,
-		TotalAreaSqm:    facSummary.TotalAreaSqm,
+		TotalAreaSqm:     facSummary.TotalAreaSqm,
 	}, nil
 }
 

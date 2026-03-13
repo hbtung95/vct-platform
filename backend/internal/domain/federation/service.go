@@ -656,10 +656,10 @@ func (s *Service) GetProvincialStatistics(ctx context.Context, provinceID string
 	}
 
 	stats := &ProvincialStatistics{
-		ProvinceID:   prov.ID,
-		ProvinceName: prov.Name,
-		TotalClubs:   prov.ClubCount,
-		TotalCoaches: prov.CoachCount,
+		ProvinceID:    prov.ID,
+		ProvinceName:  prov.Name,
+		TotalClubs:    prov.ClubCount,
+		TotalCoaches:  prov.CoachCount,
 		TotalAthletes: prov.VDVCount,
 	}
 
@@ -686,4 +686,3 @@ func (s *Service) GetProvincialStatistics(ctx context.Context, provinceID string
 
 	return stats, nil
 }
-

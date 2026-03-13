@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useMemo } from 'react'
 import { VCT_Icons } from '../components/vct-icons'
+import { VCT_Image } from '../components/VCT_Image'
 import { VCT_PageContainer, VCT_SectionCard, VCT_EmptyState, VCT_Badge, VCT_SearchInput, VCT_Modal } from '../components/vct-ui'
 import { useApiQuery } from '../hooks/useApiQuery'
 import { AthleteProfile, AthleteStats } from '@vct/shared-types'
@@ -92,7 +93,7 @@ function AthleteDetailView({ athlete }: { athlete: AthleteProfile }) {
             {/* Profile Header */}
             <div className="flex items-start gap-5">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-vct-border flex items-center justify-center text-4xl flex-shrink-0">
-                    {athlete.photo_url ? <img src={athlete.photo_url} className="w-full h-full object-cover rounded-2xl" alt="avatar" /> : '🥋'}
+                    {athlete.photo_url ? <VCT_Image src={athlete.photo_url} className="w-full h-full rounded-2xl" fill objectFit="cover" alt="avatar" sizes="80px" /> : '🥋'}
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="text-xl font-black text-vct-text m-0">{athlete.full_name}</h3>
@@ -427,7 +428,7 @@ export function Page_athlete_management() {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-vct-border flex items-center justify-center text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
-                                                        {a.photo_url ? <img src={a.photo_url} className="w-full h-full object-cover rounded-xl" alt="" /> : '🥋'}
+                                                        {a.photo_url ? <VCT_Image src={a.photo_url} className="w-full h-full rounded-xl" fill objectFit="cover" alt="" sizes="36px" /> : '🥋'}
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-vct-text text-sm group-hover:text-vct-accent transition-colors">{a.full_name}</div>

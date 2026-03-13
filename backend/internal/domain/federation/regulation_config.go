@@ -268,19 +268,19 @@ func NationalWeapons() []WeaponInfo {
 type CoachGrade string
 
 const (
-	CoachGradeBasic    CoachGrade = "co_so"     // HLV Cấp cơ sở (Nhị Đẳng+)
-	CoachGradeProvince CoachGrade = "cap_tinh"  // HLV Cấp tỉnh (Tam Đẳng+)
-	CoachGradeNational CoachGrade = "quoc_gia"  // HLV Cấp quốc gia (Tứ Đẳng+)
+	CoachGradeBasic    CoachGrade = "co_so"    // HLV Cấp cơ sở (Nhị Đẳng+)
+	CoachGradeProvince CoachGrade = "cap_tinh" // HLV Cấp tỉnh (Tam Đẳng+)
+	CoachGradeNational CoachGrade = "quoc_gia" // HLV Cấp quốc gia (Tứ Đẳng+)
 )
 
 // RefereeGrade represents referee certification levels.
 type RefereeGrade string
 
 const (
-	RefereeGradeBasic    RefereeGrade = "co_so"     // TT Cấp cơ sở
-	RefereeGradeProvince RefereeGrade = "cap_tinh"  // TT Cấp tỉnh
-	RefereeGradeNational RefereeGrade = "quoc_gia"  // TT Cấp quốc gia
-	RefereeGradeIntl     RefereeGrade = "quoc_te"   // TT Quốc tế
+	RefereeGradeBasic    RefereeGrade = "co_so"    // TT Cấp cơ sở
+	RefereeGradeProvince RefereeGrade = "cap_tinh" // TT Cấp tỉnh
+	RefereeGradeNational RefereeGrade = "quoc_gia" // TT Cấp quốc gia
+	RefereeGradeIntl     RefereeGrade = "quoc_te"  // TT Quốc tế
 )
 
 // CertValidity — Thời hạn chứng nhận (tháng)

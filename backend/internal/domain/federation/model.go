@@ -70,14 +70,14 @@ const (
 // MasterBelt represents the standard belt ranking system.
 // Scope determines which level defined this entry (national, provincial, school).
 type MasterBelt struct {
-	Level           int             `json:"level"`              // Sort order/rank (e.g., 1 for lowest)
-	Name            string          `json:"name"`               // e.g. "Đai trắng", "Đai đen 1 đẳng"
-	ColorHex        string          `json:"color_hex"`          // UI visual color
-	RequiredTimeMin int             `json:"required_time_min"`  // Minimum months required training to reach this level
-	IsDanLevel      bool            `json:"is_dan_level"`       // True if it's a black belt equivalent (đẳng cấp)
-	Description     string          `json:"description"`        // Mô tả / ghi chú quy chế
-	Scope           BeltSystemScope `json:"scope"`              // NATIONAL, PROVINCIAL, SCHOOL
-	ScopeID         string          `json:"scope_id,omitempty"` // ID of province/school (empty for national)
+	Level           int             `json:"level"`                   // Sort order/rank (e.g., 1 for lowest)
+	Name            string          `json:"name"`                    // e.g. "Đai trắng", "Đai đen 1 đẳng"
+	ColorHex        string          `json:"color_hex"`               // UI visual color
+	RequiredTimeMin int             `json:"required_time_min"`       // Minimum months required training to reach this level
+	IsDanLevel      bool            `json:"is_dan_level"`            // True if it's a black belt equivalent (đẳng cấp)
+	Description     string          `json:"description"`             // Mô tả / ghi chú quy chế
+	Scope           BeltSystemScope `json:"scope"`                   // NATIONAL, PROVINCIAL, SCHOOL
+	ScopeID         string          `json:"scope_id,omitempty"`      // ID of province/school (empty for national)
 	InheritsFrom    string          `json:"inherits_from,omitempty"` // Parent scope ID (empty = standalone)
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
@@ -86,14 +86,14 @@ type MasterBelt struct {
 // MasterWeightClass represents the standardized weight classes for tournaments
 type MasterWeightClass struct {
 	ID           string          `json:"id"`
-	Gender       string          `json:"gender"`                    // MALE, FEMALE
-	Category     string          `json:"category"`                  // Kyorugi (Đối kháng), etc.
-	MinWeight    float64         `json:"min_weight"`                // in kg (0 if no lower bound)
-	MaxWeight    float64         `json:"max_weight"`                // in kg (e.g. 50.0 means Under 50kg)
-	IsHeavy      bool            `json:"is_heavy"`                  // True if it's the 80+ kg open category
-	Scope        BeltSystemScope `json:"scope"`                     // NATIONAL, PROVINCIAL, SCHOOL
-	ScopeID      string          `json:"scope_id,omitempty"`        // ID of province/school
-	InheritsFrom string          `json:"inherits_from,omitempty"`   // Parent scope ID
+	Gender       string          `json:"gender"`                  // MALE, FEMALE
+	Category     string          `json:"category"`                // Kyorugi (Đối kháng), etc.
+	MinWeight    float64         `json:"min_weight"`              // in kg (0 if no lower bound)
+	MaxWeight    float64         `json:"max_weight"`              // in kg (e.g. 50.0 means Under 50kg)
+	IsHeavy      bool            `json:"is_heavy"`                // True if it's the 80+ kg open category
+	Scope        BeltSystemScope `json:"scope"`                   // NATIONAL, PROVINCIAL, SCHOOL
+	ScopeID      string          `json:"scope_id,omitempty"`      // ID of province/school
+	InheritsFrom string          `json:"inherits_from,omitempty"` // Parent scope ID
 	CreatedAt    time.Time       `json:"created_at"`
 	UpdatedAt    time.Time       `json:"updated_at"`
 }
@@ -101,12 +101,12 @@ type MasterWeightClass struct {
 // MasterAgeGroup represents the standardized age brackets for competitors
 type MasterAgeGroup struct {
 	ID           string          `json:"id"`
-	Name         string          `json:"name"`                      // e.g. "U15", "Youth", "Senior"
+	Name         string          `json:"name"` // e.g. "U15", "Youth", "Senior"
 	MinAge       int             `json:"min_age"`
 	MaxAge       int             `json:"max_age"`
-	Scope        BeltSystemScope `json:"scope"`                     // NATIONAL, PROVINCIAL, SCHOOL
-	ScopeID      string          `json:"scope_id,omitempty"`        // ID of province/school
-	InheritsFrom string          `json:"inherits_from,omitempty"`   // Parent scope ID
+	Scope        BeltSystemScope `json:"scope"`                   // NATIONAL, PROVINCIAL, SCHOOL
+	ScopeID      string          `json:"scope_id,omitempty"`      // ID of province/school
+	InheritsFrom string          `json:"inherits_from,omitempty"` // Parent scope ID
 	CreatedAt    time.Time       `json:"created_at"`
 	UpdatedAt    time.Time       `json:"updated_at"`
 }
@@ -125,7 +125,7 @@ const (
 	ContentSongLuyen     CompetitionContentType = "song_luyen"           // Song luyện (2 người đấu mẫu)
 	ContentNhieuLuyen    CompetitionContentType = "nhieu_luyen"          // Nhiều luyện (3+ người đấu mẫu)
 	ContentBinhKhi       CompetitionContentType = "binh_khi"             // Binh khí (quyền binh khí)
-	ContentVuKhiDoiLuyen CompetitionContentType = "vu_khi_doi_luyen"    // Vũ khí đối luyện
+	ContentVuKhiDoiLuyen CompetitionContentType = "vu_khi_doi_luyen"     // Vũ khí đối luyện
 	ContentBieuDien      CompetitionContentType = "bieu_dien_chien_luoc" // Biểu diễn chiến lược
 	ContentTuVe          CompetitionContentType = "tu_ve"                // Tự vệ
 )
@@ -136,12 +136,12 @@ type MasterCompetitionContent struct {
 	Code           CompetitionContentType `json:"code"`
 	Name           string                 `json:"name"`
 	Description    string                 `json:"description"`
-	RequiresWeight bool                   `json:"requires_weight"`  // Đối kháng cần hạng cân
-	IsTeamEvent    bool                   `json:"is_team_event"`    // Nội dung đồng đội
-	MinAthletes    int                    `json:"min_athletes"`     // Số VĐV tối thiểu
-	MaxAthletes    int                    `json:"max_athletes"`     // Số VĐV tối đa
-	HasWeapon      bool                   `json:"has_weapon"`       // Có sử dụng binh khí
-	Scope          BeltSystemScope        `json:"scope"`            // NATIONAL, PROVINCIAL, SCHOOL
+	RequiresWeight bool                   `json:"requires_weight"` // Đối kháng cần hạng cân
+	IsTeamEvent    bool                   `json:"is_team_event"`   // Nội dung đồng đội
+	MinAthletes    int                    `json:"min_athletes"`    // Số VĐV tối thiểu
+	MaxAthletes    int                    `json:"max_athletes"`    // Số VĐV tối đa
+	HasWeapon      bool                   `json:"has_weapon"`      // Có sử dụng binh khí
+	Scope          BeltSystemScope        `json:"scope"`           // NATIONAL, PROVINCIAL, SCHOOL
 	ScopeID        string                 `json:"scope_id,omitempty"`
 	CreatedAt      time.Time              `json:"created_at"`
 	UpdatedAt      time.Time              `json:"updated_at"`
@@ -191,9 +191,9 @@ const (
 type AthleteStatus string
 
 const (
-	AthleteActive   AthleteStatus = "ACTIVE"
+	AthleteActive    AthleteStatus = "ACTIVE"
 	AthleteSuspended AthleteStatus = "SUSPENDED"
-	AthleteRetired  AthleteStatus = "RETIRED"
+	AthleteRetired   AthleteStatus = "RETIRED"
 )
 
 type CoachLevel string
@@ -207,10 +207,10 @@ const (
 type ReportType string
 
 const (
-	ReportTypeMonthly  ReportType = "MONTHLY"
+	ReportTypeMonthly   ReportType = "MONTHLY"
 	ReportTypeQuarterly ReportType = "QUARTERLY"
-	ReportTypeAnnual   ReportType = "ANNUAL"
-	ReportTypeEvent    ReportType = "EVENT"
+	ReportTypeAnnual    ReportType = "ANNUAL"
+	ReportTypeEvent     ReportType = "EVENT"
 )
 
 type ReportStatus string
@@ -224,42 +224,42 @@ const (
 // ProvincialClub represents a martial arts club under a provincial federation.
 type ProvincialClub struct {
 	ID           string     `json:"id"`
-	ProvinceID   string     `json:"province_id"`   // FK to Province
-	Name         string     `json:"name"`           // Tên CLB
-	Code         string     `json:"code"`           // Mã CLB (e.g. "BD-001")
+	ProvinceID   string     `json:"province_id"` // FK to Province
+	Name         string     `json:"name"`        // Tên CLB
+	Code         string     `json:"code"`        // Mã CLB (e.g. "BD-001")
 	Address      string     `json:"address"`
-	District     string     `json:"district"`       // Quận/Huyện
-	LeaderName   string     `json:"leader_name"`    // Chủ nhiệm CLB
+	District     string     `json:"district"`    // Quận/Huyện
+	LeaderName   string     `json:"leader_name"` // Chủ nhiệm CLB
 	LeaderPhone  string     `json:"leader_phone"`
-	MemberCount  int        `json:"member_count"`   // Tổng số thành viên
-	AthleteCount int        `json:"athlete_count"`  // Số VĐV
-	CoachCount   int        `json:"coach_count"`    // Số HLV
+	MemberCount  int        `json:"member_count"`  // Tổng số thành viên
+	AthleteCount int        `json:"athlete_count"` // Số VĐV
+	CoachCount   int        `json:"coach_count"`   // Số HLV
 	Status       ClubStatus `json:"status"`
-	FoundedDate  string     `json:"founded_date"`   // YYYY-MM-DD
+	FoundedDate  string     `json:"founded_date"` // YYYY-MM-DD
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 // ProvincialAthlete represents an athlete registered under a provincial club.
 type ProvincialAthlete struct {
-	ID            string        `json:"id"`
-	ProvinceID    string        `json:"province_id"`
-	ClubID        string        `json:"club_id"`
-	ClubName      string        `json:"club_name"`
-	FullName      string        `json:"full_name"`       // Họ và tên
-	Gender        string        `json:"gender"`          // MALE / FEMALE
-	DateOfBirth   string        `json:"date_of_birth"`   // YYYY-MM-DD
-	BeltLevel     int           `json:"belt_level"`      // Cấp đai hiện tại
-	BeltName      string        `json:"belt_name"`       // Tên đai
-	WeightKg      float64       `json:"weight_kg"`
-	HeightCm      float64       `json:"height_cm"`
-	IDNumber      string        `json:"id_number"`       // CMND/CCCD
-	Phone         string        `json:"phone"`
-	Status        AthleteStatus `json:"status"`
-	JoinDate      string        `json:"join_date"`
-	Achievements  string        `json:"achievements,omitempty"` // Thành tích nổi bật
-	CreatedAt     time.Time     `json:"created_at"`
-	UpdatedAt     time.Time     `json:"updated_at"`
+	ID           string        `json:"id"`
+	ProvinceID   string        `json:"province_id"`
+	ClubID       string        `json:"club_id"`
+	ClubName     string        `json:"club_name"`
+	FullName     string        `json:"full_name"`     // Họ và tên
+	Gender       string        `json:"gender"`        // MALE / FEMALE
+	DateOfBirth  string        `json:"date_of_birth"` // YYYY-MM-DD
+	BeltLevel    int           `json:"belt_level"`    // Cấp đai hiện tại
+	BeltName     string        `json:"belt_name"`     // Tên đai
+	WeightKg     float64       `json:"weight_kg"`
+	HeightCm     float64       `json:"height_cm"`
+	IDNumber     string        `json:"id_number"` // CMND/CCCD
+	Phone        string        `json:"phone"`
+	Status       AthleteStatus `json:"status"`
+	JoinDate     string        `json:"join_date"`
+	Achievements string        `json:"achievements,omitempty"` // Thành tích nổi bật
+	CreatedAt    time.Time     `json:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at"`
 }
 
 // ProvincialCoach represents a coach registered under a provincial federation.
@@ -273,14 +273,14 @@ type ProvincialCoach struct {
 	DateOfBirth     string     `json:"date_of_birth"`
 	Phone           string     `json:"phone"`
 	Email           string     `json:"email"`
-	Level           CoachLevel `json:"level"`              // PROVINCIAL / NATIONAL / MASTER
-	CertNumber      string     `json:"cert_number"`        // Số chứng chỉ HLV
-	CertExpiry      string     `json:"cert_expiry"`        // Ngày hết hạn
+	Level           CoachLevel `json:"level"`       // PROVINCIAL / NATIONAL / MASTER
+	CertNumber      string     `json:"cert_number"` // Số chứng chỉ HLV
+	CertExpiry      string     `json:"cert_expiry"` // Ngày hết hạn
 	BeltLevel       int        `json:"belt_level"`
 	BeltName        string     `json:"belt_name"`
 	YearsExperience int        `json:"years_experience"`
-	Specialization  string     `json:"specialization"`     // Chuyên ngành (đối kháng, quyền, etc.)
-	Status          string     `json:"status"`             // ACTIVE / INACTIVE
+	Specialization  string     `json:"specialization"` // Chuyên ngành (đối kháng, quyền, etc.)
+	Status          string     `json:"status"`         // ACTIVE / INACTIVE
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
@@ -290,14 +290,14 @@ type ProvincialReport struct {
 	ID           string       `json:"id"`
 	ProvinceID   string       `json:"province_id"`
 	Title        string       `json:"title"`
-	Type         ReportType   `json:"type"`           // MONTHLY, QUARTERLY, ANNUAL, EVENT
-	Period       string       `json:"period"`          // e.g. "2026-Q1", "2026-03"
+	Type         ReportType   `json:"type"`   // MONTHLY, QUARTERLY, ANNUAL, EVENT
+	Period       string       `json:"period"` // e.g. "2026-Q1", "2026-03"
 	TotalClubs   int          `json:"total_clubs"`
 	TotalVDV     int          `json:"total_vdv"`
 	TotalCoaches int          `json:"total_coaches"`
 	TotalEvents  int          `json:"total_events"`
-	Highlights   string       `json:"highlights"`      // Điểm nổi bật
-	Issues       string       `json:"issues"`          // Khó khăn, vướng mắc
+	Highlights   string       `json:"highlights"` // Điểm nổi bật
+	Issues       string       `json:"issues"`     // Khó khăn, vướng mắc
 	Status       ReportStatus `json:"status"`
 	SubmittedBy  string       `json:"submitted_by"`
 	CreatedAt    time.Time    `json:"created_at"`

@@ -12,10 +12,15 @@ import {
 } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
-import { useClubs } from '../hooks/useCommunityAPI'
+import {
+    useClubs,
+    useCreateClub,
+    useUpdateClub,
+    useDeleteClub,
+} from '../hooks/useCommunityAPI'
 
 // ════════════════════════════════════════
-// TYPES & MOCK DATA
+// TYPES
 // ════════════════════════════════════════
 type ClubType = 'phan_duong' | 'vo_duong' | 'clb'
 
@@ -52,32 +57,20 @@ const MOCK_ORGS = [
     { id: 'ORG-003', name: 'Hội VCT Quận 7' },
 ]
 
-const MOCK_CLUBS: Club[] = [
-    {
-        id: 'CLB-001', name: 'Võ đường Trần Quang Diệu', code: 'TQD', org_id: 'ORG-002',
-        type: 'vo_duong', founded_date: '2005-04-12', master_name: 'Võ sư Nguyễn B',
-        phone: '0901112233', address: 'Tây Sơn, Bình Định', status: 'active',
-        total_members: 120, active_classes: 4
-    },
-    {
-        id: 'CLB-002', name: 'CLB VCT Trường ĐH Tôn Đức Thắng', code: 'TDT', org_id: 'ORG-003',
-        type: 'clb', founded_date: '2018-09-05', master_name: 'HLV Lê C',
-        phone: '0902223344', address: 'Quận 7, TP.HCM', status: 'active',
-        total_members: 85, active_classes: 2
-    },
-    {
-        id: 'CLB-003', name: 'Phân đường Bình Định Gia - Miền Bắc', code: 'BDG-MB', org_id: 'ORG-001',
-        type: 'phan_duong', founded_date: '1995-12-20', master_name: 'Võ sư Trần D',
-        phone: '0903334455', address: 'Cầu Giấy, Hà Nội', status: 'active',
-        total_members: 450, active_classes: 12
-    },
-    {
-        id: 'CLB-004', name: 'CLB Võ thuật Nhà văn hóa TN', code: 'NVHTN', org_id: 'ORG-001',
-        type: 'clb', founded_date: '2010-06-01', master_name: 'HLV Phạm E',
-        phone: '0904445566', address: 'Quận 1, TP.HCM', status: 'suspended',
-        total_members: 55, active_classes: 1
-    }
-]
+const toLocalClub = (c: any): Club => ({
+    id: c.id,
+    name: c.name || '',
+    code: c.code || '',
+    org_id: c.org_id || '',
+    type: (c.type || 'clb') as ClubType,
+    founded_date: c.founded_date || '',
+    master_name: c.master_name || c.leader_name || '',
+    phone: c.phone || '',
+    address: c.address || '',
+    status: (c.status || 'active') as Club['status'],
+    total_members: c.total_members || c.member_count || 0,
+    active_classes: c.active_classes || 0,
+})
 
 const BLANK_FORM: Partial<Club> = {
     name: '', code: '', org_id: '', type: 'clb', founded_date: '', master_name: '', phone: '', address: ''
@@ -89,20 +82,15 @@ const BLANK_FORM: Partial<Club> = {
 export const Page_clubs = () => {
     // ── Real API data ──
     const { data: apiClubs } = useClubs()
-    const [clubs, setClubs] = useState<Club[]>(MOCK_CLUBS)
+    const createClub = useCreateClub()
+    const updateClub = useUpdateClub()
+    const deleteClub = useDeleteClub()
+    const [clubs, setClubs] = useState<Club[]>([])
     const [search, setSearch] = useState('')
 
     useEffect(() => {
-        if (apiClubs && apiClubs.length > 0) {
-            setClubs(apiClubs.map((c: any) => ({
-                id: c.id, name: c.name, code: c.code || '',
-                org_id: c.org_id || '', type: (c.type || 'clb') as ClubType,
-                founded_date: c.founded_date || '', master_name: c.master_name || '',
-                phone: c.phone || '', address: c.address || '',
-                status: (c.status || 'active') as Club['status'],
-                total_members: c.total_members || 0, active_classes: c.active_classes || 0,
-            })))
-        }
+        if (!apiClubs) return
+        setClubs(apiClubs.map(toLocalClub))
     }, [apiClubs])
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
     const [typeFilter, setTypeFilter] = useState<string | null>(null)
@@ -112,6 +100,8 @@ export const Page_clubs = () => {
     const [editingClub, setEditingClub] = useState<Club | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Club | null>(null)
     const [form, setForm] = useState<any>({ ...BLANK_FORM })
+    const [isSaving, setIsSaving] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const showToast = useCallback((msg: string, type = 'success') => {
         setToast({ show: true, msg, type })
@@ -161,28 +151,74 @@ export const Page_clubs = () => {
         setShowModal(true)
     }, [])
 
-    const handleSave = () => {
-        if (!form.name || !form.code) { showToast('Vui lòng nhập tên và mã CLB', 'error'); return }
-        if (editingClub) {
-            setClubs(prev => prev.map(t => t.id === editingClub.id ? { ...t, ...form } : t))
-            showToast(`Đã cập nhật "${form.name}"`)
-        } else {
-            const newClub: Club = {
-                ...form, id: `CLB-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-                status: 'active', total_members: 0, active_classes: 0,
-            }
-            setClubs(prev => [newClub, ...prev])
-            showToast(`Đã thêm CLB "${form.name}"`)
+    const handleSave = async () => {
+        if (!form.name || !form.code) {
+            showToast('Vui lòng nhập tên và mã CLB', 'error')
+            return
         }
-        setShowModal(false)
+        setIsSaving(true)
+        try {
+            if (editingClub) {
+                const updated = await updateClub(editingClub.id, {
+                    name: form.name,
+                    address: form.address,
+                    phone: form.phone,
+                    master_name: form.master_name,
+                    status: form.status,
+                })
+                const next = {
+                    ...editingClub,
+                    ...form,
+                    ...toLocalClub(updated),
+                }
+                setClubs((prev) =>
+                    prev.map((club) => (club.id === editingClub.id ? next : club))
+                )
+                showToast(`Đã cập nhật "${form.name}"`)
+            } else {
+                const created = await createClub({
+                    name: form.name,
+                    address: form.address,
+                    phone: form.phone,
+                    master_name: form.master_name,
+                    status: 'active',
+                })
+                const next: Club = {
+                    ...toLocalClub(created),
+                    code: form.code || created.code || '',
+                    type: (form.type || 'clb') as ClubType,
+                    org_id: form.org_id || '',
+                    founded_date: form.founded_date || '',
+                    active_classes: 0,
+                    total_members: created.total_members || 0,
+                }
+                setClubs((prev) => [next, ...prev])
+                showToast(`Đã thêm CLB "${form.name}"`)
+            }
+            setShowModal(false)
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Không thể lưu dữ liệu'
+            showToast(message, 'error')
+        } finally {
+            setIsSaving(false)
+        }
     }
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!deleteTarget) return
-        setClubs(prev => prev.filter(t => t.id !== deleteTarget.id))
-        setSelectedIds(prev => { const n = new Set(prev); n.delete(deleteTarget.id); return n })
-        showToast(`Đã xóa "${deleteTarget.name}"`, 'success')
-        setDeleteTarget(null)
+        setIsDeleting(true)
+        try {
+            await deleteClub(deleteTarget.id)
+            setClubs(prev => prev.filter(t => t.id !== deleteTarget.id))
+            setSelectedIds(prev => { const n = new Set(prev); n.delete(deleteTarget.id); return n })
+            showToast(`Đã xóa "${deleteTarget.name}"`, 'success')
+            setDeleteTarget(null)
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Không thể xóa dữ liệu'
+            showToast(message, 'error')
+        } finally {
+            setIsDeleting(false)
+        }
     }
 
     // Bulk actions
@@ -193,14 +229,24 @@ export const Page_clubs = () => {
         {
             label: 'Đóng cửa (Giải thể)',
             icon: <VCT_Icons.x size={14} />,
-            onClick: () => {
-                setClubs(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status: 'closed' } : t))
-                showToast(`Đã đóng cửa ${selectedIds.size} CLB`, 'error')
+            onClick: async () => {
+                try {
+                    await Promise.all(
+                        Array.from(selectedIds).map((id) =>
+                            updateClub(id, { status: 'closed' })
+                        )
+                    )
+                    setClubs(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status: 'closed' } : t))
+                    showToast(`Đã đóng cửa ${selectedIds.size} CLB`, 'error')
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Không thể cập nhật trạng thái'
+                    showToast(message, 'error')
+                }
                 setSelectedIds(new Set())
             },
             variant: 'danger'
         }
-    ], [selectedIds, showToast])
+    ], [selectedIds, showToast, updateClub])
 
     const columns = [
         {
@@ -344,7 +390,9 @@ export const Page_clubs = () => {
             <VCT_Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingClub ? 'Chỉnh sửa CLB/Võ đường' : 'Thêm CLB/Võ đường'} width="680px" footer={
                 <>
                     <VCT_Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</VCT_Button>
-                    <VCT_Button onClick={handleSave}>{editingClub ? 'Cập nhật' : 'Khởi tạo CLB'}</VCT_Button>
+                    <VCT_Button loading={isSaving} onClick={() => void handleSave()}>
+                        {editingClub ? 'Cập nhật' : 'Khởi tạo CLB'}
+                    </VCT_Button>
                 </>
             }>
                 <VCT_Stack gap={16}>
@@ -370,7 +418,7 @@ export const Page_clubs = () => {
             </VCT_Modal>
 
             {/* ── DELETE CONFIRM ── */}
-            <VCT_ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
+            <VCT_ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => void handleDelete()} loading={isDeleting}
                 title="Xác nhận xóa" message={`Bạn có chắc muốn xóa CLB "${deleteTarget?.name}"? Hệ thống khuyến khích đóng cửa (giải thể) thay vì xóa hoàn toàn.`}
                 confirmLabel="Xóa vĩnh viễn" />
         </VCT_PageContainer>

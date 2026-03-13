@@ -1,12 +1,20 @@
 {
   "expo": {
-    "name": "solito-blank",
-    "slug": "solito-blank",
+    "name": "VCT Platform",
+    "slug": "vct-platform",
     "version": "1.0.0",
-    "scheme": "solito-blank",
+    "scheme": "vct-platform",
+    "orientation": "portrait",
     "platforms": ["ios", "android"],
     "ios": {
-      "bundleIdentifier": "com.solito.blank"
+      "bundleIdentifier": "com.vctplatform.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.vctplatform.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      }
     },
     "newArchEnabled": true,
     "experiments": {

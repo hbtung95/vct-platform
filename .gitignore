@@ -97,3 +97,6 @@ tsconfig.tsbuildinfo
 .env
 .env.local
 .env.*.local
+
+# Go build cache
+.gocache/

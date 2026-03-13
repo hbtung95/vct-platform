@@ -602,6 +602,46 @@ textarea {
   color: #ef4444;
 }
 
+/* ── Dynamic-color progress bar ── */
+.vct-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: all 700ms;
+  background: var(--vct-bar-gradient);
+}
+
+/* ── Dynamic-color percentage label ── */
+.vct-pct-label {
+  text-align: right;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 4px;
+  color: var(--vct-dynamic-color);
+}
+
+/* ── Dynamic-color count badge ── */
+.vct-count-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  background-color: var(--vct-dynamic-color);
+}
+
+/* ── Dynamic-color status dot ── */
+.vct-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  background-color: var(--vct-dynamic-color);
+}
+
 /* ── Accent dot indicator ── */
 .vct-dot-pulse {
   animation: vct-pulse 2s ease-in-out infinite;

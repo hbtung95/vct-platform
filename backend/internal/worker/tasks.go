@@ -25,7 +25,7 @@ func (h *NotificationHandler) TaskType() string { return "send_notification" }
 func (h *NotificationHandler) Handle(ctx context.Context, payload map[string]any) error {
 	recipientID, _ := payload["recipient_id"].(string)
 	channel, _ := payload["channel"].(string)   // "email", "push", "sms"
-	template, _ := payload["template"].(string)  // template name
+	template, _ := payload["template"].(string) // template name
 
 	if recipientID == "" || template == "" {
 		return fmt.Errorf("missing recipient_id or template")
@@ -52,7 +52,7 @@ func (h *ExportReportHandler) TaskType() string { return "export_tournament_repo
 
 func (h *ExportReportHandler) Handle(ctx context.Context, payload map[string]any) error {
 	tournamentID, _ := payload["tournament_id"].(string)
-	format, _ := payload["format"].(string)       // "csv", "pdf", "xlsx"
+	format, _ := payload["format"].(string) // "csv", "pdf", "xlsx"
 	requestedBy, _ := payload["requested_by"].(string)
 
 	if tournamentID == "" {

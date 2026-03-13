@@ -185,13 +185,13 @@ func (d *Dispatcher) Stats() map[string]any {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return map[string]any{
-		"running":     d.running,
-		"workers":     d.config.WorkerCount,
-		"queue_size":  len(d.queue),
-		"queue_cap":   d.config.QueueSize,
-		"processed":   d.processed,
-		"failed":      d.failed,
-		"handlers":    len(d.handlers),
+		"running":    d.running,
+		"workers":    d.config.WorkerCount,
+		"queue_size": len(d.queue),
+		"queue_cap":  d.config.QueueSize,
+		"processed":  d.processed,
+		"failed":     d.failed,
+		"handlers":   len(d.handlers),
 	}
 }
 

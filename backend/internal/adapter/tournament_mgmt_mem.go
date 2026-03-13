@@ -15,14 +15,14 @@ import (
 
 // InMemTournamentMgmtStore is an in-memory implementation of tournament.MgmtRepository.
 type InMemTournamentMgmtStore struct {
-	mu           sync.RWMutex
-	categories   map[string]*tournament.Category
+	mu            sync.RWMutex
+	categories    map[string]*tournament.Category
 	registrations map[string]*tournament.Registration
-	regAthletes  map[string]*tournament.RegistrationAthlete
+	regAthletes   map[string]*tournament.RegistrationAthlete
 	scheduleSlots map[string]*tournament.ScheduleSlot
-	arenaAssigns map[string]*tournament.ArenaAssignment
-	results      map[string]*tournament.TournamentResult
-	standings    map[string]*tournament.TeamStanding
+	arenaAssigns  map[string]*tournament.ArenaAssignment
+	results       map[string]*tournament.TournamentResult
+	standings     map[string]*tournament.TeamStanding
 }
 
 // NewInMemTournamentMgmtStore creates a new in-memory store.

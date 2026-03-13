@@ -456,7 +456,7 @@ const (
 type TrainingSession struct {
 	ID        string        `json:"id"`
 	AthleteID string        `json:"athlete_id"`
-	Date      string        `json:"date"`      // YYYY-MM-DD
+	Date      string        `json:"date"`       // YYYY-MM-DD
 	StartTime string        `json:"start_time"` // HH:MM
 	EndTime   string        `json:"end_time"`   // HH:MM
 	Type      SessionType   `json:"type"`
@@ -471,13 +471,13 @@ type TrainingSession struct {
 
 // AttendanceStats aggregates training attendance metrics.
 type AttendanceStats struct {
-	TotalSessions    int     `json:"total_sessions"`
-	Attended         int     `json:"attended"`
-	Absent           int     `json:"absent"`
-	Cancelled        int     `json:"cancelled"`
-	AttendanceRate   float64 `json:"attendance_rate"` // 0-100
-	CurrentStreak    int     `json:"current_streak"`
-	ByType           map[string]int `json:"by_type"`
+	TotalSessions  int            `json:"total_sessions"`
+	Attended       int            `json:"attended"`
+	Absent         int            `json:"absent"`
+	Cancelled      int            `json:"cancelled"`
+	AttendanceRate float64        `json:"attendance_rate"` // 0-100
+	CurrentStreak  int            `json:"current_streak"`
+	ByType         map[string]int `json:"by_type"`
 }
 
 type TrainingSessionRepository interface {

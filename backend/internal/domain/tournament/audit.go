@@ -28,7 +28,7 @@ const (
 type AuditEntry struct {
 	ID           string            `json:"id"`
 	TournamentID string            `json:"tournament_id"`
-	EntityType   string            `json:"entity_type"`   // category, registration, schedule, result, standing
+	EntityType   string            `json:"entity_type"` // category, registration, schedule, result, standing
 	EntityID     string            `json:"entity_id"`
 	Action       AuditAction       `json:"action"`
 	ActorID      string            `json:"actor_id"`

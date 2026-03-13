@@ -161,6 +161,7 @@ export function Page_ParentDashboard() {
         { id: 'consents', label: 'Đồng thuận', icon: '📋' },
         { id: 'attendance', label: 'Điểm danh', icon: '📅' },
     ]
+    const activePanelId = `parent-tab-panel-${activeTab}`
 
     return (
         <div className="min-h-screen bg-linear-to-b from-[#0d1117] to-[#161b22]">
@@ -185,10 +186,18 @@ export function Page_ParentDashboard() {
             </motion.div>
 
             {/* ── Tab Bar ─────────────────────────────────── */}
-            <div className="relative flex gap-1 p-2 mx-4 mt-4 rounded-xl bg-white/4">
+            <div
+                role="tablist"
+                aria-label="Điều hướng cổng phụ huynh"
+                className="relative flex gap-1 p-2 mx-4 mt-4 rounded-xl bg-white/4"
+            >
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
+                        role="tab"
+                        id={`parent-tab-${tab.id}`}
+                        aria-controls={`parent-tab-panel-${tab.id}`}
+                        aria-selected={activeTab === tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`relative flex-1 py-2.5 rounded-lg text-sm font-medium transition-all border-none cursor-pointer z-10 bg-transparent ${activeTab === tab.id ? 'text-white' : 'text-white/50'}`}
                     >
@@ -205,7 +214,12 @@ export function Page_ParentDashboard() {
             </div>
 
             {/* ── Content ─────────────────────────────────── */}
-            <div className="p-4">
+            <div
+                id={activePanelId}
+                role="tabpanel"
+                aria-labelledby={`parent-tab-${activeTab}`}
+                className="p-4"
+            >
                 {loading && <LoadingSkeleton />}
                 {error && <ErrorBanner message={error} onRetry={fetchDashboard} />}
                 {!loading && !error && dashboard && (

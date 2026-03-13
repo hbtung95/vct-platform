@@ -90,13 +90,13 @@ func (s *pgMasterDataStore) CreateMasterWeight(ctx context.Context, weight feder
 
 func (s *pgMasterDataStore) UpdateMasterWeight(ctx context.Context, weight federation.MasterWeightClass) error {
 	_, err := s.weightStore.Update(weight.ID, map[string]interface{}{
-		"gender":         weight.Gender,
-		"category":       weight.Category,
-		"max_weight":     weight.MaxWeight,
-		"is_heavy":       weight.IsHeavy,
-		"scope":          weight.Scope,
-		"scope_id":       weight.ScopeID,
-		"inherits_from":  weight.InheritsFrom,
+		"gender":        weight.Gender,
+		"category":      weight.Category,
+		"max_weight":    weight.MaxWeight,
+		"is_heavy":      weight.IsHeavy,
+		"scope":         weight.Scope,
+		"scope_id":      weight.ScopeID,
+		"inherits_from": weight.InheritsFrom,
 	})
 	return err
 }
@@ -123,12 +123,12 @@ func (s *pgMasterDataStore) CreateMasterAge(ctx context.Context, age federation.
 
 func (s *pgMasterDataStore) UpdateMasterAge(ctx context.Context, age federation.MasterAgeGroup) error {
 	_, err := s.ageStore.Update(age.ID, map[string]interface{}{
-		"name":           age.Name,
-		"min_age":        age.MinAge,
-		"max_age":        age.MaxAge,
-		"scope":          age.Scope,
-		"scope_id":       age.ScopeID,
-		"inherits_from":  age.InheritsFrom,
+		"name":          age.Name,
+		"min_age":       age.MinAge,
+		"max_age":       age.MaxAge,
+		"scope":         age.Scope,
+		"scope_id":      age.ScopeID,
+		"inherits_from": age.InheritsFrom,
 	})
 	return err
 }

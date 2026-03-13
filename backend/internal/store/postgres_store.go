@@ -70,8 +70,10 @@ CREATE INDEX IF NOT EXISTS idx_entity_records_entity_updated_at
 
 	// Phase 2: Relational schema (typed tables for future per-entity repos)
 	const relational = `
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username VARCHAR(50) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role VARCHAR(20) NOT NULL,
@@ -85,7 +87,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(200) NOT NULL,
   code VARCHAR(50) UNIQUE NOT NULL,
   level VARCHAR(20) NOT NULL,
@@ -103,7 +105,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
 );
 
 CREATE TABLE IF NOT EXISTS age_groups (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   ten VARCHAR(100) NOT NULL,
   tuoi_min INT NOT NULL,
@@ -111,7 +113,7 @@ CREATE TABLE IF NOT EXISTS age_groups (
 );
 
 CREATE TABLE IF NOT EXISTS content_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   ten VARCHAR(200) NOT NULL,
   loai VARCHAR(20) NOT NULL,
@@ -124,7 +126,7 @@ CREATE TABLE IF NOT EXISTS content_categories (
 );
 
 CREATE TABLE IF NOT EXISTS weight_classes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   ten VARCHAR(100) NOT NULL,
   gioi_tinh VARCHAR(5) NOT NULL,
@@ -136,7 +138,7 @@ CREATE TABLE IF NOT EXISTS weight_classes (
 );
 
 CREATE TABLE IF NOT EXISTS teams (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   ten VARCHAR(200) NOT NULL,
   ma_doan VARCHAR(20) NOT NULL,
@@ -155,7 +157,7 @@ CREATE TABLE IF NOT EXISTS teams (
 );
 
 CREATE TABLE IF NOT EXISTS athletes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
   ho_ten VARCHAR(200) NOT NULL,
@@ -173,7 +175,7 @@ CREATE TABLE IF NOT EXISTS athletes (
 );
 
 CREATE TABLE IF NOT EXISTS registrations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   athlete_id UUID REFERENCES athletes(id) ON DELETE CASCADE,
   content_category_id UUID,
@@ -185,7 +187,7 @@ CREATE TABLE IF NOT EXISTS registrations (
 );
 
 CREATE TABLE IF NOT EXISTS referees (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   ho_ten VARCHAR(200) NOT NULL,
   cap_bac VARCHAR(20) NOT NULL,
@@ -201,7 +203,7 @@ CREATE TABLE IF NOT EXISTS referees (
 );
 
 CREATE TABLE IF NOT EXISTS arenas (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
   ten VARCHAR(200) NOT NULL,
   loai VARCHAR(20) NOT NULL,
@@ -214,7 +216,7 @@ CREATE TABLE IF NOT EXISTS arenas (
 );
 
 CREATE TABLE IF NOT EXISTS referee_assignments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   referee_id UUID,
   arena_id UUID,
@@ -225,7 +227,7 @@ CREATE TABLE IF NOT EXISTS referee_assignments (
 );
 
 CREATE TABLE IF NOT EXISTS combat_matches (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   content_category_id UUID,
   weight_class_id UUID,
@@ -250,7 +252,7 @@ CREATE TABLE IF NOT EXISTS combat_matches (
 );
 
 CREATE TABLE IF NOT EXISTS form_performances (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   content_category_id UUID,
   arena_id UUID,
@@ -268,7 +270,7 @@ CREATE TABLE IF NOT EXISTS form_performances (
 );
 
 CREATE TABLE IF NOT EXISTS weigh_ins (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   athlete_id UUID,
   weight_class_id UUID,
@@ -281,7 +283,7 @@ CREATE TABLE IF NOT EXISTS weigh_ins (
 );
 
 CREATE TABLE IF NOT EXISTS schedule_entries (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   ngay DATE NOT NULL,
   buoi VARCHAR(10) NOT NULL,
@@ -295,7 +297,7 @@ CREATE TABLE IF NOT EXISTS schedule_entries (
 );
 
 CREATE TABLE IF NOT EXISTS appeals (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   loai VARCHAR(20) NOT NULL,
   team_id UUID,
@@ -314,7 +316,7 @@ CREATE TABLE IF NOT EXISTS appeals (
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   user_id UUID,
   type VARCHAR(50) NOT NULL,
@@ -326,7 +328,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE TABLE IF NOT EXISTS medical_records (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   athlete_id UUID,
   match_id UUID,
@@ -340,7 +342,7 @@ CREATE TABLE IF NOT EXISTS medical_records (
 );
 
 CREATE TABLE IF NOT EXISTS media_files (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   uploaded_by UUID,
   type VARCHAR(20) NOT NULL,
@@ -355,7 +357,7 @@ CREATE TABLE IF NOT EXISTS media_files (
 );
 
 CREATE TABLE IF NOT EXISTS data_audit_log (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID,
   entity_type VARCHAR(50) NOT NULL,
   entity_id UUID NOT NULL,
@@ -648,6 +650,211 @@ func (s *PostgresStore) ExportCSV(entity string) (string, error) {
 
 	return builder.String(), nil
 }
+
+// ── Transaction Support ──────────────────────────────────────
+
+// WithTransaction executes fn inside a database transaction.
+// If fn returns nil, the transaction is committed; otherwise it is rolled back.
+// The fn receives a TxStore that forwards all DataStore methods through the transaction.
+func (s *PostgresStore) WithTransaction(ctx context.Context, fn func(tx DataStore) error) error {
+	pgTx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+
+	txStore := &TxStore{tx: pgTx}
+	if fnErr := fn(txStore); fnErr != nil {
+		_ = pgTx.Rollback(ctx)
+		return fnErr
+	}
+
+	if commitErr := pgTx.Commit(ctx); commitErr != nil {
+		return fmt.Errorf("commit transaction: %w", commitErr)
+	}
+	return nil
+}
+
+// TxStore wraps a pgx.Tx to implement DataStore within a transaction scope.
+type TxStore struct {
+	tx pgx.Tx
+}
+
+func (t *TxStore) EnsureEntity(_ string) {}
+
+func (t *TxStore) List(entity string) []map[string]any {
+	rows, err := t.tx.Query(
+		context.Background(),
+		`SELECT payload FROM entity_records WHERE entity=$1 ORDER BY id ASC`,
+		entity,
+	)
+	if err != nil {
+		return []map[string]any{}
+	}
+	defer rows.Close()
+
+	records := make([]map[string]any, 0)
+	for rows.Next() {
+		var raw []byte
+		if scanErr := rows.Scan(&raw); scanErr != nil {
+			continue
+		}
+		item, decodeErr := decodePayload(raw)
+		if decodeErr != nil {
+			continue
+		}
+		records = append(records, item)
+	}
+	return records
+}
+
+func (t *TxStore) GetByID(entity, id string) (map[string]any, bool) {
+	var raw []byte
+	err := t.tx.QueryRow(
+		context.Background(),
+		`SELECT payload FROM entity_records WHERE entity=$1 AND id=$2`,
+		entity, id,
+	).Scan(&raw)
+	if errors.Is(err, pgx.ErrNoRows) || err != nil {
+		return nil, false
+	}
+	item, decodeErr := decodePayload(raw)
+	if decodeErr != nil {
+		return nil, false
+	}
+	return item, true
+}
+
+func (t *TxStore) Create(entity string, item map[string]any) (map[string]any, error) {
+	id, err := requireID(item)
+	if err != nil {
+		return nil, err
+	}
+	payload, err := json.Marshal(cloneMap(item))
+	if err != nil {
+		return nil, err
+	}
+	_, err = t.tx.Exec(
+		context.Background(),
+		`INSERT INTO entity_records(entity, id, payload) VALUES($1, $2, $3)`,
+		entity, id, payload,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return cloneMap(item), nil
+}
+
+func (t *TxStore) Update(entity, id string, patch map[string]any) (map[string]any, error) {
+	current, exists := t.GetByID(entity, id)
+	if !exists {
+		return nil, errors.New("khong tim thay ban ghi")
+	}
+	next := cloneMap(current)
+	for key, value := range patch {
+		if key == "id" {
+			continue
+		}
+		next[key] = value
+	}
+	next["id"] = id
+	payload, err := json.Marshal(next)
+	if err != nil {
+		return nil, err
+	}
+	_, err = t.tx.Exec(
+		context.Background(),
+		`UPDATE entity_records SET payload=$3, updated_at=NOW() WHERE entity=$1 AND id=$2`,
+		entity, id, payload,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return cloneMap(next), nil
+}
+
+func (t *TxStore) Delete(entity, id string) {
+	_, _ = t.tx.Exec(
+		context.Background(),
+		`DELETE FROM entity_records WHERE entity=$1 AND id=$2`,
+		entity, id,
+	)
+}
+
+func (t *TxStore) ReplaceAll(entity string, items []map[string]any) ([]map[string]any, error) {
+	_, err := t.tx.Exec(context.Background(), `DELETE FROM entity_records WHERE entity=$1`, entity)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range items {
+		if _, createErr := t.Create(entity, item); createErr != nil {
+			return nil, createErr
+		}
+	}
+	return t.List(entity), nil
+}
+
+func (t *TxStore) Import(entity string, payload []any) ImportReport {
+	report := ImportReport{Imported: make([]map[string]any, 0), Rejected: make([]RejectedItem, 0)}
+	for _, item := range payload {
+		mapped, ok := item.(map[string]any)
+		if !ok {
+			report.Rejected = append(report.Rejected, RejectedItem{Item: item, Reason: "dinh dang khong hop le"})
+			continue
+		}
+		id, err := requireID(mapped)
+		if err != nil {
+			report.Rejected = append(report.Rejected, RejectedItem{Item: item, Reason: err.Error()})
+			continue
+		}
+		body, marshalErr := json.Marshal(cloneMap(mapped))
+		if marshalErr != nil {
+			report.Rejected = append(report.Rejected, RejectedItem{Item: item, Reason: marshalErr.Error()})
+			continue
+		}
+		_, execErr := t.tx.Exec(context.Background(),
+			`INSERT INTO entity_records(entity, id, payload) VALUES($1, $2, $3) ON CONFLICT(entity, id) DO UPDATE SET payload=EXCLUDED.payload, updated_at=NOW()`,
+			entity, id, body)
+		if execErr != nil {
+			report.Rejected = append(report.Rejected, RejectedItem{Item: item, Reason: execErr.Error()})
+			continue
+		}
+		report.Imported = append(report.Imported, cloneMap(mapped))
+	}
+	return report
+}
+
+func (t *TxStore) ExportJSON(entity string) (string, error) {
+	rows := t.List(entity)
+	body, err := json.MarshalIndent(rows, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func (t *TxStore) ExportCSV(entity string) (string, error) {
+	rows := t.List(entity)
+	if len(rows) == 0 {
+		return "", nil
+	}
+	headers := sortedKeys(rows[0])
+	builder := &strings.Builder{}
+	writer := csv.NewWriter(builder)
+	_ = writer.Write(headers)
+	for _, row := range rows {
+		record := make([]string, 0, len(headers))
+		for _, key := range headers {
+			record = append(record, stringifyValue(row[key]))
+		}
+		_ = writer.Write(record)
+	}
+	writer.Flush()
+	return builder.String(), writer.Error()
+}
+
+func (t *TxStore) Close() error { return nil }
+
+// ────────────────────────────────────────────────────────────
 
 func (s *PostgresStore) Close() error {
 	s.pool.Close()

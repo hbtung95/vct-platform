@@ -23,6 +23,7 @@ import (
 	clubdomain "vct-platform/backend/internal/domain/club"
 	"vct-platform/backend/internal/domain/community"
 	"vct-platform/backend/internal/domain/discipline"
+	"vct-platform/backend/internal/domain/divisions"
 	"vct-platform/backend/internal/domain/document"
 	"vct-platform/backend/internal/domain/federation"
 	"vct-platform/backend/internal/domain/finance"
@@ -46,15 +47,15 @@ import (
 //   - middleware.go        — withAuth, withCORS, withLogging, request context
 //   - helpers.go           — JSON decode, response helpers, entity registry
 type Server struct {
-	cfg             config.Config
-	authService     *auth.Service
-	store           store.DataStore
-	cachedStore     *store.CachedStore
-	storageDriver   string
-	storageProvider string
-	realtimeHub     *realtime.Hub
-	allowedEntities map[string]struct{}
-	allowedOrigins  map[string]struct{}
+	cfg              config.Config
+	authService      *auth.Service
+	store            store.DataStore
+	cachedStore      *store.CachedStore
+	storageDriver    string
+	storageProvider  string
+	realtimeHub      *realtime.Hub
+	allowedEntities  map[string]struct{}
+	allowedOrigins   map[string]struct{}
 	rateLimiter      *rateLimiter
 	loginRateLimiter *rateLimiter // stricter limit for auth endpoints
 
@@ -78,8 +79,8 @@ type Server struct {
 	internationalSvc *international.Service
 
 	// ── Athlete Profile Service ─────────────────────────
-	athleteProfileSvc    *athlete.ProfileService
-	trainingSessionSvc   *athlete.TrainingService
+	athleteProfileSvc  *athlete.ProfileService
+	trainingSessionSvc *athlete.TrainingService
 
 	// ── Provincial Federation Services ──────────────────
 	provincialSvc *provincial.Service
@@ -133,13 +134,13 @@ func New(cfg config.Config) *Server {
 			AllowDemoUsers:  cfg.AllowDemoUsers,
 			CredentialsJSON: cfg.BootstrapUsersJSON,
 		}),
-		store:           cachedStore,
-		cachedStore:     cachedStore,
-		storageDriver:   storageDriver,
-		storageProvider: storageProvider,
-		realtimeHub:     realtime.NewHub(cfg.AllowedOrigins),
-		allowedEntities: defaultEntitySet(),
-		allowedOrigins:  originSet,
+		store:            cachedStore,
+		cachedStore:      cachedStore,
+		storageDriver:    storageDriver,
+		storageProvider:  storageProvider,
+		realtimeHub:      realtime.NewHub(cfg.AllowedOrigins),
+		allowedEntities:  defaultEntitySet(),
+		allowedOrigins:   originSet,
 		rateLimiter:      newRateLimiter(10, time.Second, 100), // 100 burst, 10/s refill
 		loginRateLimiter: newRateLimiter(1, time.Second, 5),    // 5 burst, 1/s — stricter for auth
 
@@ -149,7 +150,7 @@ func New(cfg config.Config) *Server {
 			adapter.NewRefereeRepository(cachedStore),
 			adapter.NewArenaRepository(cachedStore),
 		),
-		scoringService: scoring.NewService(adapter.NewScoringRepository(), scoring.DefaultScoringConfig()),
+		scoringService:      scoring.NewService(adapter.NewScoringRepository(), scoring.DefaultScoringConfig()),
 		registrationService: scoring.NewRegistrationService(adapter.NewRegistrationRepository(cachedStore)),
 		tournamentCRUD:      adapter.NewTournamentRepository(cachedStore),
 		rankingService:      ranking.NewService(adapter.NewAthleteRankingRepository(cachedStore), adapter.NewTeamRankingRepository(cachedStore)),
@@ -274,15 +275,15 @@ func New(cfg config.Config) *Server {
 	// ── Upgrade to PG adapters when storage driver is postgres ──
 	if storageDriver == "postgres" && cfg.PostgresURL != "" {
 		db, err := sql.Open("pgx", cfg.PostgresURL)
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		if err != nil {
-			log.Printf("PG adapters: sql.Open failed (%v), keeping in-memory stores", err)
+			log.Fatalf("PG adapters: sql.Open failed (%v)", err)
 		} else if err := db.PingContext(ctx); err != nil {
-			log.Printf("PG adapters: db.PingContext failed (%v), keeping in-memory stores", err)
 			_ = db.Close()
+			log.Fatalf("PG adapters: db.PingContext failed (%v)", err)
 		} else {
 			s.sqlDB = db
 			log.Println("PG adapters: connected — wiring PostgreSQL stores")
@@ -433,11 +434,13 @@ func (s *Server) Handler() http.Handler {
 	s.handleTournamentMgmtRoutes(mux)
 	// ── Provincial Federation (CLB, VĐV, HLV cấp tỉnh) ──
 	s.handleProvincialFederationRoutes(mux)
+	// ── Administrative Divisions (Tỉnh/Xã/Phường) ──────────
+	divisions.NewHandler().RegisterRoutes(mux)
 	// ── Domain Events ────────────────────────────────────────
 	mux.HandleFunc("/api/v1/events/recent", s.withAuth(s.handleRecentEvents))
 	// Generic entity CRUD (catch-all for unmigrated entities)
 	mux.HandleFunc("/api/v1/", s.handleEntityRoutes)
-	return withRecover(withRequestID(withRateLimit(s.rateLimiter)(withBodyLimit(s.withCORS(s.withLogging(mux))))))
+	return withRecover(withRequestID(withSecurityHeaders(withRateLimit(s.rateLimiter)(withBodyLimit(s.withCSRF(s.withCORS(s.withLogging(mux))))))))
 }
 
 // handleRoot returns a JSON welcome response at the root path.
@@ -448,14 +451,14 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	success(w, http.StatusOK, map[string]any{
-		"service":     "vct-platform-api",
-		"status":      "running",
-		"version":     "1.0.0",
-		"time":        time.Now().UTC(),
+		"service": "vct-platform-api",
+		"status":  "running",
+		"version": "1.0.0",
+		"time":    time.Now().UTC(),
 		"endpoints": map[string]string{
-			"health":  "/healthz",
-			"ready":   "/readyz",
-			"api":     "/api/v1/",
+			"health": "/healthz",
+			"ready":  "/readyz",
+			"api":    "/api/v1/",
 		},
 	})
 }
@@ -498,10 +501,10 @@ func (s *Server) handleReadiness(w http.ResponseWriter, r *http.Request) {
 		} else {
 			dbStats := s.sqlDB.Stats()
 			checks["database"] = map[string]any{
-				"status":      "healthy",
-				"open_conns":  dbStats.OpenConnections,
-				"in_use":      dbStats.InUse,
-				"idle":        dbStats.Idle,
+				"status":     "healthy",
+				"open_conns": dbStats.OpenConnections,
+				"in_use":     dbStats.InUse,
+				"idle":       dbStats.Idle,
 			}
 		}
 	} else {
@@ -589,15 +592,14 @@ func (s *Server) broadcastEntityChange(
 func resolveStore(cfg config.Config) (store.DataStore, string, string) {
 	driver := strings.ToLower(strings.TrimSpace(cfg.StorageDriver))
 	if driver == "postgres" {
-		if strings.TrimSpace(cfg.PostgresURL) == "" {
-			log.Printf("VCT_STORAGE_DRIVER=postgres nhưng VCT_POSTGRES_URL trống, fallback memory")
-			return store.NewStore(), "memory", "fallback"
+		postgresURL := strings.TrimSpace(cfg.PostgresURL)
+		if postgresURL == "" {
+			log.Fatalf("VCT_STORAGE_DRIVER=postgres nhưng VCT_POSTGRES_URL trống")
 		}
 
-		postgresStore, err := store.NewPostgresStore(cfg.PostgresURL, cfg.DBAutoMigrate)
+		postgresStore, err := store.NewPostgresStore(postgresURL, cfg.DBAutoMigrate)
 		if err != nil {
-			log.Printf("postgres init failed (%v), fallback memory", err)
-			return store.NewStore(), "memory", "fallback"
+			log.Fatalf("postgres init failed (%v)", err)
 		}
 
 		provider := strings.ToLower(strings.TrimSpace(cfg.PostgresProvider))
