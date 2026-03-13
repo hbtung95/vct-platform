@@ -19,10 +19,10 @@ import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications'
 
 // ── Fallback data (used when API unavailable) ──
 const FALLBACK_STATS = {
-    total_provinces: 63, active_provinces: 18,
-    total_clubs: 498, total_athletes: 12450, total_coaches: 856, total_referees: 324,
+    total_provinces: 34, active_provinces: 26,
+    total_clubs: 710, total_athletes: 15680, total_coaches: 1028, total_referees: 324,
     active_tournaments: 5, total_tournaments_ytd: 12,
-    by_region: { north: 25, central: 13, south: 25 },
+    by_region: { north: 15, central: 11, south: 8 },
     top_provinces_by_clubs: [],
 }
 
@@ -63,12 +63,12 @@ export function Page_federation_dashboard() {
         <VCT_PageContainer size="wide" animated>
             <ToastContainer />
             <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">
+                <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">
                     Tổng quan Liên đoàn Quốc gia
                 </h1>
-                <p className="text-sm text-[var(--vct-text-secondary)] mt-1">
+                <p className="text-sm text-(--vct-text-secondary) mt-1">
                     Dashboard tổng hợp hoạt động — KPI, thống kê theo vùng, cảnh báo và phê duyệt.
-                    {isLoading && <span className="ml-2 text-[var(--vct-accent-cyan)]">Đang tải...</span>}
+                    {isLoading && <span className="ml-2 text-(--vct-accent-cyan)">Đang tải...</span>}
                 </p>
             </div>
 
@@ -82,8 +82,8 @@ export function Page_federation_dashboard() {
 
             <div className="grid gap-6 lg:grid-cols-3 mb-6">
                 {/* ── Regional Breakdown ── */}
-                <div className="lg:col-span-2 rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)] p-5">
-                    <h2 className="text-sm font-bold text-[var(--vct-text-primary)] mb-4 uppercase tracking-wide">
+                <div className="lg:col-span-2 rounded-2xl border border-(--vct-border-subtle) bg-(--vct-bg-glass) p-5">
+                    <h2 className="text-sm font-bold text-(--vct-text-primary) mb-4 uppercase tracking-wide">
                         📊 Phân bố theo Vùng miền
                     </h2>
                     <div className="space-y-4">
@@ -93,10 +93,10 @@ export function Page_federation_dashboard() {
                             return (
                                 <div key={r.key}>
                                     <VCT_Stack direction="row" justify="space-between" align="center" className="mb-1">
-                                        <span className="text-sm font-semibold text-[var(--vct-text-primary)]">{r.name}</span>
-                                        <span className="text-xs text-[var(--vct-text-secondary)]">{r.count} tỉnh</span>
+                                        <span className="text-sm font-semibold text-(--vct-text-primary)">{r.name}</span>
+                                        <span className="text-xs text-(--vct-text-secondary)">{r.count} tỉnh</span>
                                     </VCT_Stack>
-                                    <div className="h-3 rounded-full bg-[var(--vct-bg-elevated)] overflow-hidden">
+                                    <div className="h-3 rounded-full bg-(--vct-bg-elevated) overflow-hidden">
                                         <div
                                             className="h-full rounded-full transition-all duration-700"
                                             style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${r.color}, ${r.color}88)` }}
@@ -109,7 +109,7 @@ export function Page_federation_dashboard() {
                     </div>
 
                     {/* ── Extra Stats ── */}
-                    <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-[var(--vct-border-subtle)]">
+                    <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-(--vct-border-subtle)">
                         <div className="text-center">
                             <div className="text-2xl font-bold text-[#f59e0b]">{stats.total_coaches}</div>
                             <div className="text-[10px] opacity-50 uppercase font-bold">Huấn luyện viên</div>
@@ -126,17 +126,17 @@ export function Page_federation_dashboard() {
                 </div>
 
                 {/* ── Quick Actions ── */}
-                <div className="rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)] p-5">
-                    <h2 className="text-sm font-bold text-[var(--vct-text-primary)] mb-4 uppercase tracking-wide">
+                <div className="rounded-2xl border border-(--vct-border-subtle) bg-(--vct-bg-glass) p-5">
+                    <h2 className="text-sm font-bold text-(--vct-text-primary) mb-4 uppercase tracking-wide">
                         ⚡ Cần xử lý
                     </h2>
                     <div className="space-y-3">
                         {QUICK_ACTIONS.map(a => (
                             <div key={a.label}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-[var(--vct-bg-elevated)] hover:bg-[var(--vct-bg-hover)] transition-colors cursor-pointer border border-transparent hover:border-[var(--vct-border-subtle)]">
+                                className="flex items-center gap-3 p-3 rounded-xl bg-(--vct-bg-elevated) hover:bg-(--vct-bg-hover) transition-colors cursor-pointer border border-transparent hover:border-(--vct-border-subtle)">
                                 <span className="text-xl">{a.icon}</span>
                                 <div className="flex-1">
-                                    <div className="text-sm font-semibold text-[var(--vct-text-primary)]">{a.label}</div>
+                                    <div className="text-sm font-semibold text-(--vct-text-primary)">{a.label}</div>
                                 </div>
                                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: a.color }}>
                                     {a.count}
@@ -148,20 +148,20 @@ export function Page_federation_dashboard() {
             </div>
 
             {/* ── Recent Activity ── */}
-            <div className="rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)] p-5">
-                <h2 className="text-sm font-bold text-[var(--vct-text-primary)] mb-4 uppercase tracking-wide">
+            <div className="rounded-2xl border border-(--vct-border-subtle) bg-(--vct-bg-glass) p-5">
+                <h2 className="text-sm font-bold text-(--vct-text-primary) mb-4 uppercase tracking-wide">
                     🕐 Hoạt động gần đây
                 </h2>
                 <div className="space-y-3">
                     {RECENT_ACTIVITY.map(a => (
-                        <div key={a.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-[var(--vct-bg-elevated)] transition-colors">
-                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.color }} />
+                        <div key={a.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-(--vct-bg-elevated) transition-colors">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-[var(--vct-text-primary)] truncate">{a.label}</div>
-                                <div className="text-xs text-[var(--vct-text-secondary)]">{a.type}</div>
+                                <div className="text-sm font-semibold text-(--vct-text-primary) truncate">{a.label}</div>
+                                <div className="text-xs text-(--vct-text-secondary)">{a.type}</div>
                             </div>
                             <VCT_Badge text={a.status} type={a.status === 'Đang diễn ra' ? 'success' : a.status === 'Chờ duyệt' ? 'warning' : 'neutral'} />
-                            <span className="text-xs text-[var(--vct-text-secondary)] flex-shrink-0">{a.time}</span>
+                            <span className="text-xs text-(--vct-text-secondary) shrink-0">{a.time}</span>
                         </div>
                     ))}
                 </div>

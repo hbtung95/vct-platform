@@ -40,10 +40,10 @@ const TYPE_MAP: Record<ClubType, string> = {
     clb: 'Câu lạc bộ'
 }
 
-const STATUS_MAP: Record<string, { label: string; type: any; color: string }> = {
-    active: { label: 'Đang hoạt động', type: 'success', color: '#10b981' },
-    suspended: { label: 'Tạm đình chỉ', type: 'warning', color: '#f59e0b' },
-    closed: { label: 'Đã đóng cửa', type: 'error', color: '#ef4444' }
+const STATUS_MAP: Record<string, { label: string; type: any; borderClass: string }> = {
+    active: { label: 'Đang hoạt động', type: 'success', borderClass: 'border-[#10b981]' },
+    suspended: { label: 'Tạm đình chỉ', type: 'warning', borderClass: 'border-[#f59e0b]' },
+    closed: { label: 'Đã đóng cửa', type: 'error', borderClass: 'border-[#ef4444]' }
 }
 
 const MOCK_ORGS = [
@@ -204,38 +204,38 @@ export const Page_clubs = () => {
 
     const columns = [
         {
-            key: 'checkbox', label: <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />, align: 'center' as const,
-            render: (r: Club) => <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} onClick={(e: any) => e.stopPropagation()} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />
+            key: 'checkbox', label: <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} aria-label="Chọn tất cả" title="Chọn tất cả" className="vct-checkbox" />, align: 'center' as const,
+            render: (r: Club) => <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} onClick={(e: any) => e.stopPropagation()} aria-label={`Chọn ${r.name}`} title={`Chọn ${r.name}`} className="vct-checkbox" />
         },
         {
             key: 'name', label: 'Câu lạc bộ/Võ đường', render: (r: Club) => (
                 <VCT_Stack direction="row" gap={10} align="center">
                     <VCT_AvatarLetter name={r.name} size={36} />
                     <div>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--vct-text-primary)' }}>{r.name}</div>
-                        <div style={{ fontSize: 11, opacity: 0.6 }}>{r.code} • {MOCK_ORGS.find(o => o.id === r.org_id)?.name || 'Chưa trực thuộc'}</div>
+                        <div className="vct-cell-primary">{r.name}</div>
+                        <div className="vct-cell-secondary">{r.code} • {MOCK_ORGS.find(o => o.id === r.org_id)?.name || 'Chưa trực thuộc'}</div>
                     </div>
                 </VCT_Stack>
             )
         },
         {
             key: 'type', label: 'Mô hình', render: (r: Club) => (
-                <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--vct-accent-cyan)' }}>{TYPE_MAP[r.type]}</div>
+                <div className="vct-cell-accent">{TYPE_MAP[r.type]}</div>
             )
         },
         {
             key: 'master_name', label: 'Chủ nhiệm / Võ sư', render: (r: Club) => (
                 <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{r.master_name}</div>
-                    <div style={{ fontSize: 11, opacity: 0.6 }}>{r.phone}</div>
+                    <div className="vct-cell-semibold">{r.master_name}</div>
+                    <div className="vct-cell-secondary">{r.phone}</div>
                 </div>
             )
         },
         {
             key: 'stats', label: 'Quy mô', align: 'center' as const, render: (r: Club) => (
                 <div className="text-center">
-                    <div style={{ fontWeight: 800, color: 'var(--vct-accent-cyan)', fontSize: 13 }}>{r.active_classes} lớp</div>
-                    <div style={{ fontSize: 11, opacity: 0.6 }}>{r.total_members.toLocaleString('vi-VN')} võ sinh</div>
+                    <div className="vct-cell-stat">{r.active_classes} lớp</div>
+                    <div className="vct-cell-secondary">{r.total_members.toLocaleString('vi-VN')} võ sinh</div>
                 </div>
             )
         },
@@ -248,10 +248,10 @@ export const Page_clubs = () => {
         {
             key: 'actions', label: '', align: 'right' as const, render: (r: Club) => (
                 <VCT_Stack direction="row" gap={4} justify="flex-end">
-                    <button onClick={(e) => { e.stopPropagation(); openEditModal(r); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--vct-text-tertiary)', padding: 4 }} aria-label={`Edit ${r.name}`}>
+                    <button onClick={(e) => { e.stopPropagation(); openEditModal(r); }} className="vct-icon-btn" aria-label={`Edit ${r.name}`}>
                         <VCT_Icons.Edit size={16} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }} aria-label={`Delete ${r.name}`}>
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }} className="vct-icon-btn-danger" aria-label={`Delete ${r.name}`}>
                         <VCT_Icons.Trash size={16} />
                     </button>
                 </VCT_Stack>
@@ -292,6 +292,7 @@ export const Page_clubs = () => {
                     <VCT_SearchInput value={search} onChange={setSearch} onClear={() => setSearch('')} placeholder="Tìm CLB, mã, chủ nhiệm..." />
                 </div>
                 <select
+                    title="Lọc theo mô hình"
                     value={typeFilter || ''}
                     onChange={(e) => setTypeFilter(e.target.value || null)}
                     className="bg-vct-elevated border border-vct-border text-vct-text text-sm rounded-lg px-3 py-2 outline-none focus:border-vct-accent transition-colors"
@@ -305,12 +306,12 @@ export const Page_clubs = () => {
             {filtered.length === 0 ? (
                 <VCT_EmptyState title="Không có câu lạc bộ nào" description={search || statusFilter ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.' : 'Chưa có dữ liệu. Bấm "Thêm CLB" để bắt đầu.'} actionLabel="Thêm CLB" onAction={openAddModal} icon="🏠" />
             ) : (
-                <div className="overflow-hidden rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)]">
+                <div className="overflow-hidden rounded-2xl border border-(--vct-border-subtle) bg-(--vct-bg-glass)">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="border-b border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)]">
+                            <tr className="border-b border-(--vct-border-strong) bg-(--vct-bg-card)">
                                 {columns.map((col, i) => (
-                                    <th key={i} style={{ padding: '14px 16px', textAlign: (col.align || 'left') as React.CSSProperties['textAlign'], fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, position: 'sticky', top: 0, background: 'var(--vct-bg-card)', zIndex: 2 }}>
+                                    <th key={i} className={`vct-th ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'}`}>
                                         {col.label}
                                     </th>
                                 ))}
@@ -318,11 +319,11 @@ export const Page_clubs = () => {
                         </thead>
                         <tbody>
                             {filtered.map((club, idx) => {
-                                const stColor = STATUS_MAP[club.status]?.color || '#94a3b8'
+                                const borderClass = STATUS_MAP[club.status]?.borderClass || 'border-[#94a3b8]'
                                 return (
-                                    <tr key={club.id} style={{ borderBottom: '1px solid var(--vct-border-subtle)', background: selectedIds.has(club.id) ? 'rgba(34, 211, 238, 0.05)' : idx % 2 === 0 ? 'transparent' : 'rgba(128,128,128,0.02)', borderLeft: `3px solid ${stColor}` }}>
+                                    <tr key={club.id} className={`border-b border-(--vct-border-subtle) border-l-[3px] ${borderClass} ${selectedIds.has(club.id) ? 'bg-[rgba(34,211,238,0.05)]' : idx % 2 === 0 ? 'bg-transparent' : 'bg-[rgba(128,128,128,0.02)]'}`}>
                                         {columns.map((col, ci) => (
-                                            <td key={ci} style={{ padding: '14px 16px', fontSize: 13, textAlign: (col.align || 'left') as React.CSSProperties['textAlign'] }}>
+                                            <td key={ci} className={`vct-td ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'}`}>
                                                 {col.render ? col.render(club) : (club as unknown as Record<string, React.ReactNode>)[col.key]}
                                             </td>
                                         ))}
@@ -356,7 +357,7 @@ export const Page_clubs = () => {
                         <VCT_Select options={MOCK_ORGS.map(o => ({ value: o.id, label: o.name }))} value={form.org_id} onChange={(v: any) => setForm({ ...form, org_id: v })} />
                     </VCT_Field>
 
-                    <div className="h-px w-full bg-[var(--vct-border-subtle)] my-2"></div>
+                    <div className="h-px w-full bg-(--vct-border-subtle) my-2"></div>
                     <div className="text-sm font-bold opacity-70">Chủ nhiệm / Quản lý</div>
 
                     <VCT_Field label="Họ tên Chủ nhiệm / Võ sư"><VCT_Input value={form.master_name} onChange={(e: any) => setForm({ ...form, master_name: e.target.value })} placeholder="VD: Nguyễn Văn A" /></VCT_Field>

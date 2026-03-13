@@ -1,0 +1,61 @@
+{
+  "_description": "Danh mục bài quyền, binh khí, song luyện chuẩn Võ cổ truyền Việt Nam — Có thể chỉnh sửa thủ công",
+  "_editable": true,
+  "categories": {
+    "quyen_tay_khong": {
+      "name": "Quyền tay không",
+      "description": "Các bài quyền không sử dụng vũ khí",
+      "forms": [
+        {"code": "ngoc_tran",      "name": "Ngọc Trản quyền",                "origin": "Bình Định",     "difficulty": 5, "gender": "both", "type": "ca_nhan", "description": "Một trong tứ trụ quyền pháp Bình Định"},
+        {"code": "lao_mai",        "name": "Lão Mai quyền",                  "origin": "Bình Định",     "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bài quyền mô phỏng cây mai già cằn cỗi"},
+        {"code": "hung_ke",        "name": "Hùng Kê quyền",                  "origin": "Bình Định",     "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bài quyền mô phỏng gà chọi — linh hoạt, nhanh nhẹn"},
+        {"code": "tu_hai",         "name": "Tứ Hải quyền",                   "origin": "Bình Định",     "difficulty": 5, "gender": "both", "type": "ca_nhan", "description": "Bài quyền bốn phương"},
+        {"code": "lao_ho",         "name": "Lão Hổ Thượng Sơn quyền",        "origin": "Bình Định",     "difficulty": 7, "gender": "both", "type": "ca_nhan", "description": "Hổ già lên núi — quyền pháp mạnh mẽ"},
+        {"code": "than_dong",      "name": "Thần Đồng quyền",                "origin": "Trung Bộ",      "difficulty": 4, "gender": "both", "type": "ca_nhan", "description": "Bài quyền dành cho trẻ em có năng khiếu"},
+        {"code": "bach_hac",       "name": "Bạch Hạc Lượng Xí quyền",        "origin": "Nam Bộ",        "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bài quyền mô phỏng hạc trắng"},
+        {"code": "ngu_mon",        "name": "Ngũ Môn quyền",                  "origin": "Tổng hợp",      "difficulty": 5, "gender": "both", "type": "ca_nhan", "description": "Năm cửa — tổng hợp ngũ hành"},
+        {"code": "tu_linh",        "name": "Tứ Linh quyền",                  "origin": "Tổng hợp",      "difficulty": 7, "gender": "both", "type": "ca_nhan", "description": "Long - Lân - Quy - Phụng"},
+        {"code": "nhat_lo_mai",    "name": "Nhất Lộ Mai Hoa quyền",          "origin": "Bắc Bộ",        "difficulty": 5, "gender": "both", "type": "ca_nhan", "description": "Bài quyền hoa mai đường thứ nhất"},
+        {"code": "tu_tru",         "name": "Tứ Trụ quyền",                   "origin": "Bình Định",     "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bốn trụ cột — nền tảng Bình Định"},
+        {"code": "hanh_quyen",     "name": "Hành Quyền",                     "origin": "Tổng hợp",      "difficulty": 3, "gender": "both", "type": "ca_nhan", "description": "Bài quyền đi bước — quyền cơ bản nhập môn"}
+      ]
+    },
+    "binh_khi": {
+      "name": "Binh khí",
+      "description": "Các bài vũ khí truyền thống",
+      "forms": [
+        {"code": "roi_thuan",       "name": "Roi Thuận Truyền",           "weapon": "roi",   "origin": "Bình Định",   "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bài côn pháp nổi tiếng Bình Định"},
+        {"code": "roi_mua",         "name": "Roi Múa",                    "weapon": "roi",   "origin": "Tổng hợp",    "difficulty": 4, "gender": "both", "type": "ca_nhan", "description": "Bài côn cơ bản"},
+        {"code": "bat_quai_con",    "name": "Bát Quái Côn",               "weapon": "con",   "origin": "Tổng hợp",    "difficulty": 7, "gender": "both", "type": "ca_nhan", "description": "Bài côn bát quái — 8 hướng"},
+        {"code": "don_kiem",        "name": "Đơn Kiếm",                   "weapon": "kiem",  "origin": "Tổng hợp",    "difficulty": 5, "gender": "both", "type": "ca_nhan", "description": "Bài kiếm đơn cơ bản"},
+        {"code": "song_kiem",       "name": "Song Kiếm",                  "weapon": "kiem",  "origin": "Bình Định",   "difficulty": 7, "gender": "both", "type": "ca_nhan", "description": "Bài song kiếm nâng cao"},
+        {"code": "tu_linh_dao",     "name": "Tứ Linh Đao",                "weapon": "dao",   "origin": "Bình Định",   "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bài đao pháp Tứ Linh"},
+        {"code": "song_dao",        "name": "Song Đao Phá Trận",          "weapon": "dao",   "origin": "Nam Bộ",      "difficulty": 7, "gender": "both", "type": "ca_nhan", "description": "Bài song đao nâng cao"},
+        {"code": "thuong",          "name": "Thương pháp",                "weapon": "thuong","origin": "Bình Định",   "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bài thương truyền thống"},
+        {"code": "dai_dao",         "name": "Đại Đao",                    "weapon": "dao",   "origin": "Bình Định",   "difficulty": 8, "gender": "nam",  "type": "ca_nhan", "description": "Bài đại đao — yêu cầu sức mạnh"},
+        {"code": "con_nhi_khuc",    "name": "Côn Nhị Khúc",               "weapon": "nhi_khuc","origin": "Tổng hợp",  "difficulty": 6, "gender": "both", "type": "ca_nhan", "description": "Bài côn nhị khúc hiện đại"}
+      ]
+    },
+    "song_luyen": {
+      "name": "Song luyện / Đối luyện",
+      "description": "Các bài tập đối kháng có bài bản giữa 2 người",
+      "forms": [
+        {"code": "sl_tay_khong",       "name": "Song luyện tay không",         "difficulty": 5, "gender": "both", "type": "doi", "description": "Đối luyện hai người không vũ khí"},
+        {"code": "sl_vu_khi",          "name": "Song luyện vũ khí",            "difficulty": 7, "gender": "both", "type": "doi", "description": "Đối luyện hai người có vũ khí"},
+        {"code": "sl_con_vs_dao",      "name": "Đối luyện Côn vs Đao",         "difficulty": 7, "gender": "both", "type": "doi", "description": "Côn chống đao — bài đối luyện kinh điển"},
+        {"code": "sl_kiem_vs_thuong",   "name": "Đối luyện Kiếm vs Thương",     "difficulty": 8, "gender": "both", "type": "doi", "description": "Kiếm chống thương — bài nâng cao"},
+        {"code": "sl_tay_vs_dao",      "name": "Đối luyện Tay không vs Đao",   "difficulty": 6, "gender": "both", "type": "doi", "description": "Tay không chống vũ khí"}
+      ]
+    },
+    "dong_doi": {
+      "name": "Đồng đội",
+      "description": "Nội dung thi đấu nhóm 3-5 người",
+      "forms": [
+        {"code": "dd_quyen_nam",   "name": "Đồng đội quyền nam",     "team_size": 5, "gender": "nam",     "type": "dong_doi", "description": "5 VĐV nam biểu diễn quyền đồng đội"},
+        {"code": "dd_quyen_nu",    "name": "Đồng đội quyền nữ",      "team_size": 5, "gender": "nu",      "type": "dong_doi", "description": "5 VĐV nữ biểu diễn quyền đồng đội"},
+        {"code": "dd_quyen_hh",    "name": "Đồng đội quyền hỗn hợp", "team_size": 5, "gender": "hon_hop", "type": "dong_doi", "description": "Đội hỗn hợp nam nữ"},
+        {"code": "dd_binh_khi",    "name": "Đồng đội binh khí",      "team_size": 3, "gender": "both",    "type": "dong_doi", "description": "3 VĐV biểu diễn binh khí đồng đội"}
+      ]
+    }
+  }
+}

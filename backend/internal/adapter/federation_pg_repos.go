@@ -32,16 +32,12 @@ func (r *pgProvinceRepo) GetByCode(ctx context.Context, code string) (*federatio
 	if err != nil {
 		return nil, err
 	}
-	var res *federation.Province
 	for _, p := range items {
 		if p.Code == code {
 			return &p, nil
 		}
 	}
-	if res == nil {
-		return nil, federation.ErrNotFound
-	}
-	return res, nil
+	return nil, federation.ErrNotFound
 }
 
 func (r *pgProvinceRepo) Create(ctx context.Context, p federation.Province) (*federation.Province, error) {

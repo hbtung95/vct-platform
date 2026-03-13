@@ -27,14 +27,43 @@ const STATUS_COLOR: Record<string, { label: string; type: any }> = {
 
 // ── Fallback seed data ──
 const FALLBACK_PROVINCES: Province[] = [
-    { id: 'HCM', code: 'HCM', name: 'TP Hồ Chí Minh', region: 'south', has_fed: true, club_count: 45, vdv_count: 1200, coach_count: 85 },
-    { id: 'HN', code: 'HN', name: 'Hà Nội', region: 'north', has_fed: true, club_count: 38, vdv_count: 980, coach_count: 72 },
-    { id: 'BD', code: 'BD', name: 'Bình Dương', region: 'south', has_fed: true, club_count: 22, vdv_count: 650, coach_count: 40 },
-    { id: 'DN', code: 'DN', name: 'Đà Nẵng', region: 'central', has_fed: true, club_count: 15, vdv_count: 420, coach_count: 28 },
-    { id: 'BDI', code: 'BDI', name: 'Bình Định', region: 'central', has_fed: true, club_count: 35, vdv_count: 900, coach_count: 60 },
-    { id: 'NA', code: 'NA', name: 'Nghệ An', region: 'north', has_fed: false, club_count: 8, vdv_count: 200, coach_count: 12 },
-    { id: 'TH', code: 'TH', name: 'Thanh Hóa', region: 'north', has_fed: true, club_count: 18, vdv_count: 500, coach_count: 35 },
-    { id: 'CT', code: 'CT', name: 'Cần Thơ', region: 'south', has_fed: true, club_count: 15, vdv_count: 400, coach_count: 28 },
+    // ── Miền Bắc (15) ──
+    { id: 'HN',  code: 'HN',  name: 'TP Hà Nội',      region: 'north',   has_fed: true,  club_count: 60, vdv_count: 1500, coach_count: 110 },
+    { id: 'HP',  code: 'HP',  name: 'TP Hải Phòng',    region: 'north',   has_fed: true,  club_count: 30, vdv_count: 700,  coach_count: 45 },
+    { id: 'QN',  code: 'QN',  name: 'Quảng Ninh',      region: 'north',   has_fed: true,  club_count: 15, vdv_count: 300,  coach_count: 20 },
+    { id: 'BN',  code: 'BN',  name: 'Bắc Ninh',        region: 'north',   has_fed: true,  club_count: 20, vdv_count: 400,  coach_count: 25 },
+    { id: 'HY',  code: 'HY',  name: 'Hưng Yên',        region: 'north',   has_fed: true,  club_count: 15, vdv_count: 250,  coach_count: 18 },
+    { id: 'NB',  code: 'NB',  name: 'Ninh Bình',       region: 'north',   has_fed: true,  club_count: 25, vdv_count: 550,  coach_count: 35 },
+    { id: 'PT',  code: 'PT',  name: 'Phú Thọ',         region: 'north',   has_fed: true,  club_count: 18, vdv_count: 400,  coach_count: 28 },
+    { id: 'TN',  code: 'TN',  name: 'Thái Nguyên',     region: 'north',   has_fed: true,  club_count: 12, vdv_count: 200,  coach_count: 15 },
+    { id: 'TQ',  code: 'TQ',  name: 'Tuyên Quang',     region: 'north',   has_fed: false, club_count: 8,  vdv_count: 120,  coach_count: 8 },
+    { id: 'LCI', code: 'LCI', name: 'Lào Cai',         region: 'north',   has_fed: true,  club_count: 9,  vdv_count: 150,  coach_count: 10 },
+    { id: 'CB',  code: 'CB',  name: 'Cao Bằng',        region: 'north',   has_fed: false, club_count: 5,  vdv_count: 80,   coach_count: 5 },
+    { id: 'LS',  code: 'LS',  name: 'Lạng Sơn',        region: 'north',   has_fed: false, club_count: 6,  vdv_count: 90,   coach_count: 6 },
+    { id: 'SL',  code: 'SL',  name: 'Sơn La',          region: 'north',   has_fed: false, club_count: 7,  vdv_count: 100,  coach_count: 8 },
+    { id: 'DB',  code: 'DB',  name: 'Điện Biên',       region: 'north',   has_fed: false, club_count: 4,  vdv_count: 60,   coach_count: 4 },
+    { id: 'LC',  code: 'LC',  name: 'Lai Châu',        region: 'north',   has_fed: false, club_count: 3,  vdv_count: 40,   coach_count: 3 },
+    // ── Miền Trung & Tây Nguyên (11) ──
+    { id: 'TH',  code: 'TH',  name: 'Thanh Hóa',       region: 'central', has_fed: true,  club_count: 30, vdv_count: 800,  coach_count: 50 },
+    { id: 'NA',  code: 'NA',  name: 'Nghệ An',         region: 'central', has_fed: true,  club_count: 25, vdv_count: 600,  coach_count: 40 },
+    { id: 'HT',  code: 'HT',  name: 'Hà Tĩnh',        region: 'central', has_fed: true,  club_count: 15, vdv_count: 300,  coach_count: 20 },
+    { id: 'HUE', code: 'HUE', name: 'TP Huế',          region: 'central', has_fed: true,  club_count: 20, vdv_count: 450,  coach_count: 30 },
+    { id: 'DN',  code: 'DN',  name: 'TP Đà Nẵng',      region: 'central', has_fed: true,  club_count: 25, vdv_count: 650,  coach_count: 45 },
+    { id: 'QT',  code: 'QT',  name: 'Quảng Trị',       region: 'central', has_fed: true,  club_count: 12, vdv_count: 250,  coach_count: 15 },
+    { id: 'QNG', code: 'QNG', name: 'Quảng Ngãi',      region: 'central', has_fed: true,  club_count: 18, vdv_count: 400,  coach_count: 25 },
+    { id: 'KH',  code: 'KH',  name: 'Khánh Hòa',       region: 'central', has_fed: true,  club_count: 20, vdv_count: 450,  coach_count: 30 },
+    { id: 'GL',  code: 'GL',  name: 'Gia Lai',         region: 'central', has_fed: true,  club_count: 14, vdv_count: 300,  coach_count: 20 },
+    { id: 'DL',  code: 'DL',  name: 'Đắk Lắk',        region: 'central', has_fed: true,  club_count: 22, vdv_count: 500,  coach_count: 35 },
+    { id: 'LDO', code: 'LDO', name: 'Lâm Đồng',       region: 'central', has_fed: true,  club_count: 20, vdv_count: 450,  coach_count: 30 },
+    // ── Miền Nam (8) ──
+    { id: 'HCM', code: 'HCM', name: 'TP Hồ Chí Minh', region: 'south',   has_fed: true,  club_count: 80, vdv_count: 2500, coach_count: 180 },
+    { id: 'CT',  code: 'CT',  name: 'TP Cần Thơ',      region: 'south',   has_fed: true,  club_count: 25, vdv_count: 650,  coach_count: 40 },
+    { id: 'DNI', code: 'DNI', name: 'Đồng Nai',        region: 'south',   has_fed: true,  club_count: 40, vdv_count: 1100, coach_count: 75 },
+    { id: 'AG',  code: 'AG',  name: 'An Giang',        region: 'south',   has_fed: true,  club_count: 20, vdv_count: 500,  coach_count: 35 },
+    { id: 'CM',  code: 'CM',  name: 'Cà Mau',          region: 'south',   has_fed: true,  club_count: 15, vdv_count: 350,  coach_count: 22 },
+    { id: 'DT',  code: 'DT',  name: 'Đồng Tháp',      region: 'south',   has_fed: true,  club_count: 18, vdv_count: 400,  coach_count: 28 },
+    { id: 'TNI', code: 'TNI', name: 'Tây Ninh',        region: 'south',   has_fed: true,  club_count: 12, vdv_count: 250,  coach_count: 15 },
+    { id: 'VL',  code: 'VL',  name: 'Vĩnh Long',       region: 'south',   has_fed: true,  club_count: 8,  vdv_count: 180,  coach_count: 12 },
 ]
 
 export const Page_federation_provinces = () => {
@@ -75,11 +104,11 @@ export const Page_federation_provinces = () => {
     return (
         <VCT_PageContainer size="wide" animated>
             <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">
+                <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">
                     Quản lý Tỉnh / Thành phố
-                    {isLoading && <span className="ml-2 text-sm font-normal text-[var(--vct-accent-cyan)]">Đang tải...</span>}
+                    {isLoading && <span className="ml-2 text-sm font-normal text-(--vct-accent-cyan)">Đang tải...</span>}
                 </h1>
-                <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Tổng quan 63 tỉnh/thành — theo dõi tổ chức liên đoàn địa phương, CLB và VĐV.</p>
+                <p className="text-sm text-(--vct-text-secondary) mt-1">Tổng quan 34 tỉnh/thành (sau sáp nhập 2025) — theo dõi tổ chức liên đoàn địa phương, CLB và VĐV.</p>
             </div>
 
             <VCT_StatRow items={[
@@ -94,8 +123,8 @@ export const Page_federation_provinces = () => {
                     <div className="w-full max-w-[300px]">
                         <VCT_SearchInput value={search} onChange={setSearch} onClear={() => setSearch('')} placeholder="Tìm tỉnh/thành phố..." />
                     </div>
-                    <select value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}
-                        className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-subtle)] text-[var(--vct-text-primary)] text-sm rounded-lg px-3 py-2 outline-none focus:border-[var(--vct-accent-cyan)]">
+                    <select title="Lọc theo vùng miền" value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}
+                        className="bg-(--vct-bg-elevated) border border-(--vct-border-subtle) text-(--vct-text-primary) text-sm rounded-lg px-3 py-2 outline-none focus:border-(--vct-accent-cyan)">
                         <option value="">Tất cả vùng</option>
                         {Object.entries(REGION_MAP).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
@@ -107,22 +136,22 @@ export const Page_federation_provinces = () => {
                 <VCT_EmptyState title="Không tìm thấy tỉnh/thành" description="Thử thay đổi bộ lọc." icon="🗺️" />
             ) : (
                 <>
-                    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+                    <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
                         {filtered.map(p => (
-                            <div key={p.id} className="rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)] p-5 hover:border-[var(--vct-accent-cyan)] transition-colors cursor-pointer">
+                            <div key={p.id} className="rounded-2xl border border-(--vct-border-subtle) bg-(--vct-bg-glass) p-5 hover:border-(--vct-accent-cyan) transition-colors cursor-pointer">
                                 <VCT_Stack direction="row" justify="space-between" align="center" className="mb-3">
                                     <VCT_Stack direction="row" gap={10} align="center">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#6d28d9] flex items-center justify-center text-white font-bold text-sm">{p.code}</div>
+                                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#8b5cf6] to-[#6d28d9] flex items-center justify-center text-white font-bold text-sm">{p.code}</div>
                                         <div>
-                                            <div className="font-bold text-sm text-[var(--vct-text-primary)]">{p.name}</div>
+                                            <div className="font-bold text-sm text-(--vct-text-primary)">{p.name}</div>
                                             <div className="text-xs opacity-60">{REGION_MAP[p.region] || p.region}</div>
                                         </div>
                                     </VCT_Stack>
                                     <VCT_Badge text={p.has_fed ? 'Hoạt động' : 'Chưa có LĐ'} type={p.has_fed ? 'success' : 'neutral'} />
                                 </VCT_Stack>
-                                <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-[var(--vct-border-subtle)]">
+                                <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-(--vct-border-subtle)">
                                     <div className="text-center">
-                                        <div className="text-lg font-bold text-[var(--vct-accent-cyan)]">{p.club_count}</div>
+                                        <div className="text-lg font-bold text-(--vct-accent-cyan)">{p.club_count}</div>
                                         <div className="text-[10px] opacity-50 uppercase font-bold">CLB</div>
                                     </div>
                                     <div className="text-center">
@@ -147,14 +176,14 @@ export const Page_federation_provinces = () => {
                     {totalPages > 1 && (
                         <div className="flex items-center justify-center gap-3 mt-6">
                             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
-                                className="px-3 py-2 text-sm rounded-lg bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-subtle)] text-[var(--vct-text-primary)] disabled:opacity-30 hover:bg-[var(--vct-bg-hover)] transition-colors">
+                                className="px-3 py-2 text-sm rounded-lg bg-(--vct-bg-elevated) border border-(--vct-border-subtle) text-(--vct-text-primary) disabled:opacity-30 hover:bg-(--vct-bg-hover) transition-colors">
                                 ← Trước
                             </button>
-                            <span className="text-sm text-[var(--vct-text-secondary)]">
+                            <span className="text-sm text-(--vct-text-secondary)">
                                 Trang {page} / {totalPages}
                             </span>
                             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                                className="px-3 py-2 text-sm rounded-lg bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-subtle)] text-[var(--vct-text-primary)] disabled:opacity-30 hover:bg-[var(--vct-bg-hover)] transition-colors">
+                                className="px-3 py-2 text-sm rounded-lg bg-(--vct-bg-elevated) border border-(--vct-border-subtle) text-(--vct-text-primary) disabled:opacity-30 hover:bg-(--vct-bg-hover) transition-colors">
                                 Sau →
                             </button>
                         </div>

@@ -93,8 +93,7 @@ function useCountUp(target: number, duration: number = 800) {
 function SkeletonBlock({ className = '' }: { className?: string }) {
     return (
         <div
-            className={`rounded-xl animate-pulse ${className}`}
-            style={{ background: 'rgba(255,255,255,0.06)' }}
+            className={`rounded-xl animate-pulse vct-skeleton-block ${className}`}
         />
     )
 }
@@ -113,7 +112,7 @@ function LoadingSkeleton() {
 /* ── Error Banner ──────────────────────────────────────────── */
 function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
     return (
-        <div className="rounded-xl p-4 border" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.2)' }}>
+        <div className="rounded-xl p-4 border vct-error-banner">
             <div className="flex items-center gap-3">
                 <span className="text-2xl">⚠️</span>
                 <div className="flex-1">
@@ -164,14 +163,14 @@ export function Page_ParentDashboard() {
     ]
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#0d1117] to-[#161b22]">
+        <div className="min-h-screen bg-linear-to-b from-[#0d1117] to-[#161b22]">
             {/* ── Header ──────────────────────────────────── */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                className="px-6 py-5 border-b border-white/[0.08]"
+                className="px-6 py-5 border-b border-white/8"
             >
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-2xl shadow-lg shadow-blue-500/20">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-linear-to-br from-blue-500 to-purple-600 text-2xl shadow-lg shadow-blue-500/20">
                         👪
                     </div>
                     <div>
@@ -186,18 +185,17 @@ export function Page_ParentDashboard() {
             </motion.div>
 
             {/* ── Tab Bar ─────────────────────────────────── */}
-            <div className="relative flex gap-1 p-2 mx-4 mt-4 rounded-xl bg-white/[0.04]">
+            <div className="relative flex gap-1 p-2 mx-4 mt-4 rounded-xl bg-white/4">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className="relative flex-1 py-2.5 rounded-lg text-sm font-medium transition-all border-none cursor-pointer z-10"
-                        style={{ color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.5)', background: 'transparent' }}
+                        className={`relative flex-1 py-2.5 rounded-lg text-sm font-medium transition-all border-none cursor-pointer z-10 bg-transparent ${activeTab === tab.id ? 'text-white' : 'text-white/50'}`}
                     >
                         {activeTab === tab.id && (
                             <motion.div
                                 layoutId="parent-tab-bg"
-                                className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20"
+                                className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20"
                                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                             />
                         )}
@@ -227,10 +225,10 @@ export function Page_ParentDashboard() {
 
 function OverviewTab({ data }: { data: DashboardData }) {
     const stats = [
-        { label: 'Con em', value: data.children_count, icon: '👨‍👧‍👦', color: '#3b82f6' },
-        { label: 'Đồng thuận', value: data.active_consents, icon: '✅', color: '#22c55e' },
-        { label: 'Chờ xử lý', value: data.pending_consents, icon: '⏳', color: '#f59e0b' },
-        { label: 'Sự kiện sắp tới', value: data.upcoming_events, icon: '🏆', color: '#8b5cf6' },
+        { label: 'Con em', value: data.children_count, icon: '👨‍👧‍👦', colorClass: 'text-[#3b82f6]' },
+        { label: 'Đồng thuận', value: data.active_consents, icon: '✅', colorClass: 'text-[#22c55e]' },
+        { label: 'Chờ xử lý', value: data.pending_consents, icon: '⏳', colorClass: 'text-[#f59e0b]' },
+        { label: 'Sự kiện sắp tới', value: data.upcoming_events, icon: '🏆', colorClass: 'text-[#8b5cf6]' },
     ]
 
     return (
@@ -241,13 +239,13 @@ function OverviewTab({ data }: { data: DashboardData }) {
                     <motion.div
                         key={stat.label} custom={i} variants={fadeUp} initial="hidden" animate="visible"
                         whileHover={{ scale: 1.03, y: -2 }}
-                        className="rounded-xl p-4 bg-white/[0.04] border border-white/[0.08] cursor-default backdrop-blur-sm"
+                        className="rounded-xl p-4 bg-white/4 border border-white/8 cursor-default backdrop-blur-sm"
                     >
                         <div className="flex items-center gap-2 mb-2">
                             <span className="text-xl">{stat.icon}</span>
                             <VCT_Text variant="small" style={{ color: 'rgba(255,255,255,0.5)' }}>{stat.label}</VCT_Text>
                         </div>
-                        <CountUpNumber value={stat.value} color={stat.color} />
+                        <CountUpNumber value={stat.value} colorClass={stat.colorClass} />
                     </motion.div>
                 ))}
             </div>
@@ -261,7 +259,7 @@ function OverviewTab({ data }: { data: DashboardData }) {
                     <motion.div
                         key={child.id} custom={i + 4} variants={fadeUp} initial="hidden" animate="visible"
                         whileHover={{ x: 4, borderColor: 'rgba(59,130,246,0.3)' }}
-                        className="flex items-center gap-4 rounded-xl p-4 bg-white/[0.04] border border-white/[0.08] transition-colors cursor-pointer"
+                        className="flex items-center gap-4 rounded-xl p-4 bg-white/4 border border-white/8 transition-colors cursor-pointer"
                     >
                         <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-500/15 text-2xl">
                             🥋
@@ -285,7 +283,7 @@ function OverviewTab({ data }: { data: DashboardData }) {
                 {data.recent_results.map((r, i) => (
                     <motion.div
                         key={i} custom={i + 6} variants={fadeUp} initial="hidden" animate="visible"
-                        className="rounded-xl px-4 py-3 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] transition-colors"
+                        className="rounded-xl px-4 py-3 bg-white/4 border border-white/8 hover:bg-white/6 transition-colors"
                     >
                         <div className="flex justify-between items-start">
                             <div>
@@ -312,9 +310,9 @@ function OverviewTab({ data }: { data: DashboardData }) {
 }
 
 /* ── Count Up Number Component ────────────────────────────── */
-function CountUpNumber({ value, color }: { value: number; color: string }) {
+function CountUpNumber({ value, colorClass }: { value: number; colorClass: string }) {
     const count = useCountUp(value)
-    return <div className="text-[2rem] font-extrabold" style={{ color }}>{count}</div>
+    return <div className={`text-[2rem] font-extrabold ${colorClass}`}>{count}</div>
 }
 
 /* ── Children Tab ──────────────────────────────────────────── */
@@ -357,10 +355,10 @@ function ChildrenTab({ linkedChildren, onRefresh, onNavigateTab, apiFetch }: {
                 {linkedChildren.map((child, i) => (
                     <motion.div
                         key={child.id} custom={i} variants={fadeUp} initial="hidden" animate="visible"
-                        className="rounded-xl p-5 bg-white/[0.04] border border-white/[0.08]"
+                        className="rounded-xl p-5 bg-white/4 border border-white/8"
                     >
                         <div className="flex items-center gap-4 mb-4">
-                            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-3xl">
+                            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-blue-500/20 to-purple-500/20 text-3xl">
                                 🥋
                             </div>
                             <div className="flex-1">
@@ -409,15 +407,13 @@ function ChildrenTab({ linkedChildren, onRefresh, onNavigateTab, apiFetch }: {
                 {showLinkModal && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 vct-modal-overlay"
                         onClick={() => setShowLinkModal(false)}
                     >
                         <motion.div
                             initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-md rounded-2xl p-6"
-                            style={{ background: '#1c2333', border: '1px solid rgba(255,255,255,0.1)' }}
+                            className="w-full max-w-md rounded-2xl p-6 vct-modal-panel"
                         >
                             <VCT_Text variant="h2" style={{ color: '#fff', marginBottom: '1.5rem' }}>
                                 ➕ Liên kết con em mới
@@ -429,8 +425,7 @@ function ChildrenTab({ linkedChildren, onRefresh, onNavigateTab, apiFetch }: {
                                         type="text" placeholder="ATH-XXX"
                                         value={linkForm.athlete_id}
                                         onChange={(e) => setLinkForm(p => ({ ...p, athlete_id: e.target.value }))}
-                                        className="w-full px-4 py-3 rounded-xl text-sm"
-                                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                                        className="w-full px-4 py-3 rounded-xl text-sm vct-dark-input"
                                     />
                                 </div>
                                 <div>
@@ -439,17 +434,16 @@ function ChildrenTab({ linkedChildren, onRefresh, onNavigateTab, apiFetch }: {
                                         type="text" placeholder="Nguyễn Văn ..."
                                         value={linkForm.athlete_name}
                                         onChange={(e) => setLinkForm(p => ({ ...p, athlete_name: e.target.value }))}
-                                        className="w-full px-4 py-3 rounded-xl text-sm"
-                                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                                        className="w-full px-4 py-3 rounded-xl text-sm vct-dark-input"
                                     />
                                 </div>
                                 <div>
                                     <label className="text-xs text-white/50 uppercase tracking-wider font-semibold mb-1 block">Quan hệ</label>
                                     <select
+                                        title="Quan hệ"
                                         value={linkForm.relation}
                                         onChange={(e) => setLinkForm(p => ({ ...p, relation: e.target.value }))}
-                                        className="w-full px-4 py-3 rounded-xl text-sm"
-                                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                                        className="w-full px-4 py-3 rounded-xl text-sm vct-dark-input"
                                     >
                                         <option value="cha">Cha</option>
                                         <option value="mẹ">Mẹ</option>
@@ -485,12 +479,12 @@ function ChildrenTab({ linkedChildren, onRefresh, onNavigateTab, apiFetch }: {
 
 /* ── Consents Tab ──────────────────────────────────────────── */
 
-const consentTypeMap: Record<string, { icon: string; label: string; color: string }> = {
-    tournament: { icon: '🏆', label: 'Giải đấu', color: '#3b82f6' },
-    belt_exam: { icon: '🥋', label: 'Thi đai', color: '#8b5cf6' },
-    medical: { icon: '🏥', label: 'Y tế', color: '#22c55e' },
-    photo_usage: { icon: '📸', label: 'Hình ảnh', color: '#f59e0b' },
-    training: { icon: '🏋️', label: 'Tập luyện', color: '#06b6d4' },
+const consentTypeMap: Record<string, { icon: string; label: string; bgClass: string }> = {
+    tournament: { icon: '🏆', label: 'Giải đấu', bgClass: 'bg-[#3b82f615]' },
+    belt_exam: { icon: '🥋', label: 'Thi đai', bgClass: 'bg-[#8b5cf615]' },
+    medical: { icon: '🏥', label: 'Y tế', bgClass: 'bg-[#22c55e15]' },
+    photo_usage: { icon: '📸', label: 'Hình ảnh', bgClass: 'bg-[#f59e0b15]' },
+    training: { icon: '🏋️', label: 'Tập luyện', bgClass: 'bg-[#06b6d415]' },
 }
 
 function ConsentsTab({ linkedChildren, onRefresh, apiFetch }: { linkedChildren: ChildLink[]; onRefresh: () => void; apiFetch: ApiFetch }) {
@@ -538,7 +532,7 @@ function ConsentsTab({ linkedChildren, onRefresh, apiFetch }: { linkedChildren: 
                 <motion.button
                     whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                     onClick={() => setShowNewModal(true)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white border-none cursor-pointer shadow-lg shadow-blue-500/20"
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-linear-to-r from-blue-500 to-purple-600 text-white border-none cursor-pointer shadow-lg shadow-blue-500/20"
                 >+ Ký mới</motion.button>
             </div>
 
@@ -549,11 +543,10 @@ function ConsentsTab({ linkedChildren, onRefresh, apiFetch }: { linkedChildren: 
                         return (
                             <motion.div
                                 key={c.id} custom={i} variants={fadeUp} initial="hidden" animate="visible"
-                                className="rounded-xl p-4 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] transition-colors"
+                                className="rounded-xl p-4 bg-white/4 border border-white/8 hover:bg-white/6 transition-colors"
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                                        style={{ background: `${typeInfo?.color || '#000'}15` }}>
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${typeInfo?.bgClass || 'bg-black/15'}`}>
                                         {typeInfo?.icon}
                                     </div>
                                     <div className="flex-1">
@@ -574,15 +567,13 @@ function ConsentsTab({ linkedChildren, onRefresh, apiFetch }: { linkedChildren: 
                                                 <motion.button
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => setConfirmRevoke(null)}
-                                                    className="px-3 py-1 rounded-lg text-xs cursor-pointer border-none"
-                                                    style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+                                                    className="px-3 py-1 rounded-lg text-xs cursor-pointer border-none vct-dark-ghost-btn"
                                                 >Hủy</motion.button>
                                                 <motion.button
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => handleRevoke(c.id)}
                                                     disabled={revoking === c.id}
-                                                    className="px-3 py-1 rounded-lg text-xs cursor-pointer border-none"
-                                                    style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}
+                                                    className="px-3 py-1 rounded-lg text-xs cursor-pointer border-none vct-dark-revoke-btn"
                                                 >{revoking === c.id ? '...' : '⚠️ Xác nhận thu hồi'}</motion.button>
                                             </div>
                                         ) : (
@@ -657,25 +648,23 @@ function NewConsentModal({ linkedChildren, onClose, onSuccess, apiFetch }: {
     return (
         <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 vct-modal-overlay"
             onClick={onClose}
         >
             <motion.div
                 initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-md rounded-2xl p-6"
-                style={{ background: '#1c2333', border: '1px solid rgba(255,255,255,0.1)' }}
+                className="w-full max-w-md rounded-2xl p-6 vct-modal-panel"
             >
                 <VCT_Text variant="h2" style={{ color: '#fff', marginBottom: '1.5rem' }}>📋 Ký đồng thuận mới</VCT_Text>
                 <div className="grid gap-4">
                     <div>
                         <label className="text-xs text-white/50 uppercase tracking-wider font-semibold mb-1 block">Chọn con em</label>
                         <select
+                            title="Chọn con em"
                             value={form.athlete_id}
                             onChange={(e) => handleChildSelect(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl text-sm"
-                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                            className="w-full px-4 py-3 rounded-xl text-sm vct-dark-input"
                         >
                             {linkedChildren.filter(c => c.status === 'approved').map(c => (
                                 <option key={c.athlete_id} value={c.athlete_id}>{c.athlete_name}</option>
@@ -685,10 +674,10 @@ function NewConsentModal({ linkedChildren, onClose, onSuccess, apiFetch }: {
                     <div>
                         <label className="text-xs text-white/50 uppercase tracking-wider font-semibold mb-1 block">Loại đồng thuận</label>
                         <select
+                            title="Loại đồng thuận"
                             value={form.type}
                             onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-xl text-sm"
-                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                            className="w-full px-4 py-3 rounded-xl text-sm vct-dark-input"
                         >
                             <option value="tournament">🏆 Giải đấu</option>
                             <option value="belt_exam">🥋 Thi đai</option>
@@ -703,8 +692,7 @@ function NewConsentModal({ linkedChildren, onClose, onSuccess, apiFetch }: {
                             type="text" placeholder="VD: Đồng ý tham gia giải..."
                             value={form.title}
                             onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-xl text-sm"
-                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                            className="w-full px-4 py-3 rounded-xl text-sm vct-dark-input"
                         />
                     </div>
                     <div>
@@ -714,8 +702,7 @@ function NewConsentModal({ linkedChildren, onClose, onSuccess, apiFetch }: {
                             value={form.description}
                             onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                             rows={3}
-                            className="w-full px-4 py-3 rounded-xl text-sm resize-none"
-                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                            className="w-full px-4 py-3 rounded-xl text-sm resize-none vct-dark-input"
                         />
                     </div>
                 </div>
@@ -796,10 +783,10 @@ function AttendanceTab({ linkedChildren, apiFetch }: { linkedChildren: ChildLink
                 </VCT_Text>
                 {approvedChildren.length > 1 && (
                     <select
+                        title="Chọn con em"
                         value={selectedChild}
                         onChange={(e) => setSelectedChild(e.target.value)}
-                        className="px-3 py-1.5 rounded-lg text-sm"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', outline: 'none' }}
+                        className="px-3 py-1.5 rounded-lg text-sm vct-dark-input"
                     >
                         {approvedChildren.map(c => (
                             <option key={c.athlete_id} value={c.athlete_id}>{c.athlete_name}</option>
@@ -819,37 +806,36 @@ function AttendanceTab({ linkedChildren, apiFetch }: { linkedChildren: ChildLink
                     {/* Stats Row */}
                     <div className="grid grid-cols-4 gap-2 mb-6">
                         {[
-                            { label: 'Tổng buổi', value: total, color: '#3b82f6' },
-                            { label: 'Có mặt', value: present, color: '#22c55e' },
-                            { label: 'Trễ', value: late, color: '#f59e0b' },
-                            { label: 'Vắng', value: absent, color: '#ef4444' },
+                            { label: 'Tổng buổi', value: total, colorClass: 'text-[#3b82f6]' },
+                            { label: 'Có mặt', value: present, colorClass: 'text-[#22c55e]' },
+                            { label: 'Trễ', value: late, colorClass: 'text-[#f59e0b]' },
+                            { label: 'Vắng', value: absent, colorClass: 'text-[#ef4444]' },
                         ].map((s, i) => (
                             <motion.div
                                 key={s.label} custom={i} variants={fadeUp} initial="hidden" animate="visible"
-                                className="rounded-xl p-3 text-center bg-white/[0.04] border border-white/[0.08]"
+                                className="rounded-xl p-3 text-center bg-white/4 border border-white/8"
                             >
-                                <CountUpNumber value={s.value} color={s.color} />
+                                <CountUpNumber value={s.value} colorClass={s.colorClass} />
                                 <VCT_Text variant="small" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</VCT_Text>
                             </motion.div>
                         ))}
                     </div>
 
                     {/* Attendance Rate */}
-                    <div className="rounded-xl p-4 mb-6 bg-white/[0.04] border border-white/[0.08]">
+                    <div className="rounded-xl p-4 mb-6 bg-white/4 border border-white/8">
                         <div className="flex justify-between items-center mb-2">
                             <VCT_Text variant="small" style={{ color: 'rgba(255,255,255,0.5)' }}>Tỷ lệ chuyên cần</VCT_Text>
-                            <span className="font-bold" style={{ color: rate >= 80 ? '#22c55e' : '#f59e0b' }}>{rate}%</span>
+                            <span className={`font-bold ${rate >= 80 ? 'text-[#22c55e]' : 'text-[#f59e0b]'}`}>{rate}%</span>
                         </div>
                         <div className="w-full h-3 rounded-full bg-white/10">
-                            <motion.div className="h-3 rounded-full" initial={{ width: 0 }}
+                            <motion.div className={`h-3 rounded-full ${rate >= 80 ? 'bg-[#22c55e]' : 'bg-[#f59e0b]'}`} initial={{ width: 0 }}
                                 animate={{ width: `${rate}%` }}
-                                transition={{ duration: 1, ease: 'easeOut' }}
-                                style={{ background: rate >= 80 ? '#22c55e' : '#f59e0b' }} />
+                                transition={{ duration: 1, ease: 'easeOut' }} />
                         </div>
                     </div>
 
                     {/* Mini Heatmap Calendar */}
-                    <div className="rounded-xl p-4 mb-6 bg-white/[0.04] border border-white/[0.08]">
+                    <div className="rounded-xl p-4 mb-6 bg-white/4 border border-white/8">
                         <div className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">Lịch 28 ngày gần nhất</div>
                         <div className="grid grid-cols-7 gap-1.5">
                             {heatmapDays.map((d, i) => {
@@ -883,9 +869,9 @@ function AttendanceTab({ linkedChildren, apiFetch }: { linkedChildren: ChildLink
                             return (
                                 <motion.div
                                     key={i} custom={i} variants={fadeUp} initial="hidden" animate="visible"
-                                    className="flex items-center gap-4 rounded-xl px-4 py-3 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] transition-colors"
+                                    className="flex items-center gap-4 rounded-xl px-4 py-3 bg-white/4 border border-white/8 hover:bg-white/6 transition-colors"
                                 >
-                                    <div className="min-w-[6rem] font-bold font-mono" style={{ color: 'var(--vct-accent-cyan, #06b6d4)' }}>
+                                    <div className="min-w-24 font-bold font-mono text-vct-accent">
                                         {a.date}
                                     </div>
                                     <div className="flex-1">

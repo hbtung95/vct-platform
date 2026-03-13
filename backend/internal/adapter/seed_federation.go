@@ -13,8 +13,9 @@ import (
 
 // ═══════════════════════════════════════════════════════════════
 // VCT PLATFORM — SEED DATA FOR NATIONAL-LEVEL SUBSYSTEM
-// Comprehensive mock data: 63 provinces, org hierarchy,
-// personnel, certifications, discipline, documents, intl.
+// Comprehensive mock data: 34 provinces (post-2025 merger),
+// org hierarchy, personnel, certifications, discipline,
+// documents, intl.
 // ═══════════════════════════════════════════════════════════════
 
 // ── Province Seed Data ───────────────────────────────────────
@@ -31,72 +32,43 @@ func SeedProvinces() map[string]federation.Province {
 		vdv     int
 	}
 	raw := []prov{
-		// ── Miền Bắc (28 tỉnh/TP) ──
-		{"HN", "TP Hà Nội", federation.RegionNorth, true, 45, 120, 850},
-		{"HP", "TP Hải Phòng", federation.RegionNorth, true, 18, 40, 280},
-		{"QN2", "Quảng Ninh", federation.RegionNorth, true, 12, 25, 180},
-		{"BN", "Bắc Ninh", federation.RegionNorth, true, 10, 22, 150},
-		{"HD", "Hải Dương", federation.RegionNorth, true, 8, 18, 120},
-		{"HY", "Hưng Yên", federation.RegionNorth, false, 5, 10, 60},
-		{"TB", "Thái Bình", federation.RegionNorth, true, 9, 20, 140},
-		{"HA", "Hà Nam", federation.RegionNorth, false, 4, 8, 45},
-		{"NB", "Ninh Bình", federation.RegionNorth, true, 7, 15, 95},
-		{"ND", "Nam Định", federation.RegionNorth, true, 11, 24, 165},
-		{"VP", "Vĩnh Phúc", federation.RegionNorth, false, 6, 12, 70},
-		{"PT", "Phú Thọ", federation.RegionNorth, true, 8, 16, 105},
-		{"BG", "Bắc Giang", federation.RegionNorth, true, 7, 14, 90},
-		{"BK", "Bắc Kạn", federation.RegionNorth, false, 2, 4, 20},
-		{"TN", "Thái Nguyên", federation.RegionNorth, true, 9, 18, 115},
-		{"TQ", "Tuyên Quang", federation.RegionNorth, false, 3, 6, 30},
-		{"YB", "Yên Bái", federation.RegionNorth, false, 3, 5, 25},
-		{"LC", "Lào Cai", federation.RegionNorth, false, 4, 7, 35},
-		{"LC2", "Lai Châu", federation.RegionNorth, false, 1, 2, 10},
-		{"SL", "Sơn La", federation.RegionNorth, false, 3, 5, 22},
-		{"DB", "Điện Biên", federation.RegionNorth, false, 2, 3, 12},
-		{"HG", "Hà Giang", federation.RegionNorth, false, 2, 4, 15},
-		{"CB", "Cao Bằng", federation.RegionNorth, false, 2, 3, 12},
-		{"LS", "Lạng Sơn", federation.RegionNorth, false, 3, 6, 28},
-		{"HB", "Hòa Bình", federation.RegionNorth, false, 4, 8, 40},
-		// ── Miền Trung (19 tỉnh/TP) ──
-		{"TH", "Thanh Hóa", federation.RegionCentral, true, 15, 35, 250},
-		{"NA", "Nghệ An", federation.RegionCentral, true, 12, 28, 200},
-		{"HT", "Hà Tĩnh", federation.RegionCentral, true, 8, 18, 120},
-		{"QB", "Quảng Bình", federation.RegionCentral, false, 5, 10, 55},
-		{"QT", "Quảng Trị", federation.RegionCentral, false, 4, 8, 40},
-		{"TTH", "TT Huế", federation.RegionCentral, true, 14, 30, 210},
-		{"DN", "TP Đà Nẵng", federation.RegionCentral, true, 20, 45, 320},
-		{"QNM", "Quảng Nam", federation.RegionCentral, true, 10, 22, 150},
-		{"QNG", "Quảng Ngãi", federation.RegionCentral, true, 8, 16, 100},
-		{"BD", "Bình Định", federation.RegionCentral, true, 35, 80, 600},
-		{"PY", "Phú Yên", federation.RegionCentral, true, 7, 14, 85},
-		{"KH", "Khánh Hòa", federation.RegionCentral, true, 12, 25, 170},
-		{"NT", "Ninh Thuận", federation.RegionCentral, false, 4, 8, 38},
-		{"BT", "Bình Thuận", federation.RegionCentral, true, 9, 18, 110},
-		{"GL", "Gia Lai", federation.RegionCentral, false, 5, 10, 50},
-		{"KT", "Kon Tum", federation.RegionCentral, false, 3, 5, 22},
-		{"DL", "Đắk Lắk", federation.RegionCentral, true, 8, 16, 95},
-		{"DN2", "Đắk Nông", federation.RegionCentral, false, 3, 5, 20},
-		{"LD", "Lâm Đồng", federation.RegionCentral, true, 7, 14, 80},
-		// ── Miền Nam (19 tỉnh/TP) ──
-		{"HCM", "TP Hồ Chí Minh", federation.RegionSouth, true, 55, 150, 1200},
-		{"CT", "TP Cần Thơ", federation.RegionSouth, true, 14, 30, 200},
-		{"BDG", "Bình Dương", federation.RegionSouth, true, 18, 40, 280},
-		{"DNI", "Đồng Nai", federation.RegionSouth, true, 15, 32, 220},
-		{"BR", "Bà Rịa - Vũng Tàu", federation.RegionSouth, true, 10, 20, 130},
-		{"TG", "Tiền Giang", federation.RegionSouth, true, 8, 16, 100},
-		{"LA", "Long An", federation.RegionSouth, true, 9, 18, 115},
-		{"BL", "Bến Tre", federation.RegionSouth, false, 5, 10, 55},
-		{"TV", "Trà Vinh", federation.RegionSouth, false, 4, 8, 40},
-		{"VL", "Vĩnh Long", federation.RegionSouth, false, 6, 12, 65},
-		{"DT", "Đồng Tháp", federation.RegionSouth, true, 7, 14, 85},
-		{"AG", "An Giang", federation.RegionSouth, true, 10, 22, 140},
-		{"KG", "Kiên Giang", federation.RegionSouth, true, 8, 16, 100},
-		{"HGG", "Hậu Giang", federation.RegionSouth, false, 3, 6, 30},
-		{"ST", "Sóc Trăng", federation.RegionSouth, false, 5, 10, 50},
-		{"BLC", "Bạc Liêu", federation.RegionSouth, false, 4, 7, 32},
-		{"CM", "Cà Mau", federation.RegionSouth, false, 4, 8, 38},
-		{"TN2", "Tây Ninh", federation.RegionSouth, true, 7, 14, 80},
-		{"BP", "Bình Phước", federation.RegionSouth, false, 5, 10, 48},
+		// ── Miền Bắc (15 tỉnh/TP) ──
+		{"HN", "TP Hà Nội", federation.RegionNorth, true, 60, 110, 1500},
+		{"HP", "TP Hải Phòng", federation.RegionNorth, true, 30, 45, 700},
+		{"QN", "Quảng Ninh", federation.RegionNorth, true, 15, 20, 300},
+		{"BN", "Bắc Ninh", federation.RegionNorth, true, 20, 25, 400},
+		{"HY", "Hưng Yên", federation.RegionNorth, true, 15, 18, 250},
+		{"NB", "Ninh Bình", federation.RegionNorth, true, 25, 35, 550},
+		{"PT", "Phú Thọ", federation.RegionNorth, true, 18, 28, 400},
+		{"TN", "Thái Nguyên", federation.RegionNorth, true, 12, 15, 200},
+		{"TQ", "Tuyên Quang", federation.RegionNorth, false, 8, 8, 120},
+		{"LCI", "Lào Cai", federation.RegionNorth, true, 9, 10, 150},
+		{"CB", "Cao Bằng", federation.RegionNorth, false, 5, 5, 80},
+		{"LS", "Lạng Sơn", federation.RegionNorth, false, 6, 6, 90},
+		{"SL", "Sơn La", federation.RegionNorth, false, 7, 8, 100},
+		{"DB", "Điện Biên", federation.RegionNorth, false, 4, 4, 60},
+		{"LC", "Lai Châu", federation.RegionNorth, false, 3, 3, 40},
+		// ── Miền Trung Tây Nguyên (11 tỉnh/TP) ──
+		{"TH", "Thanh Hóa", federation.RegionCentral, true, 30, 50, 800},
+		{"NA", "Nghệ An", federation.RegionCentral, true, 25, 40, 600},
+		{"HT", "Hà Tĩnh", federation.RegionCentral, true, 15, 20, 300},
+		{"HUE", "TP Huế", federation.RegionCentral, true, 20, 30, 450},
+		{"DN", "TP Đà Nẵng", federation.RegionCentral, true, 25, 45, 650},
+		{"QT", "Quảng Trị", federation.RegionCentral, true, 12, 15, 250},
+		{"QNG", "Quảng Ngãi", federation.RegionCentral, true, 18, 25, 400},
+		{"KH", "Khánh Hòa", federation.RegionCentral, true, 20, 30, 450},
+		{"GL", "Gia Lai", federation.RegionCentral, true, 14, 20, 300},
+		{"DL", "Đắk Lắk", federation.RegionCentral, true, 22, 35, 500},
+		{"LDO", "Lâm Đồng", federation.RegionCentral, true, 20, 30, 450},
+		// ── Miền Nam (8 tỉnh/TP) ──
+		{"HCM", "TP Hồ Chí Minh", federation.RegionSouth, true, 80, 180, 2500},
+		{"CT", "TP Cần Thơ", federation.RegionSouth, true, 25, 40, 650},
+		{"DNI", "Đồng Nai", federation.RegionSouth, true, 40, 75, 1100},
+		{"AG", "An Giang", federation.RegionSouth, true, 20, 35, 500},
+		{"CM", "Cà Mau", federation.RegionSouth, true, 15, 22, 350},
+		{"DT", "Đồng Tháp", federation.RegionSouth, true, 18, 28, 400},
+		{"TNI", "Tây Ninh", federation.RegionSouth, true, 12, 15, 250},
+		{"VL", "Vĩnh Long", federation.RegionSouth, true, 8, 12, 180},
 	}
 
 	data := make(map[string]federation.Province, len(raw))
@@ -133,16 +105,17 @@ func SeedFederationUnits() map[string]federation.FederationUnit {
 		{ID: "unit-bkl", Name: "Ban Kỷ luật", ShortName: "BKL", Type: federation.UnitTypeCommittee, ParentID: "unit-central", Status: federation.UnitStatusActive, LeaderName: "Hồ Sỹ Nam", LeaderTitle: "Trưởng ban", CreatedAt: now, UpdatedAt: now},
 		{ID: "unit-bdt", Name: "Ban Đào tạo - Phong trào", ShortName: "BĐT", Type: federation.UnitTypeCommittee, ParentID: "unit-central", Status: federation.UnitStatusActive, LeaderName: "Nguyễn Thị Mai", LeaderTitle: "Trưởng ban", CreatedAt: now, UpdatedAt: now},
 		// Provincial Units (top 10 provinces)
-		{ID: "unit-hcm", Name: "LĐ Võ thuật cổ truyền TP.HCM", ShortName: "LĐ HCM", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-045", Status: federation.UnitStatusActive, Address: "55 Nguyễn Thị Minh Khai, Q.1, HCM", Phone: "028-3829-1234", Email: "hcm@vct.vn", FoundedDate: "1995-03-20", LeaderName: "Lý Thanh Tùng", LeaderTitle: "Chủ tịch", ClubCount: 55, MemberCount: 1200, CreatedAt: now, UpdatedAt: now},
+		// Provincial Units (top 10 provinces — IDs match SeedProvinces() 34-province index)
+		{ID: "unit-hcm", Name: "LĐ Võ thuật cổ truyền TP.HCM", ShortName: "LĐ HCM", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-027", Status: federation.UnitStatusActive, Address: "55 Nguyễn Thị Minh Khai, Q.1, HCM", Phone: "028-3829-1234", Email: "hcm@vct.vn", FoundedDate: "1995-03-20", LeaderName: "Lý Thanh Tùng", LeaderTitle: "Chủ tịch", ClubCount: 55, MemberCount: 1200, CreatedAt: now, UpdatedAt: now},
 		{ID: "unit-hn", Name: "LĐ Võ thuật cổ truyền Hà Nội", ShortName: "LĐ HN", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-001", Status: federation.UnitStatusActive, Address: "1 Trịnh Hoài Đức, Đống Đa, HN", Phone: "024-3851-5678", Email: "hn@vct.vn", FoundedDate: "1993-08-10", LeaderName: "Trần Tuấn Anh", LeaderTitle: "Chủ tịch", ClubCount: 45, MemberCount: 850, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-bd", Name: "LĐ Võ thuật cổ truyền Bình Định", ShortName: "LĐ BĐ", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-035", Status: federation.UnitStatusActive, Address: "17 Nguyễn Huệ, Quy Nhơn, BĐ", Phone: "0256-382-9999", Email: "bd@vct.vn", FoundedDate: "1992-01-05", LeaderName: "Nguyễn Văn Trọng", LeaderTitle: "Chủ tịch", ClubCount: 35, MemberCount: 600, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-dn", Name: "LĐ Võ thuật cổ truyền Đà Nẵng", ShortName: "LĐ ĐN", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-032", Status: federation.UnitStatusActive, Address: "20 Phan Châu Trinh, Hải Châu, ĐN", Phone: "0236-356-7890", Email: "dn@vct.vn", FoundedDate: "1997-05-01", LeaderName: "Phan Quốc Việt", LeaderTitle: "Chủ tịch", ClubCount: 20, MemberCount: 320, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-bdg", Name: "LĐ Võ thuật cổ truyền Bình Dương", ShortName: "LĐ BDg", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-047", Status: federation.UnitStatusActive, Email: "bdg@vct.vn", LeaderName: "Hoàng Minh Tuấn", LeaderTitle: "Chủ tịch", ClubCount: 18, MemberCount: 280, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-th", Name: "LĐ Võ thuật cổ truyền Thanh Hóa", ShortName: "LĐ TH", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-026", Status: federation.UnitStatusActive, Email: "th@vct.vn", LeaderName: "Lê Đình Hải", LeaderTitle: "Chủ tịch", ClubCount: 15, MemberCount: 250, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-tth", Name: "LĐ Võ thuật cổ truyền TT Huế", ShortName: "LĐ Huế", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-031", Status: federation.UnitStatusActive, Email: "hue@vct.vn", LeaderName: "Trương Văn Khoa", LeaderTitle: "Chủ tịch", ClubCount: 14, MemberCount: 210, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-ct", Name: "LĐ Võ thuật cổ truyền Cần Thơ", ShortName: "LĐ CT", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-046", Status: federation.UnitStatusActive, Email: "ct@vct.vn", LeaderName: "Đặng Minh Phụng", LeaderTitle: "Chủ tịch", ClubCount: 14, MemberCount: 200, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-na", Name: "LĐ Võ thuật cổ truyền Nghệ An", ShortName: "LĐ NA", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-027", Status: federation.UnitStatusActive, Email: "na@vct.vn", LeaderName: "Cao Xuân Hà", LeaderTitle: "Chủ tịch", ClubCount: 12, MemberCount: 200, CreatedAt: now, UpdatedAt: now},
-		{ID: "unit-dni", Name: "LĐ Võ thuật cổ truyền Đồng Nai", ShortName: "LĐ ĐNai", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-048", Status: federation.UnitStatusActive, Email: "dni@vct.vn", LeaderName: "Bùi Danh Liêm", LeaderTitle: "Chủ tịch", ClubCount: 15, MemberCount: 220, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-qng", Name: "LĐ Võ thuật cổ truyền Quảng Ngãi", ShortName: "LĐ QNg", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-022", Status: federation.UnitStatusActive, Address: "12 Quang Trung, TP Quảng Ngãi", Phone: "0255-382-1234", Email: "qng@vct.vn", FoundedDate: "1994-03-10", LeaderName: "Nguyễn Văn Trọng", LeaderTitle: "Chủ tịch", ClubCount: 35, MemberCount: 600, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-dn", Name: "LĐ Võ thuật cổ truyền Đà Nẵng", ShortName: "LĐ ĐN", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-020", Status: federation.UnitStatusActive, Address: "20 Phan Châu Trinh, Hải Châu, ĐN", Phone: "0236-356-7890", Email: "dn@vct.vn", FoundedDate: "1997-05-01", LeaderName: "Phan Quốc Việt", LeaderTitle: "Chủ tịch", ClubCount: 20, MemberCount: 320, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-dni", Name: "LĐ Võ thuật cổ truyền Đồng Nai", ShortName: "LĐ ĐNai", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-029", Status: federation.UnitStatusActive, Email: "dni@vct.vn", LeaderName: "Bùi Danh Liêm", LeaderTitle: "Chủ tịch", ClubCount: 40, MemberCount: 1100, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-th", Name: "LĐ Võ thuật cổ truyền Thanh Hóa", ShortName: "LĐ TH", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-016", Status: federation.UnitStatusActive, Email: "th@vct.vn", LeaderName: "Lê Đình Hải", LeaderTitle: "Chủ tịch", ClubCount: 30, MemberCount: 800, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-tth", Name: "LĐ Võ thuật cổ truyền TP Huế", ShortName: "LĐ Huế", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-019", Status: federation.UnitStatusActive, Email: "hue@vct.vn", LeaderName: "Trương Văn Khoa", LeaderTitle: "Chủ tịch", ClubCount: 20, MemberCount: 450, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-ct", Name: "LĐ Võ thuật cổ truyền Cần Thơ", ShortName: "LĐ CT", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-028", Status: federation.UnitStatusActive, Email: "ct@vct.vn", LeaderName: "Đặng Minh Phụng", LeaderTitle: "Chủ tịch", ClubCount: 25, MemberCount: 650, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-na", Name: "LĐ Võ thuật cổ truyền Nghệ An", ShortName: "LĐ NA", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-017", Status: federation.UnitStatusActive, Email: "na@vct.vn", LeaderName: "Cao Xuân Hà", LeaderTitle: "Chủ tịch", ClubCount: 25, MemberCount: 600, CreatedAt: now, UpdatedAt: now},
+		{ID: "unit-kh", Name: "LĐ Võ thuật cổ truyền Khánh Hòa", ShortName: "LĐ KH", Type: federation.UnitTypeProvince, ParentID: "unit-central", ProvinceID: "prov-023", Status: federation.UnitStatusActive, Email: "kh@vct.vn", LeaderName: "Hoàng Minh Tuấn", LeaderTitle: "Chủ tịch", ClubCount: 20, MemberCount: 450, CreatedAt: now, UpdatedAt: now},
 	}
 
 	data := make(map[string]federation.FederationUnit, len(units))
@@ -189,11 +162,11 @@ func SeedPersonnel() map[string]federation.PersonnelAssignment {
 func SeedCertifications() map[string]certification.Certificate {
 	now := time.Now().UTC()
 	certs := []certification.Certificate{
-		{ID: "cert-001", CertNumber: "HLV-2025-0042", Type: certification.CertCoach, HolderType: "person", HolderID: "user-bd01", HolderName: "Nguyễn Văn Trọng", Grade: "Cấp quốc gia", Status: certification.CertStatusActive, IssuedBy: "unit-central", IssuedByName: "LĐ VCT VN", IssuedAt: now, ValidFrom: "2025-01-01", ValidUntil: "2029-12-31", VerifyCode: "VCT-HLV-2025-0042", ProvinceID: "prov-035", DecisionNo: "QĐ-42/2025/LĐ", CreatedAt: now, UpdatedAt: now},
+		{ID: "cert-001", CertNumber: "HLV-2025-0042", Type: certification.CertCoach, HolderType: "person", HolderID: "user-bd01", HolderName: "Nguyễn Văn Trọng", Grade: "Cấp quốc gia", Status: certification.CertStatusActive, IssuedBy: "unit-central", IssuedByName: "LĐ VCT VN", IssuedAt: now, ValidFrom: "2025-01-01", ValidUntil: "2029-12-31", VerifyCode: "VCT-HLV-2025-0042", ProvinceID: "prov-022", DecisionNo: "QĐ-42/2025/LĐ", CreatedAt: now, UpdatedAt: now},
 		{ID: "cert-002", CertNumber: "TT-2025-0015", Type: certification.CertReferee, HolderType: "person", HolderID: "user-btt01", HolderName: "Lê Hữu Phước", Grade: "Trọng tài quốc gia", Status: certification.CertStatusActive, IssuedBy: "unit-central", IssuedByName: "LĐ VCT VN", IssuedAt: now, ValidFrom: "2025-03-01", ValidUntil: "2028-02-28", VerifyCode: "VCT-TT-2025-0015", DecisionNo: "QĐ-15/2025/LĐ", CreatedAt: now, UpdatedAt: now},
-		{ID: "cert-003", CertNumber: "CLB-2024-0088", Type: certification.CertClub, HolderType: "club", HolderID: "club-bd01", HolderName: "CLB Võ Bình Định - Quy Nhơn", Grade: "Hạng A", Status: certification.CertStatusActive, IssuedBy: "unit-bd", IssuedByName: "LĐ BĐ", IssuedAt: now, ValidFrom: "2024-06-01", ValidUntil: "2027-05-31", VerifyCode: "VCT-CLB-2024-0088", ProvinceID: "prov-035", CreatedAt: now, UpdatedAt: now},
-		{ID: "cert-004", CertNumber: "DAI-2025-0123", Type: certification.CertBeltRank, HolderType: "person", HolderID: "VDV01", HolderName: "Phạm Hoàng Nam", Grade: "Đai đen nhị đẳng", Status: certification.CertStatusActive, IssuedBy: "unit-central", IssuedByName: "LĐ VCT VN", IssuedAt: now, ValidFrom: "2025-08-01", VerifyCode: "VCT-DAI-2025-0123", ProvinceID: "prov-035", CreatedAt: now, UpdatedAt: now},
-		{ID: "cert-005", CertNumber: "HLV-2023-0091", Type: certification.CertCoach, HolderType: "person", HolderID: "user-hcm02", HolderName: "Trần Quang Vinh", Grade: "Cấp 1", Status: certification.CertStatusExpiring, IssuedBy: "unit-hcm", IssuedByName: "LĐ HCM", IssuedAt: now.AddDate(-2, 0, 0), ValidFrom: "2023-04-01", ValidUntil: "2026-03-31", VerifyCode: "VCT-HLV-2023-0091", ProvinceID: "prov-045", CreatedAt: now.AddDate(-2, 0, 0), UpdatedAt: now},
+		{ID: "cert-003", CertNumber: "CLB-2024-0088", Type: certification.CertClub, HolderType: "club", HolderID: "club-qng01", HolderName: "CLB Võ Quảng Ngãi - Trung tâm", Grade: "Hạng A", Status: certification.CertStatusActive, IssuedBy: "unit-qng", IssuedByName: "LĐ QNg", IssuedAt: now, ValidFrom: "2024-06-01", ValidUntil: "2027-05-31", VerifyCode: "VCT-CLB-2024-0088", ProvinceID: "prov-022", CreatedAt: now, UpdatedAt: now},
+		{ID: "cert-004", CertNumber: "DAI-2025-0123", Type: certification.CertBeltRank, HolderType: "person", HolderID: "VDV01", HolderName: "Phạm Hoàng Nam", Grade: "Đai đen nhị đẳng", Status: certification.CertStatusActive, IssuedBy: "unit-central", IssuedByName: "LĐ VCT VN", IssuedAt: now, ValidFrom: "2025-08-01", VerifyCode: "VCT-DAI-2025-0123", ProvinceID: "prov-022", CreatedAt: now, UpdatedAt: now},
+		{ID: "cert-005", CertNumber: "HLV-2023-0091", Type: certification.CertCoach, HolderType: "person", HolderID: "user-hcm02", HolderName: "Trần Quang Vinh", Grade: "Cấp 1", Status: certification.CertStatusExpiring, IssuedBy: "unit-hcm", IssuedByName: "LĐ HCM", IssuedAt: now.AddDate(-2, 0, 0), ValidFrom: "2023-04-01", ValidUntil: "2026-03-31", VerifyCode: "VCT-HLV-2023-0091", ProvinceID: "prov-027", CreatedAt: now.AddDate(-2, 0, 0), UpdatedAt: now},
 	}
 
 	data := make(map[string]certification.Certificate, len(certs))

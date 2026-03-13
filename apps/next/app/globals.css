@@ -199,7 +199,6 @@ body,
 
 html {
   height: 100%;
-  -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
 }
 
@@ -395,8 +394,8 @@ textarea {
 /* ── Glassmorphism ── */
 .vct-glass {
   background: var(--vct-bg-glass);
-  backdrop-filter: var(--vct-glass-blur);
   -webkit-backdrop-filter: var(--vct-glass-blur);
+  backdrop-filter: var(--vct-glass-blur);
 }
 
 /* ── Card hover effect ── */
@@ -480,6 +479,127 @@ textarea {
 
 .vct-card-press:active {
   transform: scale(0.98);
+}
+
+/* ── Checkbox utility ── */
+.vct-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #22d3ee;
+  cursor: pointer;
+}
+
+/* ── Table cell utilities ── */
+.vct-th {
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.5;
+  position: sticky;
+  top: 0;
+  background: var(--vct-bg-card);
+  z-index: 2;
+}
+
+.vct-td {
+  padding: 14px 16px;
+  font-size: 13px;
+}
+
+/* ── Cell text styles ── */
+.vct-cell-primary {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--vct-text-primary);
+}
+
+.vct-cell-secondary {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.vct-cell-accent {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--vct-accent-cyan);
+}
+
+.vct-cell-semibold {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.vct-cell-stat {
+  font-weight: 800;
+  color: var(--vct-accent-cyan);
+  font-size: 13px;
+}
+
+/* ── Icon action buttons ── */
+.vct-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--vct-text-tertiary);
+}
+
+.vct-icon-btn-danger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #ef4444;
+}
+
+/* ── Dark form input (used in dark-themed modals) ── */
+.vct-dark-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+}
+
+/* ── Skeleton block ── */
+.vct-skeleton-block {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Error banner ── */
+.vct-error-banner {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.vct-error-retry-btn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* ── Modal overlay ── */
+.vct-modal-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* ── Modal panel ── */
+.vct-modal-panel {
+  background: #1c2333;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Dark ghost button ── */
+.vct-dark-ghost-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Dark revoke button ── */
+.vct-dark-revoke-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
 
 /* ── Accent dot indicator ── */

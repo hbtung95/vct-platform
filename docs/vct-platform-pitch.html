@@ -1,0 +1,686 @@
+﻿<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VCT Platform — Pitch Deck Nghiệp vụ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--font:'Inter',system-ui,sans-serif;--radius:14px;--transition:all .3s cubic-bezier(.4,0,.2,1)}
+
+/* ══ DARK THEME ══ */
+[data-theme="dark"]{
+--bg:#090b12;--bg2:#0f1219;--card:#151921;--card2:#1c2030;--card3:#232838;
+--accent:#6366f1;--accent2:#818cf8;--accentG:linear-gradient(135deg,#6366f1,#06b6d4);
+--green:#22c55e;--orange:#f59e0b;--red:#ef4444;--cyan:#06b6d4;--pink:#ec4899;--purple:#a855f7;
+--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;--border:#1e293b;--border2:#334155;
+--shadow:0 4px 30px rgba(0,0,0,.4);--glass:rgba(15,18,25,.7);
+--hero-bg:radial-gradient(ellipse at 30% 0%,rgba(99,102,241,.12),transparent 60%),radial-gradient(ellipse at 70% 100%,rgba(6,182,212,.08),transparent 60%),var(--bg)}
+
+/* ══ LIGHT THEME ══ */
+[data-theme="light"]{
+--bg:#f8fafc;--bg2:#ffffff;--card:#ffffff;--card2:#f1f5f9;--card3:#e2e8f0;
+--accent:#4f46e5;--accent2:#6366f1;--accentG:linear-gradient(135deg,#4f46e5,#0891b2);
+--green:#16a34a;--orange:#d97706;--red:#dc2626;--cyan:#0891b2;--pink:#db2777;--purple:#9333ea;
+--text:#0f172a;--text2:#475569;--text3:#94a3b8;--border:#e2e8f0;--border2:#cbd5e1;
+--shadow:0 4px 30px rgba(0,0,0,.08);--glass:rgba(255,255,255,.85);
+--hero-bg:radial-gradient(ellipse at 30% 0%,rgba(99,102,241,.06),transparent 60%),radial-gradient(ellipse at 70% 100%,rgba(6,182,212,.04),transparent 60%),var(--bg)}
+
+body{font-family:var(--font);background:var(--hero-bg);color:var(--text);line-height:1.7;transition:var(--transition)}
+
+/* ══ HEADER ══ */
+.hero{text-align:center;padding:60px 20px 40px;position:relative}
+.hero::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent)}
+.logo{font-size:3rem;font-weight:900;background:var(--accentG);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-1px}
+.tagline{color:var(--text2);font-size:1.15rem;margin-top:8px;font-weight:300}
+.version{display:inline-block;margin-top:12px;padding:4px 16px;border-radius:20px;background:var(--card2);color:var(--accent2);font-size:.8rem;font-weight:600;border:1px solid var(--border)}
+
+/* ══ STATS ══ */
+.stats{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;padding:30px 20px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;min-width:150px;text-align:center;transition:var(--transition)}
+.stat:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:var(--accent)}
+.stat .n{font-size:2.4rem;font-weight:900;background:var(--accentG);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat .l{color:var(--text2);font-size:.82rem;margin-top:4px;font-weight:500}
+
+/* ══ THEME TOGGLE ══ */
+.theme-toggle{position:fixed;top:20px;right:20px;z-index:1000;width:50px;height:50px;border-radius:50%;border:1px solid var(--border);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:var(--transition);box-shadow:var(--shadow)}
+.theme-toggle:hover{transform:scale(1.1);border-color:var(--accent)}
+
+/* ══ TABS ══ */
+.container{max-width:1400px;margin:0 auto;padding:0 20px 40px}
+.tab-bar{display:flex;gap:4px;padding:6px;background:var(--card);border:1px solid var(--border);border-radius:16px;margin:30px 0 20px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-bar::-webkit-scrollbar{height:0}
+.tab-btn{flex-shrink:0;padding:10px 20px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:12px;font-size:.88rem;font-weight:600;font-family:var(--font);transition:var(--transition);white-space:nowrap}
+.tab-btn:hover{color:var(--text);background:var(--card2)}
+.tab-btn.active{background:var(--accentG);color:#fff}
+.tab-content{display:none;animation:fadeIn .4s ease}
+.tab-content.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══ CARDS ══ */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px;margin:20px 0}
+.grid-3{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:var(--transition);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accentG);opacity:0;transition:var(--transition)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--accent)}
+.card:hover::before{opacity:1}
+.card-icon{font-size:2rem;margin-bottom:12px}
+.card h3{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.card p{color:var(--text2);font-size:.9rem}
+
+/* ══ BADGES ══ */
+.badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.b-purple{background:rgba(99,102,241,.15);color:var(--accent2)}
+.b-green{background:rgba(34,197,94,.15);color:var(--green)}
+.b-orange{background:rgba(245,158,11,.15);color:var(--orange)}
+.b-cyan{background:rgba(6,182,212,.15);color:var(--cyan)}
+.b-pink{background:rgba(236,72,153,.15);color:var(--pink)}
+.b-red{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* ══ SECTIONS ══ */
+h2{font-size:1.6rem;font-weight:800;margin:30px 0 16px;display:flex;align-items:center;gap:10px}
+h2 .icon{font-size:1.8rem}
+h3{font-size:1.1rem;color:var(--cyan);margin:20px 0 10px;font-weight:700}
+h4{font-size:.95rem;color:var(--orange);margin:14px 0 6px;font-weight:600}
+ul{padding-left:22px;margin:8px 0}
+li{margin:4px 0;color:var(--text2);font-size:.9rem}
+li strong{color:var(--text)}
+
+/* ══ FLOW DIAGRAMS ══ */
+.flow-diagram{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:20px 0;overflow-x:auto}
+.flow-diagram h4{color:var(--accent2);margin:0 0 16px;font-size:1rem}
+.flow-steps{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center}
+.flow-step{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;text-align:center;font-size:.82rem;font-weight:600;color:var(--text);min-width:110px;transition:var(--transition)}
+.flow-step:hover{border-color:var(--accent);transform:scale(1.05)}
+.flow-step small{display:block;color:var(--text3);font-weight:400;font-size:.72rem;margin-top:4px}
+.flow-arrow{color:var(--accent2);font-size:1.2rem;padding:0 4px;flex-shrink:0}
+
+/* ══ INTERACTION MAP ══ */
+.interaction-map{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;margin:20px 0}
+.interaction-map h4{color:var(--accent2);margin:0 0 20px;font-size:1.1rem;text-align:center}
+.imap-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.imap-left,.imap-right{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-size:.85rem;font-weight:600}
+.imap-arrow{text-align:center;color:var(--accent2);font-size:.8rem;font-weight:500}
+
+/* ══ TABLE ══ */
+table{width:100%;border-collapse:collapse;margin:15px 0;font-size:.85rem}
+th{background:var(--card2);color:var(--accent2);padding:12px 14px;text-align:left;border:1px solid var(--border);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px}
+td{padding:10px 14px;border:1px solid var(--border);color:var(--text2)}
+tr:hover td{background:var(--card2)}
+.perm-y{color:var(--green);font-weight:700;text-align:center}
+.perm-n{color:var(--border2);text-align:center}
+
+/* ══ FOOTER ══ */
+.footer{text-align:center;padding:40px 0;color:var(--text3);font-size:.82rem;border-top:1px solid var(--border);margin-top:40px}
+.footer strong{color:var(--text2)}
+
+@media(max-width:768px){
+.grid,.grid-3{grid-template-columns:1fr}
+.logo{font-size:2rem}
+.tab-btn{padding:8px 14px;font-size:.8rem}
+.stats{gap:8px}
+.stat{min-width:120px;padding:16px}
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()" title="Chuyển sáng/tối" id="themeBtn">&#127769;</button>
+
+<div class="hero">
+<div class="logo">&#9876;&#65039; VCT PLATFORM</div>
+<div class="tagline">Nền tảng Số hóa Toàn diện cho Võ Cổ Truyền Việt Nam</div>
+<div class="version">v7.0 &bull; Enterprise Edition &bull; 2026</div>
+</div>
+
+<div class="stats">
+<div class="stat"><div class="n">9</div><div class="l">Phân hệ</div></div>
+<div class="stat"><div class="n">12</div><div class="l">Vai trò</div></div>
+<div class="stat"><div class="n">23</div><div class="l">Module</div></div>
+<div class="stat"><div class="n">119</div><div class="l">Trang UI</div></div>
+<div class="stat"><div class="n">63</div><div class="l">Tỉnh/Thành</div></div>
+<div class="stat"><div class="n">&#8734;</div><div class="l">CLB & VĐV</div></div>
+</div>
+
+<div class="container">
+
+<div class="tab-bar" id="tabBar">
+<button class="tab-btn active" data-tab="overview">&#127912; Tổng quan</button>
+<button class="tab-btn" data-tab="modules">&#128230; Phân hệ</button>
+<button class="tab-btn" data-tab="workflows">&#9881;&#65039; Quy trình</button>
+<button class="tab-btn" data-tab="interactions">&#128279; Tương tác</button>
+<button class="tab-btn" data-tab="roles">&#128101; Vai trò</button>
+<button class="tab-btn" data-tab="org">&#127970; Tổ chức</button>
+<button class="tab-btn" data-tab="tech">&#128640; Công nghệ</button>
+</div>
+
+<!-- ██████ TAB 1: TONG QUAN ██████ -->
+<div class="tab-content active" id="tab-overview">
+<h2><span class="icon">&#127912;</span> Tổng quan VCT Platform</h2>
+<div class="card" style="margin-bottom:20px">
+<h3 style="color:var(--accent2);margin-top:0">Tầm nhìn</h3>
+<p>VCT Platform là <strong>nền tảng số hóa toàn diện</strong> dành cho hệ thống Võ Cổ Truyền Việt Nam — từ <strong>Liên đoàn Quốc gia</strong> đến từng <strong>Câu lạc bộ</strong> và <strong>Vận động viên</strong>. Platform giải quyết bài toán quản lý phân tán, thiếu minh bạch, và phi kết nối hiện tại bằng một hệ sinh thái số thống nhất.</p>
+</div>
+
+<h3>&#127919; Giá trị cốt lõi</h3>
+<div class="grid grid-3">
+<div class="card"><div class="card-icon">&#128301;</div><h3>Thống nhất Dữ liệu</h3><p>Một nguồn dữ liệu duy nhất cho 63 tỉnh/thành, hàng nghìn CLB, hàng chục nghìn VĐV — thay thế Excel rời rạc.</p></div>
+<div class="card"><div class="card-icon">&#9889;</div><h3>Real-time Operations</h3><p>Chấm điểm trực tiếp, bảng điểm live, thông báo tức thì — WebSocket-powered cho giải đấu chuyên nghiệp.</p></div>
+<div class="card"><div class="card-icon">&#128274;</div><h3>Multi-tenant & RBAC</h3><p>Phân quyền 12 vai trò, cách ly dữ liệu theo tổ chức, đảm bảo an ninh & quyền riêng tư.</p></div>
+<div class="card"><div class="card-icon">&#127758;</div><h3>Di sản & Bản sắc</h3><p>Số hóa phả hệ môn phái, kỹ thuật đặc trưng, hệ thống đai — bảo tồn và phát huy Võ Cổ Truyền.</p></div>
+<div class="card"><div class="card-icon">&#128200;</div><h3>Minh bạch Tài chính</h3><p>Theo dõi thu-chi, hóa đơn, tài trợ từ liên đoàn đến CLB — kiểm toán rõ ràng.</p></div>
+<div class="card"><div class="card-icon">&#128241;</div><h3>Multi-platform</h3><p>Web (Next.js), Mobile (Expo/React Native), PWA — truy cập mọi nơi, mọi thiết bị.</p></div>
+</div>
+
+<h3>&#127963; Hệ sinh thái 9 Phân hệ</h3>
+<div class="interaction-map">
+<h4>Sơ đồ Phân hệ & Luồng dữ liệu chính</h4>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+<div style="grid-column:1/4;background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--accent)">
+<strong style="color:var(--accent2);font-size:1rem">&#9881; System Admin</strong>
+<div style="color:var(--text3);font-size:.8rem">Tenant • User • Role • Audit • Monitoring</div>
+</div>
+<div style="background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--purple)">
+<strong style="color:var(--purple)">&#127970; Liên đoàn QG</strong>
+<div style="color:var(--text3);font-size:.78rem">Tổ chức • Giải • Tài chính • Di sản</div>
+</div>
+<div style="background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--cyan)">
+<strong style="color:var(--cyan)">&#9878; Kỷ luật</strong>
+<div style="color:var(--text3);font-size:.78rem">Vi phạm • Điều trần • Xử phạt</div>
+</div>
+<div style="background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--green)">
+<strong style="color:var(--green)">&#127463; LĐ Tỉnh</strong>
+<div style="color:var(--text3);font-size:.78rem">CLB • VĐV • HLV • Giải Tỉnh</div>
+</div>
+
+<div style="grid-column:1/2;background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--orange)">
+<strong style="color:var(--orange)">&#127942; Giải đấu</strong>
+<div style="color:var(--text3);font-size:.78rem">Đăng ký • Bốc thăm • Chấm • Kết quả</div>
+</div>
+<div style="background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--pink)">
+<strong style="color:var(--pink)">&#128101; Trọng tài</strong>
+<div style="color:var(--text3);font-size:.78rem">Phân công • Chấm Real-time</div>
+</div>
+<div style="background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--cyan)">
+<strong style="color:var(--cyan)">&#127968; CLB</strong>
+<div style="color:var(--text3);font-size:.78rem">Võ sinh • Lớp • Tài chính • Đai</div>
+</div>
+
+<div style="grid-column:1/2;background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--green)">
+<strong style="color:var(--green)">&#127947; VĐV</strong>
+<div style="color:var(--text3);font-size:.78rem">Hồ sơ • Thành tích • Training</div>
+</div>
+<div style="grid-column:2/4;background:var(--card2);border-radius:12px;padding:16px;border:2px solid var(--text3)">
+<strong style="color:var(--text2)">&#128064; Công chúng</strong>
+<div style="color:var(--text3);font-size:.78rem">Live Score • Lịch thi • Kết quả • Di sản • Cộng đồng</div>
+</div>
+</div>
+<div style="text-align:center;margin-top:16px;color:var(--text3);font-size:.78rem">
+&#8593;&#8595; Dữ liệu luân chuyển hai chiều qua API & WebSocket &bull; Phân quyền RBAC tại mỗi tầng
+</div>
+</div>
+</div>
+
+<!-- ██████ TAB 2: PHAN HE ██████ -->
+<div class="tab-content" id="tab-modules">
+<h2><span class="icon">&#128230;</span> Chi tiết 9 Phân hệ</h2>
+
+<div class="grid">
+<div class="card"><div class="card-icon">&#127970;</div><h3>Liên đoàn Quốc gia <span class="badge b-purple">Federation Admin</span></h3>
+<p>Quản lý toàn diện LĐ Võ Cổ Truyền VN. Tổ chức 9 nhóm chức năng:</p>
+<ul><li><strong>Tổng quan:</strong> Dashboard, Lịch, Phê duyệt</li>
+<li><strong>Tổ chức:</strong> Đơn vị, CLB, Nhân sự, Tỉnh, Org Chart</li>
+<li><strong>Giải đấu:</strong> Danh sách, Quản lý, Nội dung, Đăng ký, Lịch thi, Kết quả, Báo cáo</li>
+<li><strong>Quy chế:</strong> Điều lệ, Master Data (hạng cân, nội dung, đai)</li>
+<li><strong>Xếp hạng & Di sản:</strong> BXH, Phả hệ, Kỹ thuật, Dòng truyền thừa</li>
+<li><strong>Đào tạo:</strong> Giáo trình, Thư viện kỹ thuật, Thi lên đai</li>
+<li><strong>Tài chính:</strong> Hóa đơn, Phí, Tài trợ, Ngân sách</li>
+<li><strong>Cộng đồng:</strong> Tin tức, Nhóm, Sự kiện</li>
+<li><strong>Hành chính:</strong> Văn bản, Chứng chỉ, Thông báo, Workflow</li></ul></div>
+
+<div class="card"><div class="card-icon">&#127463;</div><h3>Liên đoàn Tỉnh <span class="badge b-green">Provincial</span></h3>
+<p>Quản lý cấp tỉnh/thành — kết nối trực tiếp với LĐ Quốc gia:</p>
+<ul><li>Dashboard tỉnh — thống kê CLB, VĐV, HLV</li>
+<li>CLB cấp tỉnh — thành lập, cập nhật, tạm dừng</li>
+<li>VĐV cấp tỉnh — hồ sơ, chuyển nhượng giữa CLB</li>
+<li>HLV cấp tỉnh — danh sách, chứng chỉ, phân công</li>
+<li>Giải đấu tỉnh — tạo và quản lý giải cấp khu vực</li>
+<li>Đăng ký thi đấu — đăng ký đoàn/VĐV tham gia giải</li>
+<li>Báo cáo & Tài chính tỉnh</li></ul></div>
+
+<div class="card"><div class="card-icon">&#9878;</div><h3>Kỷ luật <span class="badge b-red">Discipline</span></h3>
+<p>Quản lý vi phạm và xử lý kỷ luật:</p>
+<ul><li>Vụ việc vi phạm — tạo, phân loại, theo dõi</li>
+<li>Phiên điều trần — lập lịch, biên bản</li>
+<li>Xử phạt — cảnh cáo, cấm thi đấu, tước đai</li>
+<li>Thanh tra — kiểm tra CLB, giải đấu</li>
+<li>Báo cáo thống kê vi phạm</li></ul></div>
+
+<div class="card"><div class="card-icon">&#127942;</div><h3>Vận hành Giải đấu <span class="badge b-orange">Tournament Ops</span></h3>
+<p>Toàn bộ vòng đời giải đấu từ A→Z:</p>
+<ul><li><strong>Thiết lập:</strong> Cấu hình, Nội dung, Sàn đấu, Trọng tài</li>
+<li><strong>Đăng ký:</strong> Đoàn, VĐV, Nội dung, Cân đo</li>
+<li><strong>Vận hành:</strong> Lịch thi, Bốc thăm, Phân công TT, Chấm điểm, Bracket</li>
+<li><strong>Kết quả:</strong> Bảng kết quả, Huy chương, Khiếu nại, Báo cáo</li></ul></div>
+
+<div class="card"><div class="card-icon">&#127968;</div><h3>Câu lạc bộ <span class="badge b-cyan">Club Management</span></h3>
+<p>Quản lý vận hành CLB Võ Cổ Truyền:</p>
+<ul><li>Võ sinh & HLV — danh sách, hồ sơ, phân công</li>
+<li>Đào tạo — giáo trình, kỹ thuật, kế hoạch, lớp học</li>
+<li>Điểm danh — theo dõi chuyên cần</li>
+<li>Thi lên đai & E-Learning</li>
+<li>Cơ sở & Trang thiết bị</li>
+<li>Tài chính — học phí, hóa đơn, doanh thu</li>
+<li>Giải đấu — xem & đăng ký tham gia</li></ul></div>
+
+<div class="card"><div class="card-icon">&#128101;</div><h3>Trọng tài <span class="badge b-pink">Referee Console</span></h3>
+<p>Giao diện chuyên biệt cho trọng tài:</p>
+<ul><li>Dashboard — lịch trình, trận sắp chấm</li>
+<li>Chấm đối kháng — real-time, nút đỏ/xanh</li>
+<li>Chấm quyền — điểm biểu diễn, trừ lỗi</li>
+<li>Bảng điểm Live (Scoreboard)</li>
+<li>Khiếu nại & Kết quả tổng hợp</li></ul></div>
+
+<div class="card"><div class="card-icon">&#127947;</div><h3>VĐV Portal <span class="badge b-green">Athlete</span></h3>
+<p>Cổng thông tin cá nhân vận động viên:</p>
+<ul><li>Hồ sơ — thông tin, cấp đai, CLB</li>
+<li>Thành tích — lịch sử, huy chương, xếp hạng</li>
+<li>Giải đấu & CLB — đang/sắp tham gia</li>
+<li>Luyện tập & E-Learning</li></ul></div>
+
+<div class="card"><div class="card-icon">&#128064;</div><h3>Công chúng <span class="badge b-cyan">Spectator</span></h3>
+<p>Giao diện công khai cho khán giả:</p>
+<ul><li>Bảng điểm Live — xem trực tiếp</li>
+<li>Lịch thi đấu — tra theo ngày/sàn/VĐV</li>
+<li>BXH, Kết quả, Huy chương</li>
+<li>Di sản Võ Cổ Truyền & Cộng đồng</li></ul></div>
+
+<div class="card"><div class="card-icon">&#9881;</div><h3>Quản trị Hệ thống <span class="badge b-red">System Admin</span></h3>
+<p>Quản trị toàn bộ platform:</p>
+<ul><li>Tenant — quản lý tổ chức multi-tenant</li>
+<li>User & Role — CRUD người dùng, gán vai trò</li>
+<li>Feature Flags — bật/tắt tính năng</li>
+<li>System Health — giám sát server, DB, cache</li>
+<li>Integrity & Data Quality — toàn vẹn, chất lượng</li>
+<li>Audit Logs — lịch sử mọi thao tác</li></ul></div>
+</div>
+</div>
+
+<!-- ██████ TAB 3: QUY TRINH ██████ -->
+<div class="tab-content" id="tab-workflows">
+<h2><span class="icon">&#9881;&#65039;</span> Sơ đồ Quy trình Vận hành</h2>
+
+<div class="flow-diagram">
+<h4>&#127942; Vòng đời Giải đấu</h4>
+<div class="flow-steps">
+<div class="flow-step" style="border-color:var(--text3)">&#128221;<br>Nháp<small>Tạo giải, cấu hình</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--green)">&#128203;<br>Mở Đăng ký<small>CLB đăng ký đoàn/VĐV</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--orange)">&#128274;<br>Khóa ĐK<small>Kiểm tra, cân đo</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--red)">&#9876;<br>Thi đấu<small>Bốc thăm, chấm điểm</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--accent)">&#127942;<br>Kết thúc<small>Kết quả, huy chương</small></div>
+</div>
+</div>
+
+<div class="flow-diagram">
+<h4>&#128101; Quy trình Đăng ký Đoàn & VĐV</h4>
+<div class="flow-steps">
+<div class="flow-step">&#128221;<br>Tạo đoàn<small>Nhập thông tin</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step">&#128100;<br>Thêm VĐV<small>Hồ sơ, nội dung</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step">&#128228;<br>Gửi duyệt<small>Trưởng đoàn submit</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--orange)">&#128269;<br>BTC xét duyệt<small>Kiểm tra hồ sơ</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--green)">&#9989;<br>Xác nhận<small>Đủ điều kiện</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--cyan)">&#128205;<br>Check-in<small>Ngày thi đấu</small></div>
+</div>
+</div>
+
+<div class="flow-diagram">
+<h4>&#9989; Quy trình Phê duyệt Đa bước (Approval Engine)</h4>
+<div class="flow-steps">
+<div class="flow-step">&#128221;<br>Tạo yêu cầu<small>CLB, chuyển nhượng...</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--cyan)">&#128101;<br>Bước 1<small>Thư ký LĐ Tỉnh</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--purple)">&#128081;<br>Bước 2<small>Chủ tịch LĐ Tỉnh</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--accent)">&#128081;<br>Bước 3<small>LĐ Quốc gia (nếu cần)</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--green)">&#128276;<br>Thông báo<small>Kết quả → mọi bên</small></div>
+</div>
+</div>
+
+<div class="flow-diagram">
+<h4>&#9878; Quy trình Chấm điểm Real-time</h4>
+<div class="flow-steps">
+<div class="flow-step">&#128227;<br>BTC mở trận<small>Gán VĐV + sàn</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--pink)">&#128101;<br>TT chấm điểm<small>Tablet real-time</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--cyan)">&#128225;<br>WebSocket<small>Đồng bộ tức thì</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--orange)">&#128202;<br>Scoreboard<small>Live cho khán giả</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--green)">&#127942;<br>Kết quả<small>Tự động xếp hạng</small></div>
+</div>
+</div>
+
+<div class="flow-diagram">
+<h4>&#127968; Quy trình Thành lập CLB mới</h4>
+<div class="flow-steps">
+<div class="flow-step">&#128221;<br>Nộp hồ sơ<small>CLB gửi LĐ Tỉnh</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--orange)">&#128269;<br>Xét duyệt<small>LĐ Tỉnh review</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--cyan)">&#128260;<br>Bổ sung<small>Nếu thiếu giấy tờ</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--green)">&#9989;<br>Phê duyệt<small>Cấp mã CLB</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--accent)">&#128259;<br>Đồng bộ<small>→ LĐ Quốc gia</small></div>
+</div>
+</div>
+
+<div class="flow-diagram">
+<h4>&#9878; Quy trình Xử lý Kỷ luật</h4>
+<div class="flow-steps">
+<div class="flow-step" style="border-color:var(--red)">&#128680;<br>Báo cáo<small>Vi phạm phát hiện</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step">&#128194;<br>Mở vụ việc<small>Phân loại, gán</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step">&#128269;<br>Điều tra<small>Thu thập chứng cứ</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--orange)">&#9878;<br>Điều trần<small>Phiên xử</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--red)">&#128220;<br>Quyết định<small>Xử phạt/miễn trừ</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--green)">&#128065;<br>Giám sát<small>Thi hành</small></div>
+</div>
+</div>
+</div>
+
+<!-- ██████ TAB 4: TUONG TAC ██████ -->
+<div class="tab-content" id="tab-interactions">
+<h2><span class="icon">&#128279;</span> Sơ đồ Tương tác giữa các Phân hệ</h2>
+
+<div class="interaction-map">
+<h4>&#128260; Luồng dữ liệu chính giữa các Phân hệ</h4>
+<div class="imap-grid">
+<div class="imap-left">&#127970; <strong>LĐ Quốc gia</strong><br><small>Quy chế, Master Data, Phê duyệt</small></div>
+<div class="imap-arrow">&#8596; Đồng bộ tổ chức, báo cáo, phê duyệt</div>
+<div class="imap-right">&#127463; <strong>63 LĐ Tỉnh</strong><br><small>CLB, VĐV, HLV, Giải tỉnh</small></div>
+
+<div class="imap-left">&#127463; <strong>LĐ Tỉnh</strong><br><small>Quản lý CLB trực thuộc</small></div>
+<div class="imap-arrow">&#8596; Thành lập, báo cáo, chuyển nhượng VĐV</div>
+<div class="imap-right">&#127968; <strong>CLB</strong><br><small>Võ sinh, HLV, Tài chính</small></div>
+
+<div class="imap-left">&#127968; <strong>CLB</strong><br><small>Đăng ký đoàn, VĐV tham gia</small></div>
+<div class="imap-arrow">&#10132; Đăng ký đoàn & VĐV</div>
+<div class="imap-right">&#127942; <strong>Giải đấu</strong><br><small>Tiếp nhận, xét duyệt</small></div>
+
+<div class="imap-left">&#127942; <strong>Giải đấu (BTC)</strong><br><small>Phân công trọng tài</small></div>
+<div class="imap-arrow">&#10132; Phân công sàn, lịch trận</div>
+<div class="imap-right">&#128101; <strong>Trọng tài</strong><br><small>Nhận lịch, chấm điểm</small></div>
+
+<div class="imap-left">&#128101; <strong>Trọng tài</strong><br><small>Chấm điểm real-time</small></div>
+<div class="imap-arrow">&#10132; WebSocket live scoring</div>
+<div class="imap-right">&#128064; <strong>Khán giả</strong><br><small>Xem bảng điểm live</small></div>
+
+<div class="imap-left">&#127942; <strong>Giải đấu</strong><br><small>Kết quả, huy chương</small></div>
+<div class="imap-arrow">&#10132; Cập nhật thành tích, BXH</div>
+<div class="imap-right">&#127947; <strong>VĐV Portal</strong><br><small>Xem kết quả, xếp hạng</small></div>
+
+<div class="imap-left">&#127942; <strong>Giải đấu</strong><br><small>Vi phạm trong thi đấu</small></div>
+<div class="imap-arrow">&#10132; Báo cáo vi phạm, cấm thi</div>
+<div class="imap-right">&#9878; <strong>Kỷ luật</strong><br><small>Mở vụ việc, xử lý</small></div>
+
+<div class="imap-left">&#128106; <strong>Phụ huynh</strong><br><small>Đồng ý cho con thi đấu</small></div>
+<div class="imap-arrow">&#8596; Liên kết giám hộ VĐV vị thành niên</div>
+<div class="imap-right">&#127947; <strong>VĐV (< 18 tuổi)</strong><br><small>Yêu cầu consent phụ huynh</small></div>
+
+<div class="imap-left">&#9881; <strong>System Admin</strong><br><small>Quản lý tenant, user, role</small></div>
+<div class="imap-arrow">&#8596; Cấu hình truy cập, phân quyền</div>
+<div class="imap-right">&#128274; <strong>Tất cả Phân hệ</strong><br><small>RBAC, Feature Flags, Audit</small></div>
+</div>
+</div>
+
+<h3>&#128640; Chi tiết Tương tác theo Kịch bản</h3>
+<div class="grid">
+<div class="card"><h3>&#127942; Kịch bản: Tổ chức Giải Quốc gia</h3>
+<ol style="padding-left:20px;color:var(--text2);font-size:.88rem">
+<li><strong>LĐ Quốc gia</strong> tạo giải, cấu hình nội dung, hạng cân</li>
+<li><strong>63 LĐ Tỉnh</strong> nhận thông báo, triển khai đăng ký</li>
+<li><strong>CLB</strong> tạo đoàn, thêm VĐV, gửi đăng ký lên LĐ Tỉnh</li>
+<li><strong>LĐ Tỉnh</strong> xét duyệt, gửi lên <strong>BTC Giải</strong></li>
+<li><strong>BTC</strong> kiểm tra hồ sơ, cân đo, phân công trọng tài</li>
+<li><strong>Trọng tài</strong> chấm điểm real-time → <strong>Khán giả</strong> xem live</li>
+<li>Kết quả → cập nhật <strong>BXH VĐV</strong> + <strong>VĐV Portal</strong></li>
+<li>Vi phạm → chuyển <strong>Phân hệ Kỷ luật</strong></li>
+</ol></div>
+
+<div class="card"><h3>&#127968; Kịch bản: Vận hành CLB hàng ngày</h3>
+<ol style="padding-left:20px;color:var(--text2);font-size:.88rem">
+<li><strong>Chủ nhiệm CLB</strong> quản lý võ sinh, HLV, lớp học</li>
+<li><strong>HLV</strong> điểm danh, theo dõi tiến trình võ sinh</li>
+<li><strong>Võ sinh</strong> → tự động cập nhật <strong>VĐV Portal</strong></li>
+<li><strong>Phụ huynh</strong> theo dõi điểm danh, kết quả con em</li>
+<li>Thi lên đai → gửi <strong>LĐ Tỉnh</strong> phê duyệt → cấp chứng nhận</li>
+<li>CLB đăng ký giải → luồng <strong>Tournament Ops</strong></li>
+<li>Tài chính CLB → thu phí, report lên <strong>LĐ Tỉnh</strong></li>
+</ol></div>
+</div>
+</div>
+
+<!-- ██████ TAB 5: VAI TRO ██████ -->
+<div class="tab-content" id="tab-roles">
+<h2><span class="icon">&#128101;</span> Hệ thống Vai trò & Phân quyền (RBAC)</h2>
+
+<h3>12 Vai trò trong Hệ thống</h3>
+<div class="grid grid-3">
+<div class="card"><h3><span class="badge b-red">admin</span></h3><p><strong>Quản trị viên Hệ thống</strong><br>Toàn quyền mọi tài nguyên. Quản lý platform, user, tenant, cấu hình kỹ thuật.</p></div>
+<div class="card"><h3><span class="badge b-purple">federation_president</span></h3><p><strong>Chủ tịch Liên đoàn</strong><br>Quản lý tổ chức, CLB, thành viên, di sản, giải, tài chính. Phê duyệt cấp cao nhất.</p></div>
+<div class="card"><h3><span class="badge b-purple">federation_secretary</span></h3><p><strong>Tổng Thư ký LĐ</strong><br>Hành chính, văn bản, nhập liệu, giao dịch tài chính, tổ chức giải.</p></div>
+<div class="card"><h3><span class="badge b-green">provincial_admin</span></h3><p><strong>Admin LĐ Tỉnh</strong><br>Quản lý CLB, VĐV, HLV, giải cấp tỉnh. Import/Export dữ liệu.</p></div>
+<div class="card"><h3><span class="badge b-cyan">technical_director</span></h3><p><strong>Giám đốc Kỹ thuật</strong><br>Quản lý bài quyền, hệ thống đai, di sản, kỹ thuật. Tham vấn quy chế.</p></div>
+<div class="card"><h3><span class="badge b-orange">btc</span></h3><p><strong>Ban Tổ Chức Giải</strong><br>Vận hành giải từ A-Z: VĐV, đoàn, đăng ký, lịch, trọng tài, kết quả, tài chính giải.</p></div>
+<div class="card"><h3><span class="badge b-pink">referee_manager</span></h3><p><strong>Tổng Trọng tài</strong><br>Phân công, giám sát, xử lý khiếu nại, quản lý chất lượng trọng tài.</p></div>
+<div class="card"><h3><span class="badge b-pink">referee</span></h3><p><strong>Trọng tài</strong><br>Chấm điểm đối kháng/quyền, cân đo, xem lịch & kết quả trận.</p></div>
+<div class="card"><h3><span class="badge b-green">coach</span></h3><p><strong>Huấn luyện viên</strong><br>Quản lý VĐV, đăng ký thi đấu, theo dõi kết quả, lịch & kỹ thuật.</p></div>
+<div class="card"><h3><span class="badge b-cyan">delegate</span></h3><p><strong>Trưởng đoàn</strong><br>Đăng ký đoàn & VĐV, import/export, khiếu nại, theo dõi kết quả.</p></div>
+<div class="card"><h3><span class="badge b-green">athlete</span></h3><p><strong>Vận động viên</strong><br>Xem xếp hạng, kết quả, lịch thi, huy chương, kỹ thuật. Read-only.</p></div>
+<div class="card"><h3><span class="badge b-orange">medical_staff</span></h3><p><strong>Nhân viên Y tế</strong><br>Xem/cập nhật hồ sơ VĐV, cân đo, cấp phép y tế thi đấu.</p></div>
+</div>
+
+<h3>Ma trận Phân quyền Chi tiết</h3>
+<div style="overflow-x:auto">
+<table>
+<tr><th>Tài nguyên</th><th>admin</th><th>president</th><th>secretary</th><th>prov_admin</th><th>tech_dir</th><th>btc</th><th>ref_mgr</th><th>referee</th><th>coach</th><th>delegate</th><th>athlete</th><th>medical</th></tr>
+<tr><td>organizations</td><td class="perm-y">&#9733;</td><td class="perm-y">VCUDE</td><td class="perm-y">VCUE</td><td class="perm-y">VU</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td></tr>
+<tr><td>clubs</td><td class="perm-y">&#9733;</td><td class="perm-y">VCUDE</td><td class="perm-y">VCUE</td><td class="perm-y">VCU</td><td class="perm-n">&mdash;</td><td class="perm-y">VCU</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td></tr>
+<tr><td>tournaments</td><td class="perm-y">&#9733;</td><td class="perm-y">VCUE</td><td class="perm-y">VCUE</td><td class="perm-y">VCU</td><td class="perm-n">&mdash;</td><td class="perm-y">VCUE</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-y">V</td><td class="perm-n">&mdash;</td><td class="perm-y">V</td><td class="perm-n">&mdash;</td></tr>
+<tr><td>athletes/teams</td><td class="perm-y">&#9733;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-y">VCUIE</td><td class="perm-n">&mdash;</td><td class="perm-y">VCUIE</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-y">VCUIE</td><td class="perm-y">VCUIE</td><td class="perm-n">&mdash;</td><td class="perm-y">VU</td></tr>
+<tr><td>scoring</td><td class="perm-y">&#9733;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-y">V</td><td class="perm-y">VU</td><td class="perm-y">VU</td><td class="perm-y">VU</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td></tr>
+<tr><td>results</td><td class="perm-y">&#9733;</td><td class="perm-y">VE</td><td class="perm-y">VE</td><td class="perm-y">VE</td><td class="perm-y">V</td><td class="perm-y">VCUE</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-y">V</td></tr>
+<tr><td>heritage</td><td class="perm-y">&#9733;</td><td class="perm-y">VCUDE</td><td class="perm-y">VCU</td><td class="perm-y">V</td><td class="perm-y">VCU</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td></tr>
+<tr><td>finance</td><td class="perm-y">&#9733;</td><td class="perm-y">VUE</td><td class="perm-y">VCUE</td><td class="perm-y">VCU</td><td class="perm-n">&mdash;</td><td class="perm-y">VCUE</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td></tr>
+<tr><td>rankings</td><td class="perm-y">&#9733;</td><td class="perm-y">VE</td><td class="perm-y">VE</td><td class="perm-y">V</td><td class="perm-y">VU</td><td class="perm-y">VE</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-y">V</td><td class="perm-n">&mdash;</td></tr>
+<tr><td>weigh-ins</td><td class="perm-y">&#9733;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-y">VCUE</td><td class="perm-y">V</td><td class="perm-y">VU</td><td class="perm-y">V</td><td class="perm-n">&mdash;</td><td class="perm-n">&mdash;</td><td class="perm-y">VU</td></tr>
+</table>
+</div>
+<p style="color:var(--text3);font-size:.8rem;margin-top:8px">&#9733;=Toàn quyền &bull; V=View &bull; C=Create &bull; U=Update &bull; D=Delete &bull; I=Import &bull; E=Export</p>
+</div>
+
+<!-- ██████ TAB 6: TO CHUC ██████ -->
+<div class="tab-content" id="tab-org">
+<h2><span class="icon">&#127970;</span> Cấu trúc Tổ chức & Người dùng</h2>
+
+<h3>&#127970; Hệ thống Phân cấp Tổ chức (Multi-Tenant)</h3>
+<div class="flow-diagram">
+<h4>Sơ đồ Tổ chức VCT Platform</h4>
+<div style="text-align:center;font-size:.9rem;line-height:2.2">
+<div style="display:inline-block;background:var(--accent);color:#fff;padding:12px 30px;border-radius:12px;font-weight:700;font-size:1rem">&#127963; Liên đoàn Võ Cổ Truyền Việt Nam</div>
+<div style="color:var(--accent2);font-size:1.4rem">&#9660;</div>
+<div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap">
+<div style="background:var(--card2);border:2px solid var(--green);border-radius:12px;padding:14px 20px;min-width:200px">
+<strong style="color:var(--green)">&#127463; 63 Liên đoàn Tỉnh/Thành</strong>
+<div style="color:var(--text3);font-size:.8rem;margin-top:6px">
+&#9660; Hội/Chi hội Quận/Huyện<br>
+&#9660; CLB (Câu lạc bộ)<br>
+&nbsp;&nbsp;&#9500; Võ sinh / VĐV<br>
+&nbsp;&nbsp;&#9500; HLV (Huấn luyện viên)<br>
+&nbsp;&nbsp;&#9492; Lớp học<br>
+&#9660; Ban chấp hành tỉnh<br>
+&#9660; Trọng tài cấp tỉnh
+</div></div>
+<div style="background:var(--card2);border:2px solid var(--purple);border-radius:12px;padding:14px 20px;min-width:200px">
+<strong style="color:var(--purple)">&#128081; Ban chuyên môn QG</strong>
+<div style="color:var(--text3);font-size:.8rem;margin-top:6px">
+&#9500; Ban Kỹ thuật<br>
+&#9500; Ban Trọng tài<br>
+&#9500; Ban Kỷ luật<br>
+&#9500; Ban Tài chính<br>
+&#9492; Ban Đối ngoại
+</div></div>
+<div style="background:var(--card2);border:2px solid var(--cyan);border-radius:12px;padding:14px 20px;min-width:200px">
+<strong style="color:var(--cyan)">&#127758; Đối tác Quốc tế</strong>
+<div style="color:var(--text3);font-size:.8rem;margin-top:6px">
+&#9500; Liên đoàn quốc tế<br>
+&#9500; Tổ chức đối tác<br>
+&#9492; Sự kiện quốc tế
+</div></div>
+</div>
+</div>
+</div>
+
+<h3>&#128101; Đối tượng Người dùng</h3>
+<table>
+<tr><th>Đối tượng</th><th>Mô tả</th><th>Workspace chính</th><th>Số lượng ước tính</th></tr>
+<tr><td>&#9881; Admin Platform</td><td>Vận hành kỹ thuật hệ thống</td><td><span class="badge b-red">system_admin</span></td><td>2-5 người</td></tr>
+<tr><td>&#128081; Chủ tịch / Phó CT LĐ</td><td>Lãnh đạo, phê duyệt cấp cao</td><td><span class="badge b-purple">federation_admin</span></td><td>5-10 người</td></tr>
+<tr><td>&#128221; Tổng Thư ký</td><td>Hành chính, văn bản, quản lý thành viên</td><td><span class="badge b-purple">federation_admin</span></td><td>3-5 người</td></tr>
+<tr><td>&#127463; Admin LĐ Tỉnh</td><td>Quản lý CLB, VĐV, giải cấp tỉnh</td><td><span class="badge b-green">provincial</span></td><td>63-200 người</td></tr>
+<tr><td>&#127968; Chủ nhiệm CLB</td><td>Quản lý CLB, võ sinh, tài chính</td><td><span class="badge b-cyan">club_management</span></td><td>1,000+ người</td></tr>
+<tr><td>&#128101; HLV</td><td>Dạy võ, quản lý học trò</td><td><span class="badge b-cyan">club_management</span></td><td>3,000+ người</td></tr>
+<tr><td>&#127942; BTC Giải</td><td>Vận hành giải đấu</td><td><span class="badge b-orange">tournament_ops</span></td><td>50-100 / giải</td></tr>
+<tr><td>&#128101; Trọng tài</td><td>Chấm điểm thi đấu</td><td><span class="badge b-pink">referee_console</span></td><td>500+ người</td></tr>
+<tr><td>&#127947; VĐV</td><td>Vận động viên thi đấu</td><td><span class="badge b-green">athlete_portal</span></td><td>50,000+ người</td></tr>
+<tr><td>&#128106; Phụ huynh</td><td>Giám hộ VĐV vị thành niên</td><td><span class="badge b-green">athlete_portal</span></td><td>30,000+ người</td></tr>
+<tr><td>&#128064; Khán giả</td><td>Theo dõi giải, kết quả</td><td><span class="badge b-cyan">public_spectator</span></td><td>Không giới hạn</td></tr>
+</table>
+</div>
+
+<!-- ██████ TAB 7: CONG NGHE ██████ -->
+<div class="tab-content" id="tab-tech">
+<h2><span class="icon">&#128640;</span> Kiến trúc Công nghệ & Enterprise V7</h2>
+
+<h3>&#128187; Stack Công nghệ</h3>
+<div class="grid grid-3">
+<div class="card"><div class="card-icon">&#9881;</div><h3>Backend</h3><p><strong>Go (Golang)</strong> — Hiệu năng cao, concurrent, compile-time safety. RESTful API, WebSocket, Event Bus.</p></div>
+<div class="card"><div class="card-icon">&#128421;</div><h3>Frontend Web</h3><p><strong>Next.js + React</strong> — SSR, TypeScript, i18n (vi/en), responsive design. 119 trang UI.</p></div>
+<div class="card"><div class="card-icon">&#128241;</div><h3>Mobile</h3><p><strong>Expo + React Native</strong> — iOS & Android từ codebase chung. PWA support.</p></div>
+<div class="card"><div class="card-icon">&#128451;</div><h3>Database</h3><p><strong>PostgreSQL</strong> — ACID, RLS, migrations tự động. Neon serverless hoặc selfhost.</p></div>
+<div class="card"><div class="card-icon">&#9889;</div><h3>Realtime</h3><p><strong>WebSocket Hub</strong> — Live scoring, entity change notifications, channel-based broadcast.</p></div>
+<div class="card"><div class="card-icon">&#128274;</div><h3>Auth & Security</h3><p><strong>JWT (Access+Refresh)</strong> — RBAC 12 vai trò, rate limiting, audit trail, GDPR compliance.</p></div>
+</div>
+
+<h3>&#128142; Tính năng Enterprise V7</h3>
+<div class="grid">
+<div class="card"><h3>&#128274; Bảo vệ Dữ liệu (GDPR)</h3>
+<ul><li>Crypto-Shredding — mã hóa dữ liệu cá nhân VĐV, xóa an toàn</li>
+<li>Erasure Tombstone — chứng chỉ xóa dữ liệu</li>
+<li>Offline Sync — đồng bộ offline, conflict resolution tự động</li>
+<li>Config Changelog — version control cấu hình, rollback</li></ul></div>
+
+<div class="card"><h3>&#128272; Quản trị & An ninh</h3>
+<ul><li>Zanzibar-style ReBAC — authorization tuple nâng cao</li>
+<li>Digital Signatures — ký số kết quả, chứng nhận (PKI)</li>
+<li>Event Schema Registry — schema versioning, compatibility</li>
+<li>Multi-channel Notifications — push/email/SMS, quiet hours</li></ul></div>
+
+<div class="card"><h3>&#128200; Vận hành Giải đấu</h3>
+<ul><li>Constraint-based Scheduling — tối ưu sàn/TT/y tế</li>
+<li>Integrity Monitoring — phát hiện gian lận điểm số</li>
+<li>QR Document Verification — xác minh văn bản bằng QR</li>
+<li>Athlete Daily Load — an toàn sức khỏe thi đấu</li></ul></div>
+
+<div class="card"><h3>&#127758; Khả năng Mở rộng</h3>
+<ul><li>Multi-Sport Profile — cấu hình đa môn võ thuật</li>
+<li>Federation Merge — sáp nhập liên đoàn, dedup</li>
+<li>Team Events — thi đấu đồng đội, bout system</li>
+<li>Auth/Storage Abstraction — đa provider (Auth0, S3...)</li></ul></div>
+</div>
+
+<h3>&#128640; API Architecture</h3>
+<div class="flow-diagram">
+<h4>Kiến trúc Lớp (Layer Architecture)</h4>
+<div class="flow-steps">
+<div class="flow-step" style="border-color:var(--cyan)">&#128241;<br>Client<small>Web / Mobile / PWA</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--accent)">&#128274;<br>Auth + CORS<small>JWT, Rate Limit</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--orange)">&#128462;<br>HTTP API<small>38 Handlers</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--green)">&#9881;<br>Domain Services<small>23 Modules</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--purple)">&#128451;<br>Store/Repo<small>PG + Cache</small></div>
+<div class="flow-arrow">&#10132;</div>
+<div class="flow-step" style="border-color:var(--pink)">&#9889;<br>Event Bus<small>→ WebSocket</small></div>
+</div>
+</div>
+</div>
+
+<div class="footer">
+<p style="font-size:1.1rem;color:var(--accent2);font-weight:700;margin-bottom:8px">&#9876;&#65039; VCT Platform</p>
+<p><strong>Nền tảng Số hóa Toàn diện cho Võ Cổ Truyền Việt Nam</strong></p>
+<p style="margin-top:8px">Backend: Go &bull; Frontend: Next.js &bull; Mobile: Expo &bull; Database: PostgreSQL &bull; Realtime: WebSocket</p>
+<p style="margin-top:4px">&copy; 2026 VCT Platform. Tài liệu tự động từ mã nguồn &bull; Version 7.0</p>
+</div>
+
+</div><!-- end container -->
+
+<script>
+// ══ THEME ══
+function toggleTheme(){
+const h=document.documentElement;
+const d=h.getAttribute('data-theme')==='dark'?'light':'dark';
+h.setAttribute('data-theme',d);
+document.getElementById('themeBtn').innerHTML=d==='dark'?'\u{1F319}':'\u{2600}\u{FE0F}';
+localStorage.setItem('vct-theme',d);
+}
+(function(){const t=localStorage.getItem('vct-theme');if(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeBtn').innerHTML=t==='dark'?'\u{1F319}':'\u{2600}\u{FE0F}';}})();
+
+// ══ TABS ══
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+btn.addEventListener('click',function(){
+document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
+btn.classList.add('active');
+var tabId='tab-'+btn.getAttribute('data-tab');
+document.getElementById(tabId).classList.add('active');
+window.scrollTo({top:document.querySelector('.tab-bar').offsetTop-20,behavior:'smooth'});
+});
+});
+
+// ══ STAT COUNTER ══
+function animateCounters(){
+document.querySelectorAll('.stat .n').forEach(function(el){
+var target=el.innerText;if(target==='∞')return;
+var n=parseInt(target);if(isNaN(n))return;
+var d=Math.max(1,Math.floor(n/40));var c=0;
+var timer=setInterval(function(){c+=d;if(c>=n){c=n;clearInterval(timer);}el.innerText=c;},25);
+});
+}
+var obs=new IntersectionObserver(function(entries){
+entries.forEach(function(e){if(e.isIntersecting){animateCounters();obs.disconnect();}});
+},{threshold:0.5});
+var statsEl=document.querySelector('.stats');
+if(statsEl)obs.observe(statsEl);
+</script>
+</body>
+</html>
