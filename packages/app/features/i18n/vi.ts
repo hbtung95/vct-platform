@@ -382,6 +382,11 @@ export const vi: Record<string, string> = {
     'ws.fed.regulations': 'Quy chế Chuyên môn',
     'ws.fed.regulationsOverview': 'Tổng quan Quy chế',
     'ws.fed.masterData': 'Danh mục Chuẩn',
+    'ws.fed.admin': 'Quản trị',
+    'ws.fed.documents': 'Văn bản & Công văn',
+    'ws.fed.certifications': 'Chứng nhận & Đẳng cấp',
+    'ws.fed.notifications': 'Thông báo',
+    'ws.fed.workflow': 'Quy trình phê duyệt',
 
     // Discipline
     'ws.disc.overview': 'Tổng quan',
@@ -509,10 +514,16 @@ export const vi: Record<string, string> = {
 
     // System Admin
     'ws.sys.overview': 'Tổng quan',
+    'ws.sys.analytics': 'Phân tích hệ thống',
+    'ws.sys.platformAnalytics': 'Phân tích nền tảng',
     'ws.sys.dashboard': 'Dashboard hệ thống',
+    'ws.sys.tenants': 'Quản lý Tenant',
+    'ws.sys.tenantMgmt': 'Quản trị Tenant',
     'ws.sys.access': 'Quản lý truy cập',
     'ws.sys.users': 'Người dùng',
     'ws.sys.roles': 'Vai trò & Phân quyền',
+    'ws.sys.platformConfig': 'Cấu hình nền tảng',
+    'ws.sys.security': 'Bảo mật hệ thống',
     'ws.sys.config': 'Cấu hình',
     'ws.sys.refdata': 'Dữ liệu tham chiếu',
     'ws.sys.flags': 'Feature Flags',

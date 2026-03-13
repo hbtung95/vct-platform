@@ -382,6 +382,11 @@ export const en: Record<string, string> = {
     'ws.fed.regulations': 'Regulations',
     'ws.fed.regulationsOverview': 'Regulations Overview',
     'ws.fed.masterData': 'Master Data',
+    'ws.fed.admin': 'Administration',
+    'ws.fed.documents': 'Documents & Notices',
+    'ws.fed.certifications': 'Certifications & Ranks',
+    'ws.fed.notifications': 'Notifications',
+    'ws.fed.workflow': 'Workflow Configuration',
 
     // Discipline
     'ws.disc.overview': 'Overview',
@@ -509,10 +514,16 @@ export const en: Record<string, string> = {
 
     // System Admin
     'ws.sys.overview': 'Overview',
+    'ws.sys.analytics': 'System Analytics',
+    'ws.sys.platformAnalytics': 'Platform Analytics',
     'ws.sys.dashboard': 'System Dashboard',
+    'ws.sys.tenants': 'Tenant Management',
+    'ws.sys.tenantMgmt': 'Tenant Administration',
     'ws.sys.access': 'Access Management',
     'ws.sys.users': 'Users',
     'ws.sys.roles': 'Roles & Permissions',
+    'ws.sys.platformConfig': 'Platform Configuration',
+    'ws.sys.security': 'System Security',
     'ws.sys.config': 'Configuration',
     'ws.sys.refdata': 'Reference Data',
     'ws.sys.flags': 'Feature Flags',
