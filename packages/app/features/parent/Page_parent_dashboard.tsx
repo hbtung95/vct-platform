@@ -559,7 +559,7 @@ function ConsentsTab({ linkedChildren, onRefresh, apiFetch }: { linkedChildren: 
                                     <div className="flex-1">
                                         <div className="text-white font-semibold text-[0.95rem]">{c.title}</div>
                                         <VCT_Text variant="small" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                                            {typeInfo?.label} · {c.athlete_name} · Ký ngày {c.signed_at?.split('T')[0]}
+                                            {typeInfo?.label} · {c.athlete_name} · Ký ngày {c.signed_at?.split('T')[0]!}
                                         </VCT_Text>
                                     </div>
                                     <VCT_Badge

@@ -162,7 +162,7 @@ export const Page_curriculum = () => {
         const saveCiv = { ...dataToSave, forms: formList }
 
         if (editingCiv) {
-            setCivs(prev => prev.map(t => t.id === editingCiv.id ? { ...t, ...saveCiv, last_updated: saveCiv.last_updated || new Date().toISOString().split('T')[0] } as Curriculum : t))
+            setCivs(prev => prev.map(t => t.id === editingCiv.id ? { ...t, ...saveCiv, last_updated: saveCiv.last_updated || new Date().toISOString().split('T')[0]! } as Curriculum : t))
             showToast(`Đã cập nhật "${form.title}"`)
         } else {
             const newCiv: Curriculum = {
@@ -171,7 +171,7 @@ export const Page_curriculum = () => {
                 belt_level: saveCiv.belt_level || 'trang',
                 estimated_months: saveCiv.estimated_months || 3,
                 forms: formList, techniques_count: saveCiv.techniques_count || 0,
-                status: 'draft', last_updated: new Date().toISOString().split('T')[0]
+                status: 'draft', last_updated: new Date().toISOString().split('T')[0]!
             }
             setCivs(prev => [newCiv, ...prev])
             showToast(`Đã thêm giáo trình "${form.title}"`)

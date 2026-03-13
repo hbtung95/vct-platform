@@ -125,10 +125,10 @@ export const Page_noi_dung = () => {
         if (!requireAction(editMode ? 'update' : 'create', editMode ? 'chỉnh sửa bài quyền' : 'thêm bài quyền')) return;
         if (!formQ.ten || !formQ.lua_tuoi) { showToast('Vui lòng nhập tên và chọn lứa tuổi', 'error'); return; }
         if (editMode) {
-            setDataQuyen(prev => prev.map(q => q.id === formQ.id ? { ...q, ...formQ, updated: new Date().toISOString().split('T')[0] } : q));
+            setDataQuyen(prev => prev.map(q => q.id === formQ.id ? { ...q, ...formQ, updated: new Date().toISOString().split('T')[0]! } : q));
             showToast('Đã cập nhật bài quyền');
         } else {
-            setDataQuyen([{ ...formQ, id: genId('Q'), updated: new Date().toISOString().split('T')[0] } as NoiDungQuyen, ...dataQuyen]);
+            setDataQuyen([{ ...formQ, id: genId('Q'), updated: new Date().toISOString().split('T')[0]! } as NoiDungQuyen, ...dataQuyen]);
             showToast('Đã thêm bài quyền mới');
         }
         setShowModalQ(false);

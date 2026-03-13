@@ -257,7 +257,7 @@ export const Page_teams = () => {
                 ...form, id: genId('D'), so_vdv: 0, nam: 0, nu: 0, hlv: 0, nd_q: 0, nd_dk: 0,
                 trang_thai: 'nhap', le_phi: { tong: TOURNAMENT_CONFIG.le_phi.doan, da_dong: 0 },
                 docs: { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false },
-                ngay_dk: new Date().toISOString().split('T')[0], audit: [{ time: new Date().toLocaleString('vi-VN'), action: 'Tạo mới', by: auditActor }],
+                ngay_dk: new Date().toISOString().split('T')[0]!, audit: [{ time: new Date().toLocaleString('vi-VN'), action: 'Tạo mới', by: auditActor }],
                 thanh_tich: '',
             };
             setTeams(prev => [newTeam, ...prev]);

@@ -151,7 +151,7 @@ export const Page_clubs = () => {
     // ── CRUD Operations ──
     const openAddModal = useCallback(() => {
         setEditingClub(null)
-        setForm({ ...BLANK_FORM, founded_date: new Date().toISOString().split('T')[0], org_id: MOCK_ORGS[0]?.id || '' })
+        setForm({ ...BLANK_FORM, founded_date: new Date().toISOString().split('T')[0]!, org_id: MOCK_ORGS[0]?.id || '' })
         setShowModal(true)
     }, [])
 
