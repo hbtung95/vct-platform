@@ -50,7 +50,7 @@ func (s *Server) handleFederationProvinceRoutes(w http.ResponseWriter, r *http.R
 
 	switch {
 	case r.Method == "GET" && id == "":
-		if !requireRole(w, p, federationReadRoles...) {
+		if !requireFederationRead(w, p) {
 			return
 		}
 		params := parsePagination(r)
@@ -82,7 +82,7 @@ func (s *Server) handleFederationProvinceRoutes(w http.ResponseWriter, r *http.R
 		success(w, http.StatusOK, result)
 
 	case r.Method == "POST" && id == "":
-		if !requireRole(w, p, federationWriteRoles...) {
+		if !requireFederationWrite(w, p) {
 			return
 		}
 		var prov federation.Province
@@ -98,7 +98,7 @@ func (s *Server) handleFederationProvinceRoutes(w http.ResponseWriter, r *http.R
 		success(w, http.StatusCreated, created)
 
 	case r.Method == "GET" && id != "":
-		if !requireRole(w, p, federationReadRoles...) {
+		if !requireFederationRead(w, p) {
 			return
 		}
 		prov, err := s.federationSvc.GetProvince(r.Context(), id)
@@ -119,7 +119,7 @@ func (s *Server) handleFederationUnitRoutes(w http.ResponseWriter, r *http.Reque
 
 	switch {
 	case r.Method == "GET" && id == "":
-		if !requireRole(w, p, federationReadRoles...) {
+		if !requireFederationRead(w, p) {
 			return
 		}
 		units, err := s.federationSvc.ListUnits(r.Context())
@@ -132,7 +132,7 @@ func (s *Server) handleFederationUnitRoutes(w http.ResponseWriter, r *http.Reque
 		success(w, http.StatusOK, result)
 
 	case r.Method == "POST" && id == "":
-		if !requireRole(w, p, federationWriteRoles...) {
+		if !requireFederationWrite(w, p) {
 			return
 		}
 		var unit federation.FederationUnit
@@ -148,6 +148,9 @@ func (s *Server) handleFederationUnitRoutes(w http.ResponseWriter, r *http.Reque
 		success(w, http.StatusCreated, created)
 
 	case r.Method == "GET" && id != "":
+		if !requireFederationRead(w, p) {
+			return
+		}
 		unit, err := s.federationSvc.GetUnit(r.Context(), id)
 		if err != nil {
 			notFoundError(w, "unit not found")
@@ -161,7 +164,7 @@ func (s *Server) handleFederationUnitRoutes(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *Server) handleOrgChart(w http.ResponseWriter, r *http.Request, p auth.Principal) {
-	if !requireRole(w, p, federationReadRoles...) {
+	if !requireFederationRead(w, p) {
 		return
 	}
 	chart, err := s.federationSvc.BuildOrgChart(r.Context())
@@ -173,7 +176,7 @@ func (s *Server) handleOrgChart(w http.ResponseWriter, r *http.Request, p auth.P
 }
 
 func (s *Server) handleFederationStats(w http.ResponseWriter, r *http.Request, p auth.Principal) {
-	if !requireRole(w, p, federationReadRoles...) {
+	if !requireFederationRead(w, p) {
 		return
 	}
 	stats, err := s.federationSvc.GetNationalStatistics(r.Context())
@@ -190,7 +193,7 @@ func (s *Server) handlePersonnelRoutes(w http.ResponseWriter, r *http.Request, p
 
 	switch {
 	case r.Method == "GET":
-		if !requireRole(w, p, federationReadRoles...) {
+		if !requireFederationRead(w, p) {
 			return
 		}
 		queryUnitID := r.URL.Query().Get("unit_id")
@@ -207,7 +210,7 @@ func (s *Server) handlePersonnelRoutes(w http.ResponseWriter, r *http.Request, p
 		success(w, http.StatusOK, result)
 
 	case r.Method == "POST":
-		if !requireRole(w, p, federationWriteRoles...) {
+		if !requireFederationWrite(w, p) {
 			return
 		}
 		var assign federation.PersonnelAssignment
@@ -244,6 +247,9 @@ func (s *Server) handleDocumentCRUD(w http.ResponseWriter, r *http.Request, p au
 
 	switch {
 	case r.Method == "GET" && id == "":
+		if !requireFederationRead(w, p) {
+			return
+		}
 		docs, err := s.documentSvc.ListDocuments(r.Context())
 		if err != nil {
 			internalError(w, err)
@@ -252,7 +258,7 @@ func (s *Server) handleDocumentCRUD(w http.ResponseWriter, r *http.Request, p au
 		success(w, http.StatusOK, map[string]any{"documents": docs, "total": len(docs)})
 
 	case r.Method == "POST" && id == "":
-		if !requireRole(w, p, federationWriteRoles...) {
+		if !requireFederationWrite(w, p) {
 			return
 		}
 		var doc document.OfficialDocument
@@ -269,6 +275,9 @@ func (s *Server) handleDocumentCRUD(w http.ResponseWriter, r *http.Request, p au
 		success(w, http.StatusCreated, created)
 
 	case r.Method == "GET" && id != "" && action == "":
+		if !requireFederationRead(w, p) {
+			return
+		}
 		doc, err := s.documentSvc.GetDocument(r.Context(), id)
 		if err != nil {
 			notFoundError(w, "document not found")
@@ -277,6 +286,9 @@ func (s *Server) handleDocumentCRUD(w http.ResponseWriter, r *http.Request, p au
 		success(w, http.StatusOK, doc)
 
 	case r.Method == "POST" && action == "submit":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		if err := s.documentSvc.SubmitForApproval(r.Context(), id); err != nil {
 			badRequest(w, err.Error())
 			return
@@ -284,7 +296,7 @@ func (s *Server) handleDocumentCRUD(w http.ResponseWriter, r *http.Request, p au
 		success(w, http.StatusOK, map[string]string{"status": "pending_approval"})
 
 	case r.Method == "POST" && action == "approve":
-		if !requireRole(w, p, federationWriteRoles...) {
+		if !requireFederationWrite(w, p) {
 			return
 		}
 		if err := s.documentSvc.Approve(r.Context(), id, p.User.ID, p.User.DisplayName); err != nil {
@@ -294,6 +306,9 @@ func (s *Server) handleDocumentCRUD(w http.ResponseWriter, r *http.Request, p au
 		success(w, http.StatusOK, map[string]string{"status": "approved"})
 
 	case r.Method == "POST" && action == "publish":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		if err := s.documentSvc.Publish(r.Context(), id); err != nil {
 			badRequest(w, err.Error())
 			return
@@ -301,6 +316,9 @@ func (s *Server) handleDocumentCRUD(w http.ResponseWriter, r *http.Request, p au
 		success(w, http.StatusOK, map[string]string{"status": "published"})
 
 	case r.Method == "POST" && action == "revoke":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		var body struct {
 			Reason string `json:"reason"`
 		}
@@ -334,6 +352,9 @@ func (s *Server) handleDisciplineCRUD(w http.ResponseWriter, r *http.Request, p 
 
 	switch {
 	case r.Method == "GET" && id == "":
+		if !requireFederationRead(w, p) {
+			return
+		}
 		status := r.URL.Query().Get("status")
 		var cases []discipline.DisciplineCase
 		var err error
@@ -349,7 +370,7 @@ func (s *Server) handleDisciplineCRUD(w http.ResponseWriter, r *http.Request, p 
 		success(w, http.StatusOK, map[string]any{"cases": cases, "total": len(cases)})
 
 	case r.Method == "POST" && id == "":
-		if !requireRole(w, p, federationWriteRoles...) {
+		if !requireFederationWrite(w, p) {
 			return
 		}
 		var dc discipline.DisciplineCase
@@ -366,6 +387,9 @@ func (s *Server) handleDisciplineCRUD(w http.ResponseWriter, r *http.Request, p 
 		success(w, http.StatusCreated, created)
 
 	case r.Method == "GET" && id != "" && action == "":
+		if !requireFederationRead(w, p) {
+			return
+		}
 		dc, err := s.disciplineSvc.GetCase(r.Context(), id)
 		if err != nil {
 			notFoundError(w, "case not found")
@@ -374,6 +398,9 @@ func (s *Server) handleDisciplineCRUD(w http.ResponseWriter, r *http.Request, p 
 		success(w, http.StatusOK, dc)
 
 	case r.Method == "POST" && action == "investigate":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		var body struct {
 			InvestigatorID string `json:"investigator_id"`
 		}
@@ -385,6 +412,9 @@ func (s *Server) handleDisciplineCRUD(w http.ResponseWriter, r *http.Request, p 
 		success(w, http.StatusOK, map[string]string{"status": "investigating"})
 
 	case r.Method == "POST" && action == "hearing":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		var h discipline.Hearing
 		if err := json.NewDecoder(r.Body).Decode(&h); err != nil {
 			badRequest(w, "invalid JSON: "+err.Error())
@@ -399,6 +429,9 @@ func (s *Server) handleDisciplineCRUD(w http.ResponseWriter, r *http.Request, p 
 		success(w, http.StatusCreated, created)
 
 	case r.Method == "POST" && action == "dismiss":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		if err := s.disciplineSvc.DismissCase(r.Context(), id, p.User.ID); err != nil {
 			badRequest(w, err.Error())
 			return
@@ -429,6 +462,9 @@ func (s *Server) handleCertCRUD(w http.ResponseWriter, r *http.Request, p auth.P
 
 	switch {
 	case r.Method == "GET" && id == "":
+		if !requireFederationRead(w, p) {
+			return
+		}
 		certs, err := s.certificationSvc.ListByHolder(r.Context(), "", "")
 		if err != nil {
 			// Fallback: try to list via repo if ListByHolder returns error for empty args
@@ -438,7 +474,7 @@ func (s *Server) handleCertCRUD(w http.ResponseWriter, r *http.Request, p auth.P
 		success(w, http.StatusOK, map[string]any{"certifications": certs, "total": len(certs)})
 
 	case r.Method == "POST" && id == "":
-		if !requireRole(w, p, federationWriteRoles...) {
+		if !requireFederationWrite(w, p) {
 			return
 		}
 		var cert certification.Certificate
@@ -455,6 +491,9 @@ func (s *Server) handleCertCRUD(w http.ResponseWriter, r *http.Request, p auth.P
 		success(w, http.StatusCreated, issued)
 
 	case r.Method == "GET" && id != "" && action == "":
+		if !requireFederationRead(w, p) {
+			return
+		}
 		cert, err := s.certificationSvc.GetCertificate(r.Context(), id)
 		if err != nil {
 			notFoundError(w, "certification not found")
@@ -463,6 +502,9 @@ func (s *Server) handleCertCRUD(w http.ResponseWriter, r *http.Request, p auth.P
 		success(w, http.StatusOK, cert)
 
 	case r.Method == "POST" && action == "renew":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		var body struct {
 			ValidUntil string `json:"valid_until"`
 		}
@@ -475,6 +517,9 @@ func (s *Server) handleCertCRUD(w http.ResponseWriter, r *http.Request, p auth.P
 		success(w, http.StatusOK, renewed)
 
 	case r.Method == "POST" && action == "revoke":
+		if !requireFederationWrite(w, p) {
+			return
+		}
 		var body struct {
 			Reason string `json:"reason"`
 		}

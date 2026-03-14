@@ -97,7 +97,7 @@ export function generateWorkspaceCards(
         cards.push({
             id: key,
             type: wsType,
-            scope: { type: r.scope_type as WorkspaceScope['type'], id: r.scope_id, name: r.scope_name },
+            scope: { type: normalizeScopeType(r.scope_type, wsType), id: r.scope_id, name: r.scope_name },
             label: r.scope_name || meta.label,
             description: meta.description,
             icon: meta.icon,
@@ -153,6 +153,13 @@ function mapRoleToWorkspaceType(role: string): WorkspaceType | null {
         'international_liaison': 'federation_admin',
         // Federation — Provincial (scoped)
         'provincial_admin': 'federation_provincial',
+        'provincial_president': 'federation_provincial',
+        'provincial_vice_president': 'federation_provincial',
+        'provincial_secretary': 'federation_provincial',
+        'provincial_technical_head': 'federation_provincial',
+        'provincial_referee_head': 'federation_provincial',
+        'provincial_committee_member': 'federation_provincial',
+        'provincial_accountant': 'federation_provincial',
         // Federation — Discipline & Inspection
         'discipline_board': 'federation_discipline',
         'inspector': 'federation_discipline',
@@ -184,8 +191,35 @@ function mapRoleToWorkspaceType(role: string): WorkspaceType | null {
         // Athlete
         'ATHLETE': 'athlete_portal',
         'athlete': 'athlete_portal',
+        // Parent
+        'parent': 'parent_portal',
         // Delegate
         'delegate': 'tournament_ops',
     }
     return map[role] || null
+}
+
+function normalizeScopeType(
+    scopeType: string,
+    workspaceType: WorkspaceType
+): WorkspaceScope['type'] {
+    switch (scopeType.toUpperCase()) {
+        case 'SYSTEM':
+            return 'system'
+        case 'FEDERATION':
+            return workspaceType === 'federation_provincial' ? 'province' : 'federation'
+        case 'PROVINCE':
+            return 'province'
+        case 'TOURNAMENT':
+            return 'tournament'
+        case 'CLUB':
+            return 'club'
+        case 'SELF':
+        case 'USER':
+            return 'user'
+        case 'PUBLIC':
+            return 'public'
+        default:
+            return workspaceType === 'public_spectator' ? 'public' : 'federation'
+    }
 }

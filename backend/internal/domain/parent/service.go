@@ -417,22 +417,55 @@ func (s *InMemResultStore) ListByAthlete(_ context.Context, athleteID string) ([
 }
 
 // ═══════════════════════════════════════════════════════════════
+// STORE INTERFACES (replaceable with PostgreSQL adapters)
+// ═══════════════════════════════════════════════════════════════
+
+// ParentLinkStore persists parent-athlete links.
+type ParentLinkStore interface {
+	ListByParent(ctx context.Context, parentID string) ([]ParentLink, error)
+	GetByID(ctx context.Context, id string) (*ParentLink, error)
+	Create(ctx context.Context, l ParentLink) (*ParentLink, error)
+	Update(ctx context.Context, id string, patch LinkUpdate) error
+	Delete(ctx context.Context, id string) error
+	IsChildOfParent(ctx context.Context, parentID, athleteID string) bool
+}
+
+// ConsentStore persists parent consent records.
+type ConsentStore interface {
+	ListByParent(ctx context.Context, parentID string) ([]ConsentRecord, error)
+	ListByAthlete(ctx context.Context, athleteID string) ([]ConsentRecord, error)
+	GetByID(ctx context.Context, id string) (*ConsentRecord, error)
+	Create(ctx context.Context, c ConsentRecord) (*ConsentRecord, error)
+	Update(ctx context.Context, id string, patch ConsentUpdate) error
+}
+
+// AttendanceStore reads child attendance records.
+type AttendanceStore interface {
+	ListByAthlete(ctx context.Context, athleteID string) ([]AttendanceSummary, error)
+}
+
+// ResultStore reads child competition results.
+type ResultStore interface {
+	ListByAthlete(ctx context.Context, athleteID string) ([]ChildResult, error)
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════
 
 type Service struct {
-	linkStore       *InMemParentLinkStore
-	consentStore    *InMemConsentStore
-	attendanceStore *InMemAttendanceStore
-	resultStore     *InMemResultStore
+	linkStore       ParentLinkStore
+	consentStore    ConsentStore
+	attendanceStore AttendanceStore
+	resultStore     ResultStore
 	genID           func() string
 }
 
 func NewService(
-	linkStore *InMemParentLinkStore,
-	consentStore *InMemConsentStore,
-	attendanceStore *InMemAttendanceStore,
-	resultStore *InMemResultStore,
+	linkStore ParentLinkStore,
+	consentStore ConsentStore,
+	attendanceStore AttendanceStore,
+	resultStore ResultStore,
 	genID func() string,
 ) *Service {
 	return &Service{

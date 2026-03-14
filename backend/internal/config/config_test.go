@@ -19,7 +19,7 @@ func TestValidate_ProductionRejectsDefaultSecret(t *testing.T) {
 func TestValidate_ProductionRejectsDemoUsers(t *testing.T) {
 	cfg := Config{
 		Environment:    "production",
-		JWTSecret:      "a-real-secret-for-production",
+		JWTSecret:      "a-real-secret-for-production-2026!!",
 		AllowDemoUsers: true,
 	}
 	err := cfg.Validate()
@@ -42,7 +42,7 @@ func TestValidate_StagingRejectsDefaultSecret(t *testing.T) {
 func TestValidate_ProductionAcceptsRealSecret(t *testing.T) {
 	cfg := Config{
 		Environment:    "production",
-		JWTSecret:      "my-super-secure-jwt-secret-2026",
+		JWTSecret:      "my-super-secure-jwt-secret-2026!!",
 		AllowDemoUsers: false,
 	}
 	err := cfg.Validate()

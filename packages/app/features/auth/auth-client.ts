@@ -7,6 +7,8 @@ import type {
   UserRoleAssignment,
   WorkspaceAccess,
 } from './types'
+import { isUserRole } from './types'
+import { normalizeWorkspaceType } from '../layout/workspace-types'
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? ''
@@ -70,21 +72,45 @@ interface AuthMeResult {
   refreshExpiresAt: string
 }
 
-const toAuthUser = (payload: BackendLoginResponse): AuthUser => ({
-  id: payload.user.id,
-  username: payload.user.username,
-  name: payload.user.displayName,
-  role: payload.user.role,
-  email: payload.user.email,
-  avatarUrl: payload.user.avatarUrl,
-  tenantId: payload.user.tenantId,
-  locale: payload.user.locale ?? 'vi',
-  timezone: payload.user.timezone ?? 'Asia/Ho_Chi_Minh',
-  roles: Array.isArray(payload.roles) ? payload.roles : [],
-  permissions: Array.isArray(payload.permissions) ? payload.permissions : [],
-  workspaces: Array.isArray(payload.workspaces) ? payload.workspaces : [],
-  metadata: payload.user.metadata,
-})
+const normalizeWorkspaceAccess = (workspace: WorkspaceAccess): WorkspaceAccess | null => {
+  const type = normalizeWorkspaceType(workspace.type)
+  if (!type || !workspace.scopeId || !workspace.scopeName) {
+    return null
+  }
+
+  return {
+    type,
+    scopeId: workspace.scopeId,
+    scopeName: workspace.scopeName,
+    role: workspace.role || 'viewer',
+  }
+}
+
+const toAuthUser = (payload: BackendLoginResponse): AuthUser => {
+  if (!isUserRole(payload.user.role)) {
+    throw new AuthClientError(`Backend trả về role không hợp lệ: ${payload.user.role}`, 500)
+  }
+
+  return {
+    id: payload.user.id,
+    username: payload.user.username,
+    name: payload.user.displayName,
+    role: payload.user.role,
+    email: payload.user.email,
+    avatarUrl: payload.user.avatarUrl,
+    tenantId: payload.user.tenantId,
+    locale: payload.user.locale ?? 'vi',
+    timezone: payload.user.timezone ?? 'Asia/Ho_Chi_Minh',
+    roles: Array.isArray(payload.roles) ? payload.roles : [],
+    permissions: Array.isArray(payload.permissions) ? payload.permissions : [],
+    workspaces: Array.isArray(payload.workspaces)
+      ? payload.workspaces
+        .map((workspace) => normalizeWorkspaceAccess(workspace))
+        .filter((workspace): workspace is WorkspaceAccess => workspace !== null)
+      : [],
+    metadata: payload.user.metadata,
+  }
+}
 
 const parseError = async (response: Response): Promise<string> => {
   const fallback = `HTTP ${response.status}`

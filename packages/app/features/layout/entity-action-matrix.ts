@@ -43,7 +43,7 @@ export const canPerformEntityRouteAction = (
   if (!entity) return true
 
   const rolePolicy = ENTITY_AUTHZ_POLICY[
-    role
+    role as keyof typeof ENTITY_AUTHZ_POLICY
   ] as Record<string, readonly EntityAuthzAction[]>
   if (!rolePolicy) return false
 

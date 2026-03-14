@@ -4,20 +4,40 @@
 // ════════════════════════════════════════════════════════════════
 
 /** The workspace types in the VCT Ecosystem */
-export type WorkspaceType =
-    | 'federation_admin'
-    | 'federation_provincial'
-    | 'federation_discipline'
-    | 'tournament_ops'
-    | 'club_management'
-    | 'referee_console'
-    | 'athlete_portal'
-    | 'public_spectator'
-    | 'system_admin'
+export const WORKSPACE_TYPES = [
+    'federation_admin',
+    'federation_provincial',
+    'federation_discipline',
+    'tournament_ops',
+    'club_management',
+    'referee_console',
+    'athlete_portal',
+    'parent_portal',
+    'public_spectator',
+    'system_admin',
+] as const
+
+export type WorkspaceType = (typeof WORKSPACE_TYPES)[number]
+
+const WORKSPACE_TYPE_ALIASES = {
+    provincial_admin: 'federation_provincial',
+    provincial_management: 'federation_provincial',
+} as const satisfies Record<string, WorkspaceType>
+
+export const normalizeWorkspaceType = (value: unknown): WorkspaceType | null => {
+    if (typeof value !== 'string') return null
+    if ((WORKSPACE_TYPES as readonly string[]).includes(value)) {
+        return value as WorkspaceType
+    }
+    return WORKSPACE_TYPE_ALIASES[value as keyof typeof WORKSPACE_TYPE_ALIASES] ?? null
+}
+
+export const isWorkspaceType = (value: unknown): value is WorkspaceType =>
+    normalizeWorkspaceType(value) !== null
 
 /** Scope that a workspace operates within */
 export interface WorkspaceScope {
-    type: 'system' | 'federation' | 'tournament' | 'club' | 'user' | 'public'
+    type: 'system' | 'federation' | 'province' | 'tournament' | 'club' | 'user' | 'public'
     id: string
     name: string
 }
@@ -121,6 +141,13 @@ export const WORKSPACE_META: Record<WorkspaceType, {
         color: '#10b981',
         gradient: 'from-[#10b981] to-[#059669]',
         description: 'ws.meta.athlete.desc',
+    },
+    parent_portal: {
+        label: 'ws.meta.parent.label',
+        icon: 'Users',
+        color: '#14b8a6',
+        gradient: 'from-[#14b8a6] to-[#0f766e]',
+        description: 'ws.meta.parent.desc',
     },
     public_spectator: {
         label: 'ws.meta.spectator.label',

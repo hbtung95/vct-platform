@@ -138,7 +138,7 @@ const nextConfig = {
   // Type safety and lint are enforced by dedicated workspace scripts.
   // Keeping Next build focused on bundling avoids Windows spawn issues in CI/sandbox.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   experimental: {
     workerThreads: process.env.NEXT_FORCE_WORKER_THREADS === '1',

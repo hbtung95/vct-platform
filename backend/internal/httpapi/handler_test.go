@@ -14,7 +14,8 @@ import (
 func testServer(t *testing.T) *Server {
 	t.Helper()
 	cfg := config.Config{
-		JWTSecret: "test-secret-for-handler-tests",
+		AllowedOrigins: []string{"*"},
+		JWTSecret:      "test-secret-for-handler-tests-2026!!",
 	}
 	return New(cfg)
 }

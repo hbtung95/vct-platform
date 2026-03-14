@@ -11,7 +11,7 @@ import (
 // DefaultJWTSecret is a placeholder for development only.
 // The server will refuse to start in production/staging with this value.
 // NEVER deploy with this default — always set VCT_JWT_SECRET env var.
-const DefaultJWTSecret = "INSECURE-DEV-ONLY-MUST-OVERRIDE"
+const DefaultJWTSecret = "INSECURE-DEV-ONLY-MUST-OVERRIDE!"
 
 type Config struct {
 	Environment        string

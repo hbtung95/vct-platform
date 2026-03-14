@@ -107,7 +107,6 @@ export const VCT_Image: React.FC<VCTImageProps> = ({
 
     // Fallback: plain <img> for non-Next.js environments or data/blob URLs
     return (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
             src={src}
             alt={alt}

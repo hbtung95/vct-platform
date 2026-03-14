@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { useMemo, useCallback } from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { ScrollView, Pressable, RefreshControl, Text, View } from 'react-native'
 import { Colors, SharedStyles, FontWeight, Radius, Space, Touch } from './mobile-theme'
-import { ScreenSkeleton } from './mobile-ui'
+import { ScreenSkeleton, TimelineItem } from './mobile-ui'
 import { Icon, VCTIcons } from './icons'
 import { hapticLight } from './haptics'
 import { useNotifications } from './useAthleteData'
@@ -40,29 +40,22 @@ export function NotificationsMobileScreen() {
     [notifications, filter]
   )
 
-  const renderNotification = useCallback(({ item }: { item: MockNotification }) => {
-    const cfg = NOTIF_TYPE_CFG[item.type] ?? NOTIF_TYPE_CFG['system']!
-    return (
-      <Pressable
-        style={[SharedStyles.card, !item.read && { backgroundColor: Colors.overlay(Colors.accent, 0.04), borderColor: Colors.overlay(Colors.accent, 0.15) }]}
-        onPress={() => { hapticLight(); markAsRead(item.id) }}
-        android_ripple={{ color: 'rgba(0,0,0,0.03)' }}
-        accessibilityRole="button"
-        accessibilityLabel={`${item.read ? '' : 'Chưa đọc: '}${item.title}. ${item.body}`}
-      >
-        <View style={[SharedStyles.rowBetween, { marginBottom: 6 }]}>
-          <View style={[SharedStyles.row, { gap: 6 }]}>
-            {!item.read && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, marginRight: 2 }} />}
-            <Icon name={cfg.icon} size={16} color={cfg.color} />
-            <Text style={{ fontSize: 10, fontWeight: FontWeight.extrabold, color: cfg.color, textTransform: 'uppercase', letterSpacing: 0.5 }}>{cfg.label}</Text>
-          </View>
-          <Text style={{ fontSize: 10, color: Colors.textSecondary }}>{item.time}</Text>
-        </View>
-        <Text style={{ fontSize: 14, fontWeight: FontWeight.extrabold, color: Colors.textPrimary, marginBottom: 4 }}>{item.title}</Text>
-        <Text style={{ fontSize: 12, color: Colors.textSecondary, lineHeight: 18 }}>{item.body}</Text>
-      </Pressable>
-    )
-  }, [markAsRead])
+  const groupedNotifs = useMemo(() => {
+    const groups: Record<string, typeof filteredNotifs> = {
+      'Hôm nay': [],
+      'Hôm qua': [],
+      'Tuần này': [],
+      'Cũ hơn': []
+    }
+    filteredNotifs.forEach(n => {
+      const t = n.time.toLowerCase()
+      if (t.includes('phút') || t.includes('giờ') || t.includes('hôm nay')) groups['Hôm nay']!.push(n)
+      else if (t.includes('hôm qua')) groups['Hôm qua']!.push(n)
+      else if (t.includes('ngày')) groups['Tuần này']!.push(n)
+      else groups['Cũ hơn']!.push(n)
+    })
+    return Object.entries(groups).filter(([_, items]) => items!.length > 0)
+  }, [filteredNotifs])
 
   if (isLoading) return <ScreenSkeleton />
 
@@ -123,15 +116,56 @@ export function NotificationsMobileScreen() {
   )
 
   return (
-    <FlatList
+    <ScrollView
       style={SharedStyles.page}
       contentContainerStyle={SharedStyles.scrollContent}
-      data={filteredNotifs}
-      keyExtractor={item => item.id}
-      renderItem={renderNotification}
-      ListHeaderComponent={headerComponent}
-      ListEmptyComponent={emptyComponent}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.accent} />}
-    />
+    >
+      {headerComponent}
+      <View style={{ marginBottom: Space.xl }}>
+        {groupedNotifs.length > 0 ? (
+          <>
+            {groupedNotifs.map(([groupStr, items]) => (
+              <View key={groupStr} style={{ marginBottom: Space.lg }}>
+                <Text style={SharedStyles.sectionTitle}>{groupStr}</Text>
+                <View style={SharedStyles.card}>
+                  {items.map((item, index) => {
+                    const cfg = NOTIF_TYPE_CFG[item.type] ?? NOTIF_TYPE_CFG['system']!
+                    return (
+                      <TimelineItem
+                        key={item.id}
+                        title={item.title}
+                        subtitle={item.body}
+                        time={item.time}
+                        icon={cfg.icon}
+                        color={cfg.color}
+                        isLast={index === items.length - 1}
+                      >
+                        {/* Interactive overlay */}
+                        <Pressable
+                          style={{
+                            marginTop: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: Radius.sm,
+                            backgroundColor: item.read ? Colors.trackBg : Colors.overlay(Colors.accent, 0.1),
+                            alignSelf: 'flex-start',
+                          }}
+                          onPress={() => { hapticLight(); markAsRead(item.id) }}
+                        >
+                          <Text style={{ fontSize: 10, fontWeight: FontWeight.bold, color: item.read ? Colors.textSecondary : Colors.accent }}>
+                            {item.read ? 'Đã đọc' : 'Đánh dấu đã đọc'}
+                          </Text>
+                        </Pressable>
+                      </TimelineItem>
+                    )
+                  })}
+                </View>
+              </View>
+            ))}
+            <Text style={{ fontSize: 11, color: Colors.textMuted, textAlign: 'center', marginTop: Space.sm }}>
+              💡 Gợi ý: Vuốt sang trái trên thông báo (trong app thật) để xóa / đánh dấu đã đọc.
+            </Text>
+          </>
+        ) : emptyComponent}
+      </View>
+    </ScrollView>
   )
 }

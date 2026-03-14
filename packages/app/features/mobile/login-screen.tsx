@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useState, useCallback } from 'react'
 import {
   ActivityIndicator,
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -81,6 +82,11 @@ const s = StyleSheet.create({
   footerText: { color: '#475569', fontSize: 11, fontWeight: FontWeight.semibold },
 })
 
+const DEMO_ACCOUNTS = [
+  { username: 'parent', password: 'Parent@123', label: 'Phụ huynh' },
+  { username: 'admin', password: 'Admin@123', label: 'Quản trị hệ thống' },
+] as const
+
 export function LoginMobileScreen() {
   const { login } = useAuth()
   const [username, setUsername] = useState('')
@@ -88,6 +94,26 @@ export function LoginMobileScreen() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Animated logo pulse
+  const logoScale = React.useRef(new Animated.Value(1)).current
+  const formSlide = React.useRef(new Animated.Value(30)).current
+  const formOpacity = React.useRef(new Animated.Value(0)).current
+
+  React.useEffect(() => {
+    // Logo breathing animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoScale, { toValue: 1.08, duration: 1200, useNativeDriver: true }),
+        Animated.timing(logoScale, { toValue: 1, duration: 1200, useNativeDriver: true }),
+      ])
+    ).start()
+    // Form slide-up entrance
+    Animated.parallel([
+      Animated.spring(formSlide, { toValue: 0, useNativeDriver: true, speed: 12, bounciness: 6 }),
+      Animated.timing(formOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+    ]).start()
+  }, [logoScale, formSlide, formOpacity])
 
   const canSubmit = username.trim().length > 0 && password.trim().length > 0 && !isSubmitting
 
@@ -111,26 +137,41 @@ export function LoginMobileScreen() {
   const handleDemoSkip = useCallback(() => {
     hapticLight()
     setIsSubmitting(true)
-    login({ username: 'demo', password: 'demo' })
-      .then(() => hapticSuccess())
-      .catch(() => { setError('Không thể khởi tạo chế độ demo'); hapticError() })
+    const bootstrapDemo = async () => {
+      for (const account of DEMO_ACCOUNTS) {
+        try {
+          await login({ username: account.username, password: account.password })
+          hapticSuccess()
+          return
+        } catch {
+          // Try the next seeded demo account.
+        }
+      }
+
+      throw new Error('Không thể khởi tạo chế độ demo')
+    }
+
+    bootstrapDemo()
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Không thể khởi tạo chế độ demo')
+        hapticError()
+      })
       .finally(() => setIsSubmitting(false))
   }, [login])
 
   return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-        {/* HERO */}
         <View style={s.heroWrap}>
-          <View style={s.logoCircle}>
+          <Animated.View style={[s.logoCircle, { transform: [{ scale: logoScale }] }]}>
             <Icon name={VCTIcons.fitness} size={42} color={Colors.accent} />
-          </View>
+          </Animated.View>
           <Text style={s.brandText}>VCT PLATFORM</Text>
           <Text style={s.brandSub}>Nền tảng Võ Cổ Truyền Việt Nam</Text>
         </View>
 
-        {/* FORM */}
-        <View style={s.formCard} accessibilityRole="form">
+        {/* FORM — animated entrance */}
+        <Animated.View style={[s.formCard, { transform: [{ translateY: formSlide }], opacity: formOpacity }]} accessibilityRole="form">
           {error ? (
             <View style={s.errorBox} accessibilityRole="alert">
               <Icon name={VCTIcons.alert} size={18} color={Colors.red} />
@@ -204,7 +245,7 @@ export function LoginMobileScreen() {
               <Text style={s.loginBtnText}>ĐĂNG NHẬP</Text>
             )}
           </Pressable>
-        </View>
+        </Animated.View>
 
         {/* DEMO */}
         <View style={s.demoHint}>
@@ -213,7 +254,8 @@ export function LoginMobileScreen() {
             <Text style={s.demoTitle}>Tài khoản demo</Text>
             <Text style={s.demoText}>
               Bạn có thể bỏ qua đăng nhập để dùng chế độ demo.{'\n'}
-              Hoặc đăng nhập với: <Text style={s.demoCode}>admin / admin123</Text>
+              Hoặc đăng nhập với: <Text style={s.demoCode}>parent / Parent@123</Text>{'\n'}
+              Tài khoản quản trị: <Text style={s.demoCode}>admin / Admin@123</Text>
             </Text>
           </View>
         </View>

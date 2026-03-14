@@ -136,7 +136,7 @@ export function SettingsMobileScreen() {
       <Text style={s.sectionTitle}>Tài khoản</Text>
       <View style={s.sectionCard}>
         <SettingRow icon={VCTIcons.person} label="Hồ sơ cá nhân" />
-        <SettingRow icon="swap-horizontal-outline" label="Chuyển vai trò" value={roleLabel} onPress={handleRoleSwitch} />
+        <SettingRow icon={VCTIcons.grid} label="Chuyển vai trò" value={roleLabel} onPress={handleRoleSwitch} />
         <SettingRow icon={VCTIcons.key} label="Đổi mật khẩu" />
         <SettingRow icon={VCTIcons.phone} label="Thiết bị đăng nhập" value="1 thiết bị" isLast />
       </View>
@@ -150,6 +150,23 @@ export function SettingsMobileScreen() {
         <SettingRow icon={VCTIcons.cellular} label="Sử dụng dữ liệu" value="Wi-Fi" isLast />
       </View>
 
+      {/* STORAGE & OFFLINE */}
+      <Text style={s.sectionTitle}>Lưu trữ & Ngoại tuyến</Text>
+      <View style={s.sectionCard}>
+        <SettingRow icon={VCTIcons.cloudOffline} label="Chế độ ngoại tuyến" value="Bật" />
+        <SettingRow icon={VCTIcons.cloudUpload} label="Đồng bộ tự động" value="Bật" />
+        <SettingRow
+          icon={VCTIcons.refresh}
+          label="Xóa bộ đệm (12MB)"
+          showArrow={false}
+          onPress={() => {
+            hapticWarning()
+            Alert.alert('Xóa bộ đệm', 'Dữ liệu tạm 12MB đã được dọn dẹp.', [{ text: 'OK' }])
+          }}
+          isLast
+        />
+      </View>
+
       {/* ABOUT */}
       <Text style={s.sectionTitle}>Thông tin</Text>
       <View style={s.sectionCard}>
@@ -158,7 +175,8 @@ export function SettingsMobileScreen() {
         <SettingRow icon={VCTIcons.shield} label="Chính sách bảo mật" />
         <SettingRow icon={VCTIcons.call} label="Liên hệ hỗ trợ" />
         <SettingRow icon={VCTIcons.starOutline} label="Đánh giá ứng dụng" />
-        <SettingRow icon={VCTIcons.info} label="Phiên bản" value="1.0.0" showArrow={false} isLast />
+        <SettingRow icon={VCTIcons.info} label="Phiên bản" value="1.0.0 (build 2026.03)" showArrow={false} />
+        <SettingRow icon={VCTIcons.settings} label="Môi trường" value="Development" showArrow={false} isLast />
       </View>
 
       <Pressable

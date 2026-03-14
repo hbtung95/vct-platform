@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ActivityIndicator, Alert, Pressable, Text, View, Animated } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View, Animated } from 'react-native'
 import { Colors, SharedStyles, FontWeight, Radius, Space, Touch } from './mobile-theme'
 import { Icon, VCTIcons } from './icons'
 import { hapticLight } from './haptics'
@@ -231,3 +231,368 @@ export function OfflineBanner({ isOffline, onRetry }: { isOffline: boolean; onRe
 export function showComingSoon(feature: string): void {
   Alert.alert('Sắp ra mắt', `Tính năng "${feature}" đang được phát triển.`)
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PROFESSIONAL UI COMPONENTS (v2)
+// ═══════════════════════════════════════════════════════════════
+
+/** Pressable card with scale-on-press spring animation */
+export function AnimatedCard({ children, onPress, style }: {
+  children: React.ReactNode; onPress?: () => void; style?: object
+}) {
+  const scale = React.useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 4 }).start()
+  }
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start()
+  }
+
+  return (
+    <Pressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={() => { if (onPress) { hapticLight(); onPress() } }}
+      accessibilityRole={onPress ? 'button' : undefined}
+    >
+      <Animated.View style={[SharedStyles.card, { transform: [{ scale }] }, style]}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  )
+}
+
+/** Search input with icon and clear button */
+export function SearchBar({ value, onChangeText, placeholder = 'Tìm kiếm...' }: {
+  value: string; onChangeText: (text: string) => void; placeholder?: string
+}) {
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: 10,
+      backgroundColor: Colors.bgCard, borderRadius: Radius.md,
+      borderWidth: 1, borderColor: Colors.border,
+      paddingHorizontal: 14, marginBottom: Space.md, height: 44,
+    }}>
+      <Icon name={VCTIcons.search} size={18} color={Colors.textMuted} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={Colors.textMuted}
+        style={{ flex: 1, fontSize: 14, color: Colors.textPrimary, height: '100%' }}
+        accessibilityLabel={placeholder}
+      />
+      {value.length > 0 && (
+        <Pressable
+          onPress={() => onChangeText('')}
+          accessibilityRole="button"
+          accessibilityLabel="Xóa tìm kiếm"
+          style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.overlay(Colors.textMuted, 0.1), justifyContent: 'center', alignItems: 'center' }}
+        >
+          <Icon name={VCTIcons.close} size={14} color={Colors.textMuted} />
+        </Pressable>
+      )}
+    </View>
+  )
+}
+
+/** Compact selectable chip/tag */
+export function Chip({ label, selected, onPress, color, count }: {
+  label: string; selected: boolean; onPress: () => void; color?: string; count?: number
+}) {
+  const chipColor = color ?? Colors.accent
+  return (
+    <Pressable
+      onPress={() => { hapticLight(); onPress() }}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      style={{
+        paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.pill,
+        backgroundColor: selected ? Colors.overlay(chipColor, 0.12) : Colors.bgCard,
+        borderWidth: 1, borderColor: selected ? chipColor : Colors.border,
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+      }}
+    >
+      <Text style={{
+        fontSize: 12, fontWeight: FontWeight.bold,
+        color: selected ? chipColor : Colors.textSecondary,
+      }}>{label}</Text>
+      {count !== undefined && count > 0 && (
+        <View style={{
+          minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
+          backgroundColor: selected ? chipColor : Colors.overlay(Colors.textMuted, 0.15),
+          justifyContent: 'center', alignItems: 'center',
+        }}>
+          <Text style={{ fontSize: 9, fontWeight: FontWeight.black, color: selected ? '#fff' : Colors.textSecondary }}>{count}</Text>
+        </View>
+      )}
+    </Pressable>
+  )
+}
+
+/** Reusable 2-step confirmation modal */
+export function ConfirmModal({ visible, title, message, confirmLabel, cancelLabel, destructive, onConfirm, onCancel }: {
+  visible: boolean; title: string; message: string
+  confirmLabel?: string; cancelLabel?: string; destructive?: boolean
+  onConfirm: () => void; onCancel: () => void
+}) {
+  if (!visible) return null
+  const actionColor = destructive ? Colors.red : Colors.accent
+  return (
+    <View style={{
+      ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 999,
+    }}>
+      <View style={{
+        width: '85%', maxWidth: 340, borderRadius: Radius.xl, padding: Space.xxl,
+        backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
+        shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 10,
+      }}>
+        <Text style={{ fontSize: 18, fontWeight: FontWeight.black, color: Colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>{title}</Text>
+        <Text style={{ fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: Space.xl }}>{message}</Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Pressable
+            onPress={() => { hapticLight(); onCancel() }}
+            accessibilityRole="button"
+            style={{
+              flex: 1, paddingVertical: 12, borderRadius: Radius.md, alignItems: 'center',
+              backgroundColor: Colors.overlay(Colors.textMuted, 0.08), borderWidth: 1, borderColor: Colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: FontWeight.bold, color: Colors.textSecondary }}>{cancelLabel ?? 'Hủy'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => { hapticLight(); onConfirm() }}
+            accessibilityRole="button"
+            style={{
+              flex: 1, paddingVertical: 12, borderRadius: Radius.md, alignItems: 'center',
+              backgroundColor: Colors.overlay(actionColor, 0.12), borderWidth: 1, borderColor: actionColor,
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: FontWeight.extrabold, color: actionColor }}>{confirmLabel ?? 'Xác nhận'}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+/** Standalone stat card with icon, value, label, and optional trend */
+export function StatCard({ icon, label, value, color, trend }: {
+  icon: React.ComponentProps<typeof Icon>['name']; label: string; value: string | number
+  color: string; trend?: 'up' | 'down' | 'flat'
+}) {
+  return (
+    <View style={[SharedStyles.statBox, { position: 'relative' }]} accessibilityLabel={`${value} ${label}`}>
+      <Icon name={icon} size={16} color={color} style={{ marginBottom: 4 }} />
+      <Text style={[SharedStyles.statValue, { color }]}>{value}</Text>
+      <Text style={SharedStyles.statLabel}>{label}</Text>
+      {trend && trend !== 'flat' && (
+        <View style={{ position: 'absolute', top: 6, right: 6 }}>
+          <Icon
+            name={trend === 'up' ? VCTIcons.trending : VCTIcons.trendingDown}
+            size={10}
+            color={trend === 'up' ? Colors.green : Colors.red}
+          />
+        </View>
+      )}
+    </View>
+  )
+}
+
+/** Section divider with label and optional icon */
+export function SectionDivider({ label, icon }: { label: string; icon?: React.ComponentProps<typeof Icon>['name'] }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: Space.lg, marginBottom: Space.md }}>
+      <View style={{ height: 1, flex: 1, backgroundColor: Colors.border }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {icon && <Icon name={icon} size={12} color={Colors.textMuted} />}
+        <Text style={{ fontSize: 10, fontWeight: FontWeight.extrabold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</Text>
+      </View>
+      <View style={{ height: 1, flex: 1, backgroundColor: Colors.border }} />
+    </View>
+  )
+}
+
+/** Circular progress ring — View-based (no SVG dependency) */
+export function ProgressRing({
+  progress, size = 56, strokeWidth = 5, color = Colors.accent, label,
+}: { progress: number; size?: number; strokeWidth?: number; color?: string; label?: string }) {
+  const pct = Math.max(0, Math.min(100, progress))
+  const innerSize = size - strokeWidth * 2
+  return (
+    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }} accessibilityLabel={`${pct}%`} accessibilityRole="progressbar">
+      {/* Track */}
+      <View style={{
+        position: 'absolute', width: size, height: size, borderRadius: size / 2,
+        borderWidth: strokeWidth, borderColor: Colors.overlay(color, 0.12),
+      }} />
+      {/* Fill — using conic-gradient approximation via top+bottom halves */}
+      {pct > 0 && (
+        <View style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, overflow: 'hidden', transform: [{ rotate: '-90deg' }] }}>
+          {/* Right half (0-50%) */}
+          <View style={{ position: 'absolute', width: size / 2, height: size, right: 0, overflow: 'hidden' }}>
+            <View style={{
+              width: size, height: size, borderRadius: size / 2,
+              borderWidth: strokeWidth, borderColor: 'transparent',
+              borderTopColor: color, borderRightColor: pct > 25 ? color : 'transparent',
+              transform: [{ rotate: `${Math.min(pct, 50) * 3.6}deg` }],
+            }} />
+          </View>
+          {/* Left half (50-100%) */}
+          {pct > 50 && (
+            <View style={{ position: 'absolute', width: size / 2, height: size, left: 0, overflow: 'hidden' }}>
+              <View style={{
+                width: size, height: size, borderRadius: size / 2,
+                borderWidth: strokeWidth, borderColor: 'transparent',
+                borderTopColor: color, borderLeftColor: pct > 75 ? color : 'transparent',
+                transform: [{ rotate: `${(pct - 50) * 3.6}deg` }],
+              }} />
+            </View>
+          )}
+        </View>
+      )}
+      {/* Center label */}
+      <View style={{ width: innerSize, height: innerSize, borderRadius: innerSize / 2, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: size * 0.22, fontWeight: FontWeight.black, color }}>
+          {label ?? `${pct}%`}
+        </Text>
+      </View>
+    </View>
+  )
+}
+
+/** Animated tab selector with underline indicator */
+export function TabSelector({
+  tabs, selectedKey, onSelect, color = Colors.accent,
+}: {
+  tabs: { key: string; label: string; count?: number }[]
+  selectedKey: string
+  onSelect: (key: string) => void
+  color?: string
+}) {
+  const indicatorAnim = React.useRef(new Animated.Value(0)).current
+  const selectedIdx = tabs.findIndex(t => t.key === selectedKey)
+
+  React.useEffect(() => {
+    Animated.spring(indicatorAnim, { toValue: selectedIdx >= 0 ? selectedIdx : 0, useNativeDriver: true, tension: 200, friction: 20 }).start()
+  }, [selectedIdx, indicatorAnim])
+
+  const tabWidth = 100 / tabs.length
+
+  return (
+    <View style={{ borderRadius: Radius.md, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, marginBottom: Space.md, overflow: 'hidden' }}>
+      <View style={{ flexDirection: 'row' }}>
+        {tabs.map((tab, idx) => (
+          <Pressable
+            key={tab.key}
+            onPress={() => { hapticLight(); onSelect(tab.key) }}
+            style={{ flex: 1, paddingVertical: 10, alignItems: 'center' }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab.key === selectedKey }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={{
+                fontSize: 12, fontWeight: tab.key === selectedKey ? FontWeight.black : FontWeight.semibold,
+                color: tab.key === selectedKey ? color : Colors.textMuted,
+              }}>{tab.label}</Text>
+              {tab.count !== undefined && (
+                <View style={{
+                  minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,
+                  backgroundColor: tab.key === selectedKey ? Colors.overlay(color, 0.15) : Colors.overlay(Colors.textMuted, 0.08),
+                  justifyContent: 'center', alignItems: 'center',
+                }}>
+                  <Text style={{ fontSize: 9, fontWeight: FontWeight.bold, color: tab.key === selectedKey ? color : Colors.textMuted }}>{tab.count}</Text>
+                </View>
+              )}
+            </View>
+          </Pressable>
+        ))}
+      </View>
+      {/* Animated underline */}
+      <Animated.View style={{
+        height: 2.5, backgroundColor: color, borderRadius: 2,
+        width: `${tabWidth}%` as any,
+        transform: [{ translateX: indicatorAnim.interpolate({
+          inputRange: tabs.map((_, i) => i),
+          outputRange: tabs.map((_, i) => i * (100 / tabs.length)),
+        }) as any }],
+      }} />
+    </View>
+  )
+}
+
+/** Animated counting stat number */
+export function StatsCounter({
+  value, label, color = Colors.accent, icon, duration = 800, suffix = '',
+}: {
+  value: number; label: string; color?: string
+  icon?: React.ComponentProps<typeof Icon>['name']
+  duration?: number; suffix?: string
+}) {
+  const [display, setDisplay] = React.useState(0)
+  const animRef = React.useRef<number | null>(null)
+
+  React.useEffect(() => {
+    const startTime = Date.now()
+    const startVal = 0
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(Math.round(startVal + (value - startVal) * eased))
+      if (progress < 1) {
+        animRef.current = requestAnimationFrame(animate)
+      }
+    }
+    animRef.current = requestAnimationFrame(animate)
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
+  }, [value, duration])
+
+  return (
+    <View style={{ alignItems: 'center', gap: 4 }} accessibilityLabel={`${label}: ${value}${suffix}`}>
+      {icon && <Icon name={icon} size={16} color={color} />}
+      <Text style={{ fontSize: 22, fontWeight: FontWeight.black, color }}>{display}{suffix}</Text>
+      <Text style={{ fontSize: 10, color: Colors.textSecondary, fontWeight: FontWeight.semibold }}>{label}</Text>
+    </View>
+  )
+}
+
+/** Timeline item with connected dot and line */
+export function TimelineItem({
+  title, subtitle, time, icon, color = Colors.accent, isLast = false, children,
+}: {
+  title: string; subtitle?: string; time?: string
+  icon?: React.ComponentProps<typeof Icon>['name']; color?: string
+  isLast?: boolean; children?: React.ReactNode
+}) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 12, minHeight: 48 }}>
+      {/* Timeline track */}
+      <View style={{ alignItems: 'center', width: 28 }}>
+        <View style={{
+          width: 28, height: 28, borderRadius: 14,
+          backgroundColor: Colors.overlay(color, 0.1),
+          justifyContent: 'center', alignItems: 'center',
+          borderWidth: 2, borderColor: Colors.overlay(color, 0.3),
+        }}>
+          {icon ? <Icon name={icon} size={12} color={color} /> :
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />}
+        </View>
+        {!isLast && <View style={{ width: 2, flex: 1, backgroundColor: Colors.overlay(color, 0.15), marginVertical: 2 }} />}
+      </View>
+      {/* Content */}
+      <View style={{ flex: 1, paddingBottom: isLast ? 0 : Space.md }}>
+        <View style={[SharedStyles.rowBetween]}>
+          <Text style={{ fontSize: 13, fontWeight: FontWeight.extrabold, color: Colors.textPrimary, flex: 1 }} numberOfLines={1}>{title}</Text>
+          {time && <Text style={{ fontSize: 10, color: Colors.textMuted }}>{time}</Text>}
+        </View>
+        {subtitle && <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>{subtitle}</Text>}
+        {children}
+      </View>
+    </View>
+  )
+}
+

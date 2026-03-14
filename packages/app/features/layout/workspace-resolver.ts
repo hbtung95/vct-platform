@@ -3,7 +3,7 @@
 // Resolves available workspaces and filters sidebar based on UUID permissions.
 // ════════════════════════════════════════════════════════════════
 
-import type { WorkspaceType, WorkspaceSidebarConfig } from './workspace-types'
+import { normalizeWorkspaceType, type WorkspaceType, type WorkspaceSidebarConfig } from './workspace-types'
 import type { AuthUser, WorkspaceAccess, UserRoleAssignment } from '../auth/types'
 import { WORKSPACE_SIDEBARS } from './workspace-sidebar-configs'
 
@@ -133,17 +133,56 @@ const checkPermission = (
     return permSet.has(permission)
 }
 
+const PROVINCIAL_ROLE_CODES = new Set([
+    'PROVINCIAL_ADMIN',
+    'PROVINCIAL_PRESIDENT',
+    'PROVINCIAL_VICE_PRESIDENT',
+    'PROVINCIAL_SECRETARY',
+    'PROVINCIAL_TECHNICAL_HEAD',
+    'PROVINCIAL_REFEREE_HEAD',
+    'PROVINCIAL_COMMITTEE_MEMBER',
+    'PROVINCIAL_ACCOUNTANT',
+])
+
+const FEDERATION_ROLE_CODES = new Set([
+    'FEDERATION_ADMIN',
+    'FEDERATION_STAFF',
+    'FEDERATION_PRESIDENT',
+    'FEDERATION_SECRETARY',
+    'VICE_PRESIDENT',
+    'PR_MANAGER',
+    'INTERNATIONAL_LIAISON',
+])
+
+const DISCIPLINE_ROLE_CODES = new Set(['DISCIPLINE_BOARD', 'INSPECTOR'])
+const CLUB_ROLE_CODES = new Set([
+    'CLUB_MANAGER',
+    'CLUB_COACH',
+    'CLUB_LEADER',
+    'CLUB_VICE_LEADER',
+    'CLUB_SECRETARY',
+    'CLUB_ACCOUNTANT',
+    'COACH',
+])
+const REFEREE_ROLE_CODES = new Set([
+    'HEAD_REFEREE',
+    'REFEREE_MANAGER',
+    'REFEREE',
+    'JUDGE',
+])
+const TOURNAMENT_ROLE_CODES = new Set([
+    'TOURNAMENT_DIRECTOR',
+    'TOURNAMENT_STAFF',
+    'BTC',
+    'DELEGATE',
+    'MEDICAL_STAFF',
+])
+
 /**
  * Resolve which workspace types a user can access based on their role assignments.
  * Scope names use i18n keys — consumers should call t(scopeName) to localize.
  */
 export function resolveWorkspacesForUser(user: AuthUser): WorkspaceAccess[] {
-    // If backend already provides workspaces, use those
-    if (user.workspaces && user.workspaces.length > 0) {
-        return user.workspaces
-    }
-
-    // Fallback: derive from roles
     const workspaces: WorkspaceAccess[] = []
     const seen = new Set<string>()
 
@@ -153,6 +192,17 @@ export function resolveWorkspacesForUser(user: AuthUser): WorkspaceAccess[] {
             seen.add(key)
             workspaces.push({ type, scopeId, scopeName, role })
         }
+    }
+
+    // If backend already provides workspaces, use those after alias normalization.
+    if (user.workspaces && user.workspaces.length > 0) {
+        for (const workspace of user.workspaces) {
+            const type = normalizeWorkspaceType(workspace.type)
+            if (!type) continue
+            addWorkspace(type, workspace.scopeId, workspace.scopeName, workspace.role)
+        }
+        addWorkspace('public_spectator', 'PUBLIC', 'ws.scope.spectator', 'viewer')
+        return workspaces
     }
 
     // Derive from role assignments
@@ -179,30 +229,30 @@ function mapRoleToWorkspace(
     const scopeId = ra.scopeId ?? 'DEFAULT'
     const scopeName = ra.scopeName ?? ra.roleName
 
-    if (code === 'SYSTEM_ADMIN') {
+    if (code === 'SYSTEM_ADMIN' || code === 'ADMIN') {
         add('system_admin', 'SYS', 'ws.scope.sysadmin', 'admin')
         add('federation_admin', scopeId, scopeName, 'admin')
         add('tournament_ops', scopeId, scopeName, 'admin')
         add('club_management', scopeId, scopeName, 'admin')
-    } else if (code === 'FEDERATION_ADMIN' || code.includes('FEDERATION') || code.includes('PRESIDENT') || code.includes('SECRETARY')) {
+    } else if (PROVINCIAL_ROLE_CODES.has(code)) {
+        add('federation_provincial', scopeId, scopeName, ra.roleCode)
+    } else if (DISCIPLINE_ROLE_CODES.has(code)) {
+        add('federation_discipline', scopeId, scopeName, ra.roleCode)
+    } else if (FEDERATION_ROLE_CODES.has(code)) {
         add('federation_admin', scopeId, scopeName, ra.roleCode)
-    } else if (code === 'CLUB_MANAGER' || code.includes('CLUB')) {
-        add('club_management', scopeId, scopeName, ra.roleCode)
-    } else if (code === 'REFEREE' || code.includes('REFEREE')) {
-        add('referee_console', scopeId, scopeName, ra.roleCode)
-    } else if (code === 'COACH') {
-        add('club_management', scopeId, scopeName, 'coach')
-    } else if (code === 'ATHLETE') {
-        add('athlete_portal', scopeId, scopeName, 'athlete')
-    } else if (code === 'DELEGATE') {
-        add('tournament_ops', scopeId, scopeName, 'delegate')
-    } else if (code === 'BTC' || code.includes('ORGANIZ')) {
-        add('tournament_ops', scopeId, scopeName, 'btc')
     } else if (code === 'TECHNICAL_DIRECTOR') {
         add('tournament_ops', scopeId, scopeName, 'technical_director')
         add('federation_admin', scopeId, scopeName, 'technical_director')
-    } else if (code === 'MEDICAL_STAFF') {
-        add('tournament_ops', scopeId, scopeName, 'medical_staff')
+    } else if (CLUB_ROLE_CODES.has(code)) {
+        add('club_management', scopeId, scopeName, ra.roleCode)
+    } else if (REFEREE_ROLE_CODES.has(code)) {
+        add('referee_console', scopeId, scopeName, ra.roleCode)
+    } else if (TOURNAMENT_ROLE_CODES.has(code)) {
+        add('tournament_ops', scopeId, scopeName, ra.roleCode.toLowerCase())
+    } else if (code === 'ATHLETE') {
+        add('athlete_portal', scopeId, scopeName, 'athlete')
+    } else if (code === 'PARENT') {
+        add('parent_portal', scopeId, scopeName, 'parent')
     }
 }
 
@@ -218,13 +268,31 @@ function mapSingleRoleToWorkspace(
             add('club_management', 'CLUB', 'ws.scope.club', 'admin')
             break
         case 'federation_president':
+        case 'vice_president':
         case 'federation_secretary':
-        case 'provincial_admin':
             add('federation_admin', 'FED', 'ws.scope.federation', role)
+            break
+        case 'pr_manager':
+        case 'international_liaison':
+            add('federation_admin', 'FED', 'ws.scope.federation', role)
+            break
+        case 'provincial_admin':
+        case 'provincial_president':
+        case 'provincial_vice_president':
+        case 'provincial_secretary':
+        case 'provincial_technical_head':
+        case 'provincial_referee_head':
+        case 'provincial_committee_member':
+        case 'provincial_accountant':
+            add('federation_provincial', 'PROV', 'ws.scope.provincial', role)
             break
         case 'technical_director':
             add('federation_admin', 'FED', 'ws.scope.federation', role)
             add('tournament_ops', 'TOURN', 'ws.scope.tournament', role)
+            break
+        case 'discipline_board':
+        case 'inspector':
+            add('federation_discipline', 'FED', 'ws.scope.discipline', role)
             break
         case 'btc':
             add('tournament_ops', 'TOURN', 'ws.scope.tournament', 'btc')
@@ -245,6 +313,9 @@ function mapSingleRoleToWorkspace(
             break
         case 'athlete':
             add('athlete_portal', 'SELF', 'ws.scope.athlete', 'athlete')
+            break
+        case 'parent':
+            add('parent_portal', 'SELF', 'ws.scope.parent', 'parent')
             break
         case 'medical_staff':
             add('tournament_ops', 'TOURN', 'ws.scope.medical', 'medical_staff')

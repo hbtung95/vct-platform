@@ -89,26 +89,57 @@ const PROVINCIAL_SIDEBAR: WorkspaceSidebarConfig = {
     groups: [
         {
             id: 'overview', label: 'ws.prov.overview', items: [
-                { id: 'prov-dashboard', path: '/province/dashboard', label: 'ws.prov.dashboard', icon: 'Dashboard' },
+                { id: 'prov-dashboard', path: '/provincial', label: 'ws.prov.dashboard', icon: 'Dashboard' },
             ],
         },
         {
             id: 'management', label: 'ws.prov.management', items: [
-                { id: 'prov-clubs', path: '/province/clubs', label: 'ws.prov.clubs', icon: 'Home' },
-                { id: 'prov-athletes', path: '/province/athletes', label: 'ws.prov.athletes', icon: 'Users' },
-                { id: 'prov-coaches', path: '/province/coaches', label: 'ws.prov.coaches', icon: 'UserCheck' },
+                { id: 'prov-clubs', path: '/provincial/clubs', label: 'ws.prov.clubs', icon: 'Home' },
+                { id: 'prov-athletes', path: '/provincial/athletes', label: 'ws.prov.athletes', icon: 'Users' },
+                { id: 'prov-coaches', path: '/provincial/coaches', label: 'ws.prov.coaches', icon: 'UserCheck' },
+                { id: 'prov-referees', path: '/provincial/referees', label: 'ws.prov.referees', icon: 'Scale' },
+                { id: 'prov-personnel', path: '/provincial/personnel', label: 'ws.prov.personnel', icon: 'Users' },
             ],
         },
         {
             id: 'tournaments', label: 'ws.prov.tournaments', items: [
-                { id: 'prov-tournaments', path: '/province/tournaments', label: 'ws.prov.tournaments', icon: 'Trophy' },
-                { id: 'prov-registration', path: '/registration', label: 'ws.prov.registration', icon: 'ClipboardCheck' },
+                { id: 'prov-tournaments', path: '/provincial/tournaments', label: 'ws.prov.tournaments', icon: 'Trophy' },
+                { id: 'prov-certifications', path: '/provincial/certifications', label: 'ws.prov.certifications', icon: 'Award' },
+                { id: 'prov-vo-sinh', path: '/provincial/vo-sinh', label: 'ws.prov.voSinh', icon: 'Users' },
             ],
         },
         {
             id: 'reports', label: 'ws.prov.reports', items: [
-                { id: 'prov-reports', path: '/province/reports', label: 'ws.prov.reportList', icon: 'Printer' },
-                { id: 'prov-finance', path: '/finance', label: 'ws.prov.finance', icon: 'DollarSign' },
+                { id: 'prov-documents', path: '/provincial/documents', label: 'ws.prov.documents', icon: 'FileText' },
+                { id: 'prov-discipline', path: '/provincial/discipline', label: 'ws.prov.discipline', icon: 'Shield' },
+                { id: 'prov-reports', path: '/provincial/reports', label: 'ws.prov.reportList', icon: 'Printer' },
+                { id: 'prov-finance', path: '/provincial/finance', label: 'ws.prov.finance', icon: 'DollarSign' },
+            ],
+        },
+    ],
+}
+
+const PARENT_SIDEBAR: WorkspaceSidebarConfig = {
+    type: 'parent_portal',
+    groups: [
+        {
+            id: 'overview', label: 'parent.dashboard', items: [
+                { id: 'parent-dashboard', path: '/parent', label: 'parent.dashboard', icon: 'Dashboard' },
+            ],
+        },
+        {
+            id: 'children', label: 'parent.children', items: [
+                { id: 'parent-children', path: '/parent/children', label: 'parent.children', icon: 'Users' },
+            ],
+        },
+        {
+            id: 'consent', label: 'parent.consent', items: [
+                { id: 'parent-consent', path: '/parent/consent', label: 'parent.consent', icon: 'Shield' },
+            ],
+        },
+        {
+            id: 'attendance', label: 'parent.attendance', items: [
+                { id: 'parent-attendance', path: '/parent/attendance', label: 'parent.attendance', icon: 'Calendar' },
             ],
         },
     ],
@@ -372,6 +403,7 @@ export const WORKSPACE_SIDEBARS: Record<WorkspaceType, WorkspaceSidebarConfig> =
     club_management: CLUB_SIDEBAR,
     referee_console: REFEREE_SIDEBAR,
     athlete_portal: ATHLETE_SIDEBAR,
+    parent_portal: PARENT_SIDEBAR,
     public_spectator: PUBLIC_SIDEBAR,
     system_admin: SYSADMIN_SIDEBAR,
 }

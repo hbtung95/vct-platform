@@ -2,15 +2,12 @@
 // VCT PLATFORM — Route Utility Functions
 // ════════════════════════════════════════════════════════════════
 
-import type { UserRole } from '../auth/types'
+import { USER_ROLES, type UserRole } from '../auth/types'
 import type { BreadcrumbItem, RouteAction, RouteCapability, RouteId, RouteItem, RoutePermissionMatrixEntry } from './route-types'
-import { ENTITY_AUTHZ_ROLES } from '../auth/entity-authz.generated'
 import { ROUTE_ROLE_CAPABILITIES } from './rbac-matrix'
 import { ROUTE_GROUPS, ROUTES } from './routes'
 
 // ── Internal Helpers ─────────────────────────────────────────
-
-const USER_ROLES: UserRole[] = [...ENTITY_AUTHZ_ROLES]
 
 const hasAction = (
     capabilityValue: RouteCapability | undefined,

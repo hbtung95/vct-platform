@@ -25,7 +25,7 @@ export const WorkspaceSwitcher = ({
     const [isOpen, setIsOpen] = React.useState(false)
     const ref = React.useRef<HTMLDivElement>(null)
 
-    const currentMeta = WORKSPACE_META[currentType]
+    const currentMeta = WORKSPACE_META[currentType] ?? WORKSPACE_META.public_spectator
     const iconMap = VCT_Icons as Record<string, React.ComponentType<any>>
     const CurrentIcon = iconMap[currentMeta.icon] ?? VCT_Icons.Activity
 

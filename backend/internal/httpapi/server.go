@@ -315,6 +315,18 @@ func New(cfg config.Config) *Server {
 				adapter.NewPgTournamentMgmtStore(db),
 				newUUID,
 			)
+
+			// BTC module (Ban Tổ Chức)
+			s.btcSvc = btc.NewService(adapter.NewPgBTCStore(db), newUUID)
+
+			// Parent/Guardian module
+			s.parentSvc = parent.NewService(
+				adapter.NewPgParentLinkStore(db),
+				adapter.NewPgConsentStore(db),
+				adapter.NewPgParentAttendanceStore(db),
+				adapter.NewPgParentResultStore(db),
+				newUUID,
+			)
 		}
 	}
 

@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'solito/navigation'
 import { Colors, SharedStyles, FontWeight, Radius, Space, Touch } from '../mobile-theme'
-import { Badge, ScreenHeader, GoalBar } from '../mobile-ui'
+import { Badge, ScreenHeader, SearchBar, AnimatedCard, ProgressRing, EmptyState } from '../mobile-ui'
 import { Icon, VCTIcons } from '../icons'
 import { hapticLight } from '../haptics'
 
@@ -47,11 +47,25 @@ const FEATURED_COURSES = [
 
 export function AthleteElearningMobileScreen() {
   const router = useRouter()
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [refreshing, setRefreshing] = React.useState(false)
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true)
+    setTimeout(() => setRefreshing(false), 800)
+  }, [])
+
+  const filteredCourses = React.useMemo(() => {
+    if (!searchQuery) return FEATURED_COURSES
+    const q = searchQuery.toLowerCase()
+    return FEATURED_COURSES.filter(c => c.title.toLowerCase().includes(q) || c.category.toLowerCase().includes(q))
+  }, [searchQuery])
 
   return (
     <ScrollView
       style={SharedStyles.page}
       contentContainerStyle={SharedStyles.scrollContent}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
     >
       <ScreenHeader
         title="E-Learning"
@@ -60,8 +74,17 @@ export function AthleteElearningMobileScreen() {
         onBack={() => router.back()}
       />
 
+      <View style={{ marginBottom: Space.lg }}>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Tìm bài quyền, kỹ thuật..."
+        />
+      </View>
+
       {/* CATEGORY GRID */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: Space.lg }}>
+      {!searchQuery && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: Space.lg }}>
         {COURSE_CATEGORIES.map(cat => (
           <Pressable
             key={cat.key}
@@ -86,20 +109,20 @@ export function AthleteElearningMobileScreen() {
             <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>{cat.count} khóa học</Text>
           </Pressable>
         ))}
-      </View>
+        </View>
+      )}
 
       {/* LEARNING PROGRESS */}
-      <Text style={SharedStyles.sectionTitle}>Đang học</Text>
-      {FEATURED_COURSES.filter(c => c.progress > 0 && c.progress < 100).map(course => (
-        <Pressable
+      {(!searchQuery || filteredCourses.some(c => c.progress > 0 && c.progress < 100)) && (
+        <Text style={SharedStyles.sectionTitle}>Đang học</Text>
+      )}
+      {filteredCourses.filter(c => c.progress > 0 && c.progress < 100).map(course => (
+        <AnimatedCard
           key={course.id}
-          style={SharedStyles.card}
-          onPress={() => { hapticLight() }}
-          accessibilityRole="button"
-          accessibilityLabel={`${course.title}: ${course.progress}%`}
+          onPress={() => { router.push(`/course-detail?id=${course.id}`) }}
         >
           <View style={[SharedStyles.rowBetween, { marginBottom: 8 }]}>
-            <View style={[SharedStyles.row, { gap: 10 }]}>
+            <View style={[SharedStyles.row, { gap: 10, flex: 1 }]}>
               <View style={{
                 width: 36, height: 36, borderRadius: 10,
                 backgroundColor: Colors.overlay(course.color, 0.1), justifyContent: 'center', alignItems: 'center',
@@ -111,27 +134,24 @@ export function AthleteElearningMobileScreen() {
                 <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>{course.category}</Text>
               </View>
             </View>
+            <ProgressRing progress={course.progress} size={42} strokeWidth={4} color={course.color} />
           </View>
           <Text style={{ fontSize: 11, color: Colors.textSecondary, marginBottom: 8, lineHeight: 16 }}>{course.description}</Text>
-          {/* Progress bar */}
-          <View style={{ marginBottom: 4 }}>
-            <View style={[SharedStyles.rowBetween, { marginBottom: 4 }]}>
-              <Text style={{ fontSize: 10, fontWeight: FontWeight.bold, color: Colors.textSecondary }}>
-                {course.completedLessons}/{course.lessons} bài
-              </Text>
-              <Text style={{ fontSize: 10, fontWeight: FontWeight.extrabold, color: course.color }}>{course.progress}%</Text>
-            </View>
-            <View style={{ height: 4, backgroundColor: Colors.trackBg, borderRadius: 2, overflow: 'hidden' }}>
-              <View style={{ height: '100%', borderRadius: 2, width: `${course.progress}%`, backgroundColor: course.color }} />
-            </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Icon name={VCTIcons.document} size={12} color={Colors.textMuted} />
+            <Text style={{ fontSize: 10, fontWeight: FontWeight.bold, color: Colors.textSecondary }}>
+              Đã học {course.completedLessons}/{course.lessons} bài
+            </Text>
           </View>
-        </Pressable>
+        </AnimatedCard>
       ))}
 
       {/* COMPLETED COURSES */}
-      <Text style={SharedStyles.sectionTitle}>Đã hoàn thành</Text>
-      {FEATURED_COURSES.filter(c => c.progress >= 100).map(course => (
-        <View key={course.id} style={[SharedStyles.card, { borderColor: Colors.overlay(Colors.green, 0.2) }]}>
+      {(!searchQuery || filteredCourses.some(c => c.progress >= 100)) && (
+        <Text style={SharedStyles.sectionTitle}>Đã hoàn thành</Text>
+      )}
+      {filteredCourses.filter(c => c.progress >= 100).map(course => (
+        <AnimatedCard key={course.id} style={{ borderColor: Colors.overlay(Colors.green, 0.2) }} onPress={() => { router.push(`/course-detail?id=${course.id}`) }}>
           <View style={[SharedStyles.row, { gap: 10 }]}>
             <View style={{
               width: 36, height: 36, borderRadius: 10,
@@ -144,21 +164,50 @@ export function AthleteElearningMobileScreen() {
               <Text style={{ fontSize: 11, color: Colors.green, marginTop: 2, fontWeight: FontWeight.bold }}>✓ Hoàn thành · {course.lessons} bài</Text>
             </View>
           </View>
-        </View>
+        </AnimatedCard>
       ))}
 
       {/* ALL COURSES */}
-      <Text style={SharedStyles.sectionTitle}>Tất cả khóa học</Text>
-      {FEATURED_COURSES.filter(c => c.progress === 0).length === 0 && (
-        <View style={[SharedStyles.card, { alignItems: 'center', paddingVertical: Space.xxl }]}>
-          <Icon name={VCTIcons.book} size={32} color={Colors.textMuted} />
-          <Text style={{ fontSize: 13, fontWeight: FontWeight.bold, color: Colors.textSecondary, marginTop: 8 }}>
-            Bạn đã bắt đầu tất cả khóa học!
-          </Text>
-          <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 4, textAlign: 'center', maxWidth: 260 }}>
-            Tiếp tục hoàn thành các khóa đang dở để nâng cao kỹ năng.
-          </Text>
-        </View>
+      {(!searchQuery || filteredCourses.some(c => c.progress === 0)) && (
+        <Text style={SharedStyles.sectionTitle}>Khóa học mới</Text>
+      )}
+      {filteredCourses.filter(c => c.progress === 0).length === 0 && !searchQuery && (
+        <EmptyState icon={VCTIcons.book} title="Bạn đã bắt đầu tất cả khóa học!" message="Tiếp tục hoàn thành các khóa đang dở để nâng cao kỹ năng." />
+      )}
+      {filteredCourses.filter(c => c.progress === 0).map(course => (
+        <AnimatedCard
+          key={course.id}
+          onPress={() => { router.push(`/course-detail?id=${course.id}`) }}
+        >
+          <View style={[SharedStyles.rowBetween, { marginBottom: 8 }]}>
+            <View style={[SharedStyles.row, { gap: 10, flex: 1 }]}>
+              <View style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: Colors.overlay(course.color, 0.1), justifyContent: 'center', alignItems: 'center',
+              }}>
+                <Icon name={course.icon} size={18} color={course.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: FontWeight.extrabold, color: Colors.textPrimary }}>{course.title}</Text>
+                <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>{course.category}</Text>
+              </View>
+            </View>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.overlay(Colors.accent, 0.1), justifyContent: 'center', alignItems: 'center' }}>
+              <Icon name={VCTIcons.forward} size={14} color={Colors.accent} />
+            </View>
+          </View>
+          <Text style={{ fontSize: 11, color: Colors.textSecondary, marginBottom: 8, lineHeight: 16 }}>{course.description}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Icon name={VCTIcons.document} size={12} color={Colors.textMuted} />
+            <Text style={{ fontSize: 10, fontWeight: FontWeight.bold, color: Colors.textSecondary }}>
+              {course.lessons} bài học
+            </Text>
+          </View>
+        </AnimatedCard>
+      ))}
+
+      {searchQuery && filteredCourses.length === 0 && (
+        <EmptyState icon={VCTIcons.search} title="Không tìm thấy kết quả" message={`Không có khóa học nào khớp với '${searchQuery}'`} />
       )}
 
       {/* Info */}

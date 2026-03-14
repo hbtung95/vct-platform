@@ -257,8 +257,9 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
         club_management: '/club',
         referee_console: '/referee-scoring',
         athlete_portal: '/athlete-portal',
+        parent_portal: '/parent',
         public_spectator: '/scoreboard',
-        federation_provincial: '/province/dashboard',
+        federation_provincial: '/provincial',
         federation_discipline: '/discipline/dashboard',
       }
       router.push(dashboardPaths[ws.type] ?? '/dashboard')

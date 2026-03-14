@@ -2,7 +2,7 @@ import * as React from 'react'
 import { RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'solito/navigation'
 import { Colors, SharedStyles, FontWeight, Radius, Space } from '../mobile-theme'
-import { Badge, ScreenHeader, ScreenSkeleton, EmptyState } from '../mobile-ui'
+import { Badge, ScreenHeader, ScreenSkeleton, EmptyState, SearchBar, Chip, StatsCounter, AnimatedCard, SectionDivider } from '../mobile-ui'
 import { Icon, VCTIcons } from '../icons'
 import { useAthleteResults } from '../useAthleteData'
 
@@ -21,10 +21,27 @@ const MEDAL_CFG = [
 export function AthleteResultsMobileScreen() {
   const router = useRouter()
   const { data, isLoading, refetch } = useAthleteResults()
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [medalFilter, setMedalFilter] = React.useState<string | null>(null)
+  const results = data?.results ?? []
+  const medals = data?.medals ?? { gold: 0, silver: 0, bronze: 0, total: 0 }
+  const eloRating = data?.eloRating ?? 0
+  const totalTournaments = data?.totalTournaments ?? 0
+
+  const filteredResults = React.useMemo(() => {
+    let list = results
+    if (medalFilter) {
+      const emoji = medalFilter === 'gold' ? '🥇' : medalFilter === 'silver' ? '🥈' : '🥉'
+      list = list.filter(r => r.medal === emoji)
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      list = list.filter(r => r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q))
+    }
+    return list
+  }, [results, medalFilter, searchQuery])
 
   if (isLoading || !data) return <ScreenSkeleton />
-
-  const { results, medals, eloRating, totalTournaments } = data
 
   return (
     <ScrollView
@@ -39,11 +56,8 @@ export function AthleteResultsMobileScreen() {
         {MEDAL_CFG.map(m => {
           const count = medals[m.key as keyof typeof medals] ?? 0
           return (
-            <View key={m.key} style={[SharedStyles.statBox, { borderColor: Colors.overlay(m.color, 0.2), backgroundColor: Colors.overlay(m.color, 0.06) }]}
-              accessibilityLabel={`${count} huy chương ${m.label}`}>
-              <Icon name={m.icon} size={18} color={m.color} style={{ marginBottom: 4 }} />
-              <Text style={[SharedStyles.statValue, { color: m.color, fontSize: 28 }]}>{count}</Text>
-              <Text style={[SharedStyles.statLabel, { color: m.color }]}>{m.label}</Text>
+            <View key={m.key} style={[SharedStyles.statBox, { borderColor: Colors.overlay(m.color, 0.2), backgroundColor: Colors.overlay(m.color, 0.06) }]}>
+              <StatsCounter value={count} label={m.label} color={m.color} icon={m.icon} />
             </View>
           )
         })}
@@ -51,27 +65,33 @@ export function AthleteResultsMobileScreen() {
 
       {/* Elo & Tournaments */}
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: Space.lg }}>
-        <View style={SharedStyles.statBox} accessibilityLabel={`Elo: ${eloRating}`}>
-          <Icon name={VCTIcons.stats} size={16} color={Colors.accent} style={{ marginBottom: 4 }} />
-          <Text style={[SharedStyles.statValue, { color: Colors.accent }]}>{eloRating}</Text>
-          <Text style={SharedStyles.statLabel}>Elo</Text>
+        <View style={[SharedStyles.statBox, { borderColor: Colors.overlay(Colors.accent, 0.2) }]}>
+          <StatsCounter value={eloRating} label="Elo" color={Colors.accent} icon={VCTIcons.stats} />
         </View>
-        <View style={SharedStyles.statBox} accessibilityLabel={`${totalTournaments} giải đấu`}>
-          <Icon name={VCTIcons.trophy} size={16} color={Colors.green} style={{ marginBottom: 4 }} />
-          <Text style={[SharedStyles.statValue, { color: Colors.green }]}>{totalTournaments}</Text>
-          <Text style={SharedStyles.statLabel}>Giải đấu</Text>
+        <View style={[SharedStyles.statBox, { borderColor: Colors.overlay(Colors.green, 0.2) }]}>
+          <StatsCounter value={totalTournaments} label="Giải đấu" color={Colors.green} icon={VCTIcons.trophy} />
         </View>
-        <View style={SharedStyles.statBox} accessibilityLabel={`${medals.total} tổng huy chương`}>
-          <Icon name={VCTIcons.medal} size={16} color={Colors.gold} style={{ marginBottom: 4 }} />
-          <Text style={[SharedStyles.statValue, { color: Colors.gold }]}>{medals.total}</Text>
-          <Text style={SharedStyles.statLabel}>Tổng HC</Text>
+        <View style={[SharedStyles.statBox, { borderColor: Colors.overlay(Colors.gold, 0.2) }]}>
+          <StatsCounter value={medals.total} label="Tổng HC" color={Colors.gold} icon={VCTIcons.medal} />
         </View>
       </View>
 
+      <SectionDivider label="Lịch sử thi đấu" icon={VCTIcons.calendar} />
+
+      <View style={{ marginBottom: Space.md }}>
+        <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Tìm giải đấu, nội dung..." />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: Space.lg }}>
+        <Chip label="Tất cả" selected={!medalFilter} onPress={() => setMedalFilter(null)} />
+        {MEDAL_CFG.map(m => (
+          <Chip key={m.key} label={m.label} selected={medalFilter === m.key} onPress={() => setMedalFilter(m.key)} color={m.color} />
+        ))}
+      </View>
+
       {/* Competition History */}
-      <Text style={SharedStyles.sectionTitle}>Lịch sử thi đấu</Text>
-      {results.length > 0 ? results.map(r => (
-        <View key={r.id} style={SharedStyles.card}>
+      {/* Competition History */}
+      {filteredResults.length > 0 ? filteredResults.map(r => (
+        <AnimatedCard key={r.id} onPress={() => router.push(`/tournament-detail?id=${r.id}`)}>
           <View style={[SharedStyles.rowBetween, { marginBottom: 6 }]}>
             <Text style={{ fontSize: 14, fontWeight: FontWeight.extrabold, color: Colors.textPrimary, flex: 1 }}>{r.name}</Text>
             {r.medal && (
@@ -96,7 +116,7 @@ export function AthleteResultsMobileScreen() {
               </>
             )}
           </View>
-        </View>
+        </AnimatedCard>
       )) : (
         <EmptyState
           icon={VCTIcons.trophy}

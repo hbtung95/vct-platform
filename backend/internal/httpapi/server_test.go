@@ -47,7 +47,7 @@ func newTestServer() *Server {
 		AllowedOrigins:     []string{"*"},
 		DisableAuthForData: false,
 		AllowDemoUsers:     true,
-		JWTSecret:          "http-test-secret",
+		JWTSecret:          "http-test-secret-0123456789abcdef",
 		JWTIssuer:          "http-test",
 		AccessTokenTTL:     10 * time.Minute,
 		RefreshTokenTTL:    2 * time.Hour,
@@ -81,6 +81,9 @@ func requestJSON(
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("Accept", "application/json")
+	if method != http.MethodGet && method != http.MethodHead && method != http.MethodOptions {
+		req.Header.Set("Origin", "http://localhost")
+	}
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}

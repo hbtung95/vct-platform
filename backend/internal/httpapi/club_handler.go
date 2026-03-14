@@ -28,7 +28,7 @@ func (s *Server) handleClubDashboard(w http.ResponseWriter, r *http.Request, p a
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if !requireRole(w, p, clubReadRoles...) {
+	if !requireClubRead(w, p) {
 		return
 	}
 	clubID := r.URL.Query().Get("club_id")
@@ -53,7 +53,7 @@ func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, p aut
 
 	switch r.Method {
 	case http.MethodGet:
-		if !requireRole(w, p, clubReadRoles...) {
+		if !requireClubRead(w, p) {
 			return
 		}
 		members, err := s.provincialSvc.ListClubMembers(r.Context(), clubID)
@@ -64,7 +64,7 @@ func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, p aut
 		success(w, http.StatusOK, map[string]any{"data": map[string]any{"members": members, "total": len(members)}})
 
 	case http.MethodPost:
-		if !requireRole(w, p, clubWriteRoles...) {
+		if !requireClubWrite(w, p) {
 			return
 		}
 		var m provincial.ClubMember
@@ -88,9 +88,6 @@ func (s *Server) handleClubMembers(w http.ResponseWriter, r *http.Request, p aut
 }
 
 func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, p auth.Principal) {
-	if !requireRole(w, p, clubReadRoles...) {
-		return
-	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/club/members/")
 	parts := strings.SplitN(path, "/", 2)
 	id := parts[0]
@@ -99,6 +96,9 @@ func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, 
 		action := parts[1]
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if !requireClubWrite(w, p) {
 			return
 		}
 		switch action {
@@ -122,6 +122,9 @@ func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, 
 
 	switch r.Method {
 	case http.MethodGet:
+		if !requireClubRead(w, p) {
+			return
+		}
 		m, err := s.provincialSvc.GetClubMember(r.Context(), id)
 		if err != nil {
 			notFound(w)
@@ -130,6 +133,9 @@ func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, 
 		success(w, http.StatusOK, map[string]any{"data": m})
 
 	case http.MethodPut:
+		if !requireClubWrite(w, p) {
+			return
+		}
 		var patch map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 			badRequest(w, "invalid body")
@@ -142,6 +148,9 @@ func (s *Server) handleClubMemberAction(w http.ResponseWriter, r *http.Request, 
 		success(w, http.StatusOK, map[string]any{"message": "updated"})
 
 	case http.MethodDelete:
+		if !requireClubWrite(w, p) {
+			return
+		}
 		if err := s.provincialSvc.DeleteClubMember(r.Context(), id); err != nil {
 			internalError(w, err)
 			return
@@ -163,7 +172,7 @@ func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, p aut
 
 	switch r.Method {
 	case http.MethodGet:
-		if !requireRole(w, p, clubReadRoles...) {
+		if !requireClubRead(w, p) {
 			return
 		}
 		classes, err := s.provincialSvc.ListClubClasses(r.Context(), clubID)
@@ -174,7 +183,7 @@ func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, p aut
 		success(w, http.StatusOK, map[string]any{"data": map[string]any{"classes": classes, "total": len(classes)}})
 
 	case http.MethodPost:
-		if !requireRole(w, p, clubWriteRoles...) {
+		if !requireClubWrite(w, p) {
 			return
 		}
 		var c provincial.ClubClass
@@ -198,13 +207,13 @@ func (s *Server) handleClubClasses(w http.ResponseWriter, r *http.Request, p aut
 }
 
 func (s *Server) handleClubClassAction(w http.ResponseWriter, r *http.Request, p auth.Principal) {
-	if !requireRole(w, p, clubReadRoles...) {
-		return
-	}
 	id := strings.TrimPrefix(r.URL.Path, "/api/v1/club/classes/")
 
 	switch r.Method {
 	case http.MethodGet:
+		if !requireClubRead(w, p) {
+			return
+		}
 		c, err := s.provincialSvc.GetClubClass(r.Context(), id)
 		if err != nil {
 			notFound(w)
@@ -213,6 +222,9 @@ func (s *Server) handleClubClassAction(w http.ResponseWriter, r *http.Request, p
 		success(w, http.StatusOK, map[string]any{"data": c})
 
 	case http.MethodPut:
+		if !requireClubWrite(w, p) {
+			return
+		}
 		var patch map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 			badRequest(w, "invalid body")
@@ -225,6 +237,9 @@ func (s *Server) handleClubClassAction(w http.ResponseWriter, r *http.Request, p
 		success(w, http.StatusOK, map[string]any{"message": "updated"})
 
 	case http.MethodDelete:
+		if !requireClubWrite(w, p) {
+			return
+		}
 		if err := s.provincialSvc.DeleteClubClass(r.Context(), id); err != nil {
 			internalError(w, err)
 			return
@@ -239,9 +254,6 @@ func (s *Server) handleClubClassAction(w http.ResponseWriter, r *http.Request, p
 // ── Finance ──────────────────────────────────────────────────
 
 func (s *Server) handleClubFinance(w http.ResponseWriter, r *http.Request, p auth.Principal) {
-	if !requireRole(w, p, clubReadRoles...) {
-		return
-	}
 	clubID := r.URL.Query().Get("club_id")
 	if clubID == "" {
 		clubID = "CLB-001"
@@ -249,6 +261,9 @@ func (s *Server) handleClubFinance(w http.ResponseWriter, r *http.Request, p aut
 
 	switch r.Method {
 	case http.MethodGet:
+		if !requireClubRead(w, p) {
+			return
+		}
 		entries, err := s.provincialSvc.ListClubFinance(r.Context(), clubID)
 		if err != nil {
 			internalError(w, err)
@@ -257,6 +272,9 @@ func (s *Server) handleClubFinance(w http.ResponseWriter, r *http.Request, p aut
 		success(w, http.StatusOK, map[string]any{"data": map[string]any{"entries": entries, "total": len(entries)}})
 
 	case http.MethodPost:
+		if !requireClubWrite(w, p) {
+			return
+		}
 		var f provincial.ClubFinanceEntry
 		if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
 			badRequest(w, "invalid request body")
@@ -282,7 +300,7 @@ func (s *Server) handleClubFinanceSummary(w http.ResponseWriter, r *http.Request
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if !requireRole(w, p, clubReadRoles...) {
+	if !requireClubRead(w, p) {
 		return
 	}
 	clubID := r.URL.Query().Get("club_id")
@@ -300,7 +318,7 @@ func (s *Server) handleClubFinanceSummary(w http.ResponseWriter, r *http.Request
 // ── Settings ─────────────────────────────────────────────────
 
 func (s *Server) handleClubSettings(w http.ResponseWriter, r *http.Request, p auth.Principal) {
-	if !requireRole(w, p, clubReadRoles...) {
+	if !requireClubRead(w, p) {
 		return
 	}
 	clubID := r.URL.Query().Get("club_id")

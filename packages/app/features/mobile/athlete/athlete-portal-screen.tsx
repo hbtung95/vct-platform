@@ -3,7 +3,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'solito/navigation'
 import { useAuth } from '../../auth/AuthProvider'
 import { Colors, SharedStyles, FontWeight, Radius, Space, Touch } from '../mobile-theme'
-import { Badge, ScreenSkeleton } from '../mobile-ui'
+import { Badge, ScreenSkeleton, AnimatedCard, SectionDivider, StatsCounter } from '../mobile-ui'
 import { Icon, VCTIcons } from '../icons'
 import { hapticLight } from '../haptics'
 import { useAthleteProfile, useAthleteTournaments, useAthleteTraining, useNotifications } from '../useAthleteData'
@@ -90,101 +90,89 @@ export function AthletePortalMobileScreen() {
         </Pressable>
       </View>
 
-      {/* COMPACT STATS */}
+      {/* ANIMATED STATS */}
       <View style={SharedStyles.statsRow}>
-        <View style={SharedStyles.statBox} accessibilityLabel={`${profile.tournamentCount} giải đấu`}>
-          <Icon name={VCTIcons.trophy} size={16} color={Colors.accent} style={{ marginBottom: 4 }} />
-          <Text style={SharedStyles.statValue}>{profile.tournamentCount}</Text>
-          <Text style={SharedStyles.statLabel}>Giải đấu</Text>
+        <View style={[SharedStyles.statBox, { borderColor: Colors.overlay(Colors.accent, 0.2) }]}>
+          <StatsCounter value={profile.tournamentCount} label="Giải đấu" color={Colors.accent} icon={VCTIcons.trophy} />
         </View>
-        <View style={SharedStyles.statBox} accessibilityLabel={`${profile.medalCount} huy chương`}>
-          <Icon name={VCTIcons.medal} size={16} color={Colors.gold} style={{ marginBottom: 4 }} />
-          <Text style={[SharedStyles.statValue, { color: Colors.gold }]}>{profile.medalCount}</Text>
-          <Text style={SharedStyles.statLabel}>Huy chương</Text>
+        <View style={[SharedStyles.statBox, { borderColor: Colors.overlay(Colors.gold, 0.2) }]}>
+          <StatsCounter value={profile.medalCount} label="Huy chương" color={Colors.gold} icon={VCTIcons.medal} />
         </View>
-        <View style={SharedStyles.statBox} accessibilityLabel={`Tỷ lệ tập ${profile.attendanceRate}%`}>
-          <Icon name={VCTIcons.flame} size={16} color={Colors.green} style={{ marginBottom: 4 }} />
-          <Text style={[SharedStyles.statValue, { color: Colors.green }]}>{profile.attendanceRate}%</Text>
-          <Text style={SharedStyles.statLabel}>Chuyên cần</Text>
+        <View style={[SharedStyles.statBox, { borderColor: Colors.overlay(Colors.green, 0.2) }]}>
+          <StatsCounter value={profile.attendanceRate} label="Chuyên cần" color={Colors.green} icon={VCTIcons.flame} suffix="%" />
         </View>
       </View>
 
       {/* QUICK ACTIONS — 6-item grid */}
-      <Text style={SharedStyles.sectionTitle}>Truy cập nhanh</Text>
+      <SectionDivider label="Truy cập nhanh" icon={VCTIcons.flash} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: Space.lg }}>
         {QUICK_ACTIONS.map(item => (
-          <Pressable
+          <AnimatedCard
             key={item.route}
-            style={{
-              width: '30%', flexGrow: 1, borderRadius: Radius.md, padding: 14, alignItems: 'center',
-              backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-              minHeight: Touch.minSize,
-            }}
-            onPress={() => { hapticLight(); router.push(item.route) }}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
+            onPress={() => router.push(item.route)}
+            style={{ width: '30%', flexGrow: 1, alignItems: 'center', gap: 6, minHeight: Touch.minSize }}
           >
-            <Icon name={item.icon} size={22} color={item.color} style={{ marginBottom: 6 }} />
-            <Text style={{ fontSize: 11, fontWeight: FontWeight.bold, color: Colors.textSecondary }}>{item.label}</Text>
-          </Pressable>
+            <View style={{
+              width: 42, height: 42, borderRadius: 14,
+              backgroundColor: Colors.overlay(item.color, 0.1),
+              justifyContent: 'center', alignItems: 'center',
+            }}>
+              <Icon name={item.icon} size={20} color={item.color} />
+            </View>
+            <Text style={{ fontSize: 11, fontWeight: FontWeight.extrabold, color: Colors.textPrimary }}>{item.label}</Text>
+          </AnimatedCard>
         ))}
       </View>
 
       {/* UPCOMING TOURNAMENT — mini card */}
       {nextTournament && (
         <>
-          <Text style={SharedStyles.sectionTitle}>Giải đấu sắp tới</Text>
-          <Pressable
-            style={SharedStyles.card}
-            onPress={() => { hapticLight(); router.push(`/tournament-detail?id=${nextTournament.id}`) }}
-            accessibilityRole="button"
-            accessibilityLabel={`Giải đấu: ${nextTournament.name}`}
-          >
+          <SectionDivider label="Giải đấu sắp tới" icon={VCTIcons.trophy} />
+          <AnimatedCard onPress={() => router.push(`/tournament-detail?id=${nextTournament.id}`)}>
             <View style={[SharedStyles.rowBetween, { marginBottom: 6 }]}>
               <View style={[SharedStyles.row, { gap: 8 }]}>
-                <Icon name={VCTIcons.trophy} size={16} color={Colors.gold} />
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.overlay(Colors.gold, 0.1), justifyContent: 'center', alignItems: 'center' }}>
+                  <Icon name={VCTIcons.trophy} size={18} color={Colors.gold} />
+                </View>
                 <Text style={{ fontSize: 14, fontWeight: FontWeight.extrabold, color: Colors.textPrimary, flex: 1 }}>
                   {nextTournament.name}
                 </Text>
               </View>
               <Icon name={VCTIcons.forward} size={16} color={Colors.textMuted} />
             </View>
-            <View style={[SharedStyles.row, { gap: 6 }]}>
+            <View style={[SharedStyles.row, { gap: 6, marginLeft: 44 }]}>
               <Icon name={VCTIcons.calendar} size={12} color={Colors.textSecondary} />
               <Text style={{ fontSize: 11, color: Colors.textSecondary }}>{nextTournament.date}</Text>
               <Text style={{ fontSize: 11, color: Colors.textSecondary }}> · </Text>
               <Text style={{ fontSize: 11, color: Colors.textSecondary }}>{nextTournament.categories.join(', ')}</Text>
             </View>
-          </Pressable>
+          </AnimatedCard>
         </>
       )}
 
       {/* NEXT TRAINING SESSION — mini card */}
       {nextSession && (
         <>
-          <Text style={SharedStyles.sectionTitle}>Buổi tập tiếp theo</Text>
-          <Pressable
-            style={SharedStyles.card}
-            onPress={() => { hapticLight(); router.push(`/training-detail?id=${nextSession.id}`) }}
-            accessibilityRole="button"
-            accessibilityLabel={`Buổi tập: ${nextSession.date}`}
-          >
+          <SectionDivider label="Buổi tập tiếp theo" icon={VCTIcons.calendar} />
+          <AnimatedCard onPress={() => router.push(`/training-detail?id=${nextSession.id}`)}>
             <View style={[SharedStyles.rowBetween, { marginBottom: 6 }]}>
               <View style={[SharedStyles.row, { gap: 8 }]}>
-                <Icon name={VCTIcons.fitness} size={16} color={Colors.green} />
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.overlay(Colors.green, 0.1), justifyContent: 'center', alignItems: 'center' }}>
+                  <Icon name={VCTIcons.fitness} size={18} color={Colors.green} />
+                </View>
                 <Text style={{ fontSize: 14, fontWeight: FontWeight.extrabold, color: Colors.textPrimary }}>
                   {nextSession.time}
                 </Text>
               </View>
               <Icon name={VCTIcons.forward} size={16} color={Colors.textMuted} />
             </View>
-            <View style={[SharedStyles.row, { gap: 6 }]}>
+            <View style={[SharedStyles.row, { gap: 6, marginLeft: 44 }]}>
               <Icon name={VCTIcons.location} size={12} color={Colors.textSecondary} />
               <Text style={{ fontSize: 11, color: Colors.textSecondary }}>{nextSession.location}</Text>
               <Text style={{ fontSize: 11, color: Colors.textSecondary }}> · </Text>
               <Text style={{ fontSize: 11, color: Colors.textSecondary }}>{nextSession.coach}</Text>
             </View>
-          </Pressable>
+          </AnimatedCard>
         </>
       )}
     </ScrollView>

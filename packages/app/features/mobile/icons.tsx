@@ -95,6 +95,7 @@ export const VCTIcons = {
   cellular: 'cellular-outline' as IoniconsName,
   wifi: 'wifi-outline' as IoniconsName,
   cloudOffline: 'cloud-offline-outline' as IoniconsName,
+  medkit: 'medkit-outline' as IoniconsName,
 
   // Misc
   heart: 'heart' as IoniconsName,
@@ -107,5 +108,6 @@ export const VCTIcons = {
   clipboard: 'clipboard-outline' as IoniconsName,
   cloudUpload: 'cloud-upload-outline' as IoniconsName,
   grid: 'grid-outline' as IoniconsName,
+  list: 'list-outline' as IoniconsName,
   book: 'book-outline' as IoniconsName,
 } as const

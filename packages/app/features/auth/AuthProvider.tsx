@@ -9,14 +9,15 @@ import {
   useRef,
   useState,
 } from 'react'
-import { ENTITY_AUTHZ_ROLES } from './entity-authz.generated'
 import { isRouteAccessible } from '../layout/route-registry'
+import { normalizeWorkspaceType } from '../layout/workspace-types'
 import { authClient, isAuthClientError } from './auth-client'
 import {
   clearLegacyTokens,
   persistLegacyTokens,
   readStoredTokens,
 } from './token-storage'
+import { isUserRole } from './types'
 import type { AuthSession, AuthUser, LoginInput, UserRole, WorkspaceAccess } from './types'
 
 interface AuthContextValue {
@@ -45,19 +46,6 @@ const LEGACY_WORKSPACE_STORAGE_KEY = 'vct-workspace'
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 45 * 1000
 const memoryStorage = new Map<string, string>()
 
-const USER_ROLES: UserRole[] = [...ENTITY_AUTHZ_ROLES]
-const WORKSPACE_TYPES = new Set([
-  'federation_admin',
-  'tournament_ops',
-  'club_management',
-  'referee_console',
-  'athlete_portal',
-  'public_spectator',
-  'system_admin',
-  'parent_portal',
-  'provincial_management',
-])
-
 const DEFAULT_USER: AuthUser = {
   id: 'guest',
   name: 'Khách vận hành',
@@ -72,15 +60,24 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value && typeof value === 'object')
 
 const isRole = (value: unknown): value is UserRole =>
-  typeof value === 'string' && USER_ROLES.includes(value as UserRole)
+  isUserRole(value)
 
-const isWorkspaceAccessShape = (value: unknown): value is WorkspaceAccess =>
-  isRecord(value) &&
-  typeof value.type === 'string' &&
-  WORKSPACE_TYPES.has(value.type) &&
-  typeof value.scopeId === 'string' &&
-  typeof value.scopeName === 'string' &&
-  typeof value.role === 'string'
+const normalizeWorkspaceAccess = (value: unknown): WorkspaceAccess | null => {
+  if (!isRecord(value)) return null
+
+  const type = normalizeWorkspaceType(value.type)
+  if (!type) return null
+  if (typeof value.scopeId !== 'string' || typeof value.scopeName !== 'string') {
+    return null
+  }
+
+  return {
+    type,
+    scopeId: value.scopeId,
+    scopeName: value.scopeName,
+    role: typeof value.role === 'string' ? value.role : 'viewer',
+  }
+}
 
 const normalizeTimestamp = (value: unknown, fallbackMs: number): string => {
   if (typeof value === 'string') {
@@ -124,7 +121,11 @@ const normalizeStoredSession = (value: unknown): AuthSession | null => {
     role: rawUser.role,
     roles: Array.isArray(rawUser.roles) ? (rawUser.roles as AuthUser['roles']) : [],
     permissions: Array.isArray(rawUser.permissions) ? (rawUser.permissions as string[]) : [],
-    workspaces: Array.isArray(rawUser.workspaces) ? (rawUser.workspaces as AuthUser['workspaces']) : [],
+    workspaces: Array.isArray(rawUser.workspaces)
+      ? rawUser.workspaces
+        .map((workspace) => normalizeWorkspaceAccess(workspace))
+        .filter((workspace): workspace is WorkspaceAccess => workspace !== null)
+      : [],
     metadata: isRecord(rawUser.metadata) ? rawUser.metadata : undefined,
   }
 
@@ -143,8 +144,9 @@ const normalizeStoredSession = (value: unknown): AuthSession | null => {
 }
 
 const normalizeStoredWorkspace = (value: unknown): WorkspaceAccess | null => {
-  if (isWorkspaceAccessShape(value)) {
-    return value
+  const normalized = normalizeWorkspaceAccess(value)
+  if (normalized) {
+    return normalized
   }
 
   if (!isRecord(value)) return null
@@ -156,12 +158,8 @@ const normalizeStoredWorkspace = (value: unknown): WorkspaceAccess | null => {
       : null
 
   if (!activeWorkspace) return null
-  if (
-    typeof activeWorkspace.type !== 'string' ||
-    !WORKSPACE_TYPES.has(activeWorkspace.type)
-  ) {
-    return null
-  }
+  const type = normalizeWorkspaceType(activeWorkspace.type)
+  if (!type) return null
 
   const scope = isRecord(activeWorkspace.scope) ? activeWorkspace.scope : null
   const scopeId =
@@ -182,7 +180,7 @@ const normalizeStoredWorkspace = (value: unknown): WorkspaceAccess | null => {
   if (!scopeId || !scopeName) return null
 
   return {
-    type: activeWorkspace.type as WorkspaceAccess['type'],
+    type,
     scopeId,
     scopeName,
     role:
@@ -527,9 +525,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const setActiveWorkspace = useCallback(
     (workspace: WorkspaceAccess | null) => {
-      setActiveWorkspaceState(workspace)
-      if (workspace) {
-        writePersisted(WORKSPACE_STORAGE_KEY, JSON.stringify(workspace))
+      const normalizedWorkspace = workspace ? normalizeWorkspaceAccess(workspace) : null
+      setActiveWorkspaceState(normalizedWorkspace)
+      if (normalizedWorkspace) {
+        writePersisted(WORKSPACE_STORAGE_KEY, JSON.stringify(normalizedWorkspace))
         removePersisted(LEGACY_WORKSPACE_STORAGE_KEY)
       } else {
         removePersisted(WORKSPACE_STORAGE_KEY)

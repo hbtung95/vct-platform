@@ -72,6 +72,10 @@ apps/expo/android
 .turbo
 build/**
 backend/bin/
+backend/*.exe
+backend/fly*.log
+backend/fly*.txt
+backend/.env
 test-results/
 
 .pnp.*

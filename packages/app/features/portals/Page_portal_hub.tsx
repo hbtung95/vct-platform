@@ -145,6 +145,7 @@ const FILTER_LABEL_MAP: Record<string, string> = {
     tournament_ops: '🏆 Giải đấu',
     club_management: '🥋 CLB',
     athlete_portal: '👤 Cá nhân',
+    parent_portal: '👨‍👩‍👧‍👦 Phụ huynh',
     public_spectator: '📺 Khán giả',
     system_admin: '⚙️ Hệ thống',
 }
@@ -157,6 +158,7 @@ const WORKSPACE_DESTINATIONS: Record<WorkspaceType, string> = {
     club_management: '/clubs',
     referee_console: '/referee-scoring',
     athlete_portal: '/athlete-portal',
+    parent_portal: '/parent',
     public_spectator: '/scoreboard',
     system_admin: '/admin',
 }
@@ -187,6 +189,11 @@ const WORKSPACE_STATS: Partial<Record<WorkspaceType, WorkspaceCard['stats']>> = 
         { label: 'Huy chương', value: 7 },
         { label: 'ELO', value: '1,680' },
     ],
+    parent_portal: [
+        { label: 'Con em', value: 2 },
+        { label: 'Đồng thuận', value: 4 },
+        { label: 'Điểm danh', value: '96%' },
+    ],
     public_spectator: [
         { label: 'Đang LIVE', value: 3 },
         { label: 'Giải', value: 2 },
@@ -216,6 +223,7 @@ function getIconForWorkspace(icon: string) {
         'Home': 'Building2',
         'Scale': 'Scale',
         'User': 'User',
+        'Users': 'Users',
         'Monitor': 'MonitorPlay',
         'Settings': 'Settings',
     }
@@ -239,13 +247,14 @@ export function Page_portal_hub() {
     const workspaceCards = useMemo(() => {
         if (resolvedWorkspaces.length === 0) return MOCK_WORKSPACE_CARDS
 
-        return resolvedWorkspaces.map<WorkspaceCard>((workspace) => {
+        return resolvedWorkspaces.flatMap<WorkspaceCard>((workspace) => {
             const meta = WORKSPACE_META[workspace.type]
+            if (!meta) return []
             const isActive =
                 activeWorkspace?.type === workspace.type &&
                 activeWorkspace.scopeId === workspace.scopeId
 
-            return {
+            return [{
                 id: `${workspace.type}:${workspace.scopeId}`,
                 type: workspace.type,
                 scope: {
@@ -254,10 +263,12 @@ export function Page_portal_hub() {
                             ? 'system'
                             : workspace.type === 'public_spectator'
                                 ? 'public'
-                                : workspace.type === 'athlete_portal'
+                                : workspace.type === 'athlete_portal' || workspace.type === 'parent_portal'
                                     ? 'user'
-                                    : workspace.type === 'club_management'
-                                        ? 'club'
+                                : workspace.type === 'club_management'
+                                    ? 'club'
+                                    : workspace.type === 'federation_provincial'
+                                        ? 'province'
                                         : workspace.type === 'tournament_ops' || workspace.type === 'referee_console'
                                             ? 'tournament'
                                             : 'federation',
@@ -272,7 +283,7 @@ export function Page_portal_hub() {
                 badge: formatRoleBadge(workspace.role),
                 stats: WORKSPACE_STATS[workspace.type],
                 lastAccessed: isActive ? 'Đang hoạt động' : undefined,
-            }
+            }]
         })
     }, [activeWorkspace?.scopeId, activeWorkspace?.type, resolvedWorkspaces, t])
 

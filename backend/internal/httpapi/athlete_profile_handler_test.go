@@ -88,6 +88,7 @@ func TestAthleteProfileMethodNotAllowed(t *testing.T) {
 
 	// Stats only allows GET
 	req := httptest.NewRequest("POST", "/api/v1/athlete-profiles/stats", nil)
+	req.Header.Set("Origin", "http://localhost")
 	w := httptest.NewRecorder()
 
 	mux.ServeHTTP(w, req)
