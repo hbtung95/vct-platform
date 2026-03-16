@@ -156,6 +156,22 @@ func (s *Server) withCSRF(next http.Handler) http.Handler {
 			return
 		}
 
+		// Skip CSRF for public auth endpoints — these are stateless (no session
+		// cookies), already rate-limited, and must work from any origin.
+		publicAuthPaths := []string{
+			"/api/v1/auth/login",
+			"/api/v1/auth/register",
+			"/api/v1/auth/send-otp",
+			"/api/v1/auth/verify-otp",
+			"/api/v1/auth/refresh",
+		}
+		for _, p := range publicAuthPaths {
+			if r.URL.Path == p {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		// For state-changing requests, validate Origin header against allowed origins
 		origin := strings.TrimSpace(r.Header.Get("Origin"))
 		if origin == "" {
