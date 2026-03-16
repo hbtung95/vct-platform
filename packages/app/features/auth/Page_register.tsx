@@ -6,6 +6,8 @@ import { VCT_Toast } from '../components/vct-ui'
 import { VCT_Icons } from '../components/vct-icons'
 import { useI18n } from '../i18n'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? ''
+
 type Step = 'info' | 'verify' | 'complete'
 
 interface FormData {
@@ -82,7 +84,7 @@ export function Page_register() {
     if (!validate()) return
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/auth/send-otp', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -119,7 +121,7 @@ export function Page_register() {
     if (resendCooldown > 0) return
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/auth/send-otp', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -150,7 +152,7 @@ export function Page_register() {
     if (code.length !== 6) { flash(t('otpWarn'), 'warning'); return }
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/auth/verify-otp', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, code }),
