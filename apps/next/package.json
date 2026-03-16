@@ -11,6 +11,8 @@
     "lint": "eslint app --ext .ts,.tsx"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "app": "*",
     "next": "^16.1.6",
     "raf": "^3.4.1",
