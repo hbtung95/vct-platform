@@ -356,7 +356,7 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
   const renderHeader = (showHamburger: boolean) => (
     <header
       role="banner"
-      className={`vct-glass flex shrink-0 items-center justify-between border-b border-vct-border shadow-[var(--vct-shadow-sm)] ${isMobile ? 'h-14 gap-2 px-4' : 'h-14 gap-4 px-6'}`}
+      className={`relative z-50 vct-glass flex shrink-0 items-center justify-between border-b border-vct-border shadow-[var(--vct-shadow-sm)] ${isMobile ? 'h-14 gap-2 px-4' : 'h-14 gap-4 px-6'}`}
     >
       {/* ── Left: mobile hamburger + breadcrumbs ── */}
       <div className="flex min-w-0 items-center gap-3">
