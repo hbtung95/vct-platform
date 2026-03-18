@@ -34,6 +34,7 @@ import (
 	"vct-platform/backend/internal/domain/provincial"
 	"vct-platform/backend/internal/domain/ranking"
 	"vct-platform/backend/internal/domain/scoring"
+	"vct-platform/backend/internal/domain/support"
 	"vct-platform/backend/internal/domain/tournament"
 	"vct-platform/backend/internal/email"
 	"vct-platform/backend/internal/events"
@@ -107,6 +108,12 @@ type Server struct {
 
 	// ── Tournament Management Service ─────────────────────────
 	tournamentMgmtSvc *tournament.MgmtService
+
+	// ── Customer Support & Technical Assistance ─────────────
+	supportSvc *support.Service
+
+	// ── Subscription & Billing ──────────────────────────────
+	subscriptionSvc *finance.SubscriptionService
 
 	// ── SQL DB (for PG adapters when storage driver is postgres) ──
 	sqlDB *sql.DB
@@ -255,6 +262,24 @@ func New(cfg config.Config) *Server {
 
 		// ── Email Service (Resend for OTP) ────────────────
 		emailService: email.NewService(cfg.ResendAPIKey, cfg.ResendFromEmail),
+
+		// ── Wire Customer Support Service ────────────────
+		supportSvc: support.NewService(
+			support.NewInMemTicketRepo(),
+			support.NewInMemCategoryRepo(),
+			support.NewInMemFAQRepo(),
+			newUUID,
+		),
+
+		// ── Wire Subscription & Billing Service ───────────
+		subscriptionSvc: finance.NewSubscriptionService(
+			finance.NewInMemPlanRepo(),
+			finance.NewInMemSubRepo(),
+			finance.NewInMemBillingRepo(),
+			finance.NewInMemRenewalRepo(),
+			nil, // invoice repo — will wire when invoice store is available
+			newUUID,
+		),
 	}
 
 	// Wire JWT validation into WebSocket hub for first-message auth
@@ -295,6 +320,21 @@ func New(cfg config.Config) *Server {
 			s.sqlDB = db
 			log.Println("PG adapters: connected — wiring PostgreSQL stores")
 
+			// Re-create auth service with DB for persistent user storage
+			s.authService.Stop() // stop existing cleanup goroutine
+			s.authService = auth.NewService(auth.ServiceConfig{
+				Secret:          cfg.JWTSecret,
+				Issuer:          cfg.JWTIssuer,
+				AccessTTL:       cfg.AccessTokenTTL,
+				RefreshTTL:      cfg.RefreshTokenTTL,
+				AuditLimit:      cfg.AuditLimit,
+				CleanupInterval: 5 * time.Minute,
+				AllowDemoUsers:  cfg.AllowDemoUsers,
+				CredentialsJSON: cfg.BootstrapUsersJSON,
+				DB:              db, // enable persistent user storage
+			})
+			log.Println("PG adapters: auth service re-created with database user store")
+
 			// Club module
 			s.clubSvc = clubdomain.NewService(
 				adapter.NewPgAttendanceStore(db),
@@ -332,6 +372,16 @@ func New(cfg config.Config) *Server {
 				adapter.NewPgConsentStore(db),
 				adapter.NewPgParentAttendanceStore(db),
 				adapter.NewPgParentResultStore(db),
+				newUUID,
+			)
+
+			// Subscription & Billing
+			s.subscriptionSvc = finance.NewSubscriptionService(
+				finance.NewPgPlanRepo(db),
+				finance.NewPgSubRepo(db),
+				finance.NewPgBillingRepo(db),
+				finance.NewPgRenewalRepo(db),
+				nil, // invoice repo will be provided later
 				newUUID,
 			)
 		}
@@ -412,6 +462,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/finance/budgets", s.withAuth(s.handleBudgetList))
 	mux.HandleFunc("/api/v1/finance/sponsorships/", s.withAuth(s.handleSponsorshipList))
 	mux.HandleFunc("/api/v1/finance/sponsorships", s.withAuth(s.handleSponsorshipCreate))
+	// ── Subscription & Billing ──────────────────────────────
+	mux.HandleFunc("/api/v1/finance/plans/", s.withAuth(s.handlePlanRoutes))
+	mux.HandleFunc("/api/v1/finance/plans", s.withAuth(s.handlePlanRoutes))
+	mux.HandleFunc("/api/v1/finance/subscriptions/expiring", s.withAuth(s.handleExpiringSubscriptions))
+	mux.HandleFunc("/api/v1/finance/subscriptions/", s.withAuth(s.handleSubscriptionDetail))
+	mux.HandleFunc("/api/v1/finance/subscriptions", s.withAuth(s.handleSubscriptionRoutes))
+	mux.HandleFunc("/api/v1/finance/billing-cycles/", s.withAuth(s.handleBillingCycleMarkPaid))
+	mux.HandleFunc("/api/v1/finance/billing-cycles", s.withAuth(s.handleBillingCycleList))
 	// ── Bracket & Tournament Orchestration ───────────────────
 	mux.HandleFunc("/api/v1/brackets-action/assign-medals", s.withAuth(s.handleAssignMedals))
 	mux.HandleFunc("/api/v1/tournaments-action/open-registration", s.withAuth(s.handleTournamentOpenRegistration))
@@ -458,6 +516,8 @@ func (s *Server) Handler() http.Handler {
 	s.handleProvincialFederationRoutes(mux)
 	// ── Administrative Divisions (Tỉnh/Xã/Phường) ──────────
 	divisions.NewHandler().RegisterRoutes(mux)
+	// ── Customer Support ─────────────────────────────────────
+	s.handleSupportRoutes(mux)
 	// ── Domain Events ────────────────────────────────────────
 	mux.HandleFunc("/api/v1/events/recent", s.withAuth(s.handleRecentEvents))
 	// Generic entity CRUD (catch-all for unmigrated entities)

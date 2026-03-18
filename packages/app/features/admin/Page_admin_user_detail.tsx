@@ -87,21 +87,21 @@ const buildTimelineEvents = (user: SystemUser): TimelineEvent[] => [
 // SKELETON COMPONENTS
 // ════════════════════════════════════════
 const SkeletonHero = () => (
-    <section className="relative mb-8 overflow-hidden rounded-[28px] border border-[var(--vct-border-subtle)] p-6 bg-[var(--vct-bg-elevated)] tablet:p-8">
+    <section className="relative mb-8 overflow-hidden rounded-[28px] border border-(--vct-border-subtle) p-6 bg-(--vct-bg-elevated) tablet:p-8">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div className="flex flex-col gap-5 tablet:flex-row tablet:items-center">
-                <div className="w-[88px] h-[88px] rounded-full bg-[var(--vct-bg-card)] animate-pulse" />
+                <div className="w-[88px] h-[88px] rounded-full bg-(--vct-bg-card) animate-pulse" />
                 <div className="space-y-3">
                     <div className="flex gap-2">
-                        <div className="h-5 w-20 bg-[var(--vct-bg-card)] rounded-full animate-pulse" />
-                        <div className="h-5 w-16 bg-[var(--vct-bg-card)] rounded-full animate-pulse" />
-                        <div className="h-5 w-24 bg-[var(--vct-bg-card)] rounded-full animate-pulse" />
+                        <div className="h-5 w-20 bg-(--vct-bg-card) rounded-full animate-pulse" />
+                        <div className="h-5 w-16 bg-(--vct-bg-card) rounded-full animate-pulse" />
+                        <div className="h-5 w-24 bg-(--vct-bg-card) rounded-full animate-pulse" />
                     </div>
-                    <div className="h-9 w-64 bg-[var(--vct-bg-card)] rounded animate-pulse" />
-                    <div className="h-4 w-96 bg-[var(--vct-bg-card)] rounded animate-pulse" />
+                    <div className="h-9 w-64 bg-(--vct-bg-card) rounded animate-pulse" />
+                    <div className="h-4 w-96 bg-(--vct-bg-card) rounded animate-pulse" />
                     <div className="flex gap-4">
-                        <div className="h-4 w-40 bg-[var(--vct-bg-card)] rounded animate-pulse" />
-                        <div className="h-4 w-32 bg-[var(--vct-bg-card)] rounded animate-pulse" />
+                        <div className="h-4 w-40 bg-(--vct-bg-card) rounded animate-pulse" />
+                        <div className="h-4 w-32 bg-(--vct-bg-card) rounded animate-pulse" />
                     </div>
                 </div>
             </div>
@@ -110,11 +110,11 @@ const SkeletonHero = () => (
 )
 
 const SkeletonSectionCard = ({ rows = 3 }: { rows?: number }) => (
-    <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-6">
-        <div className="h-5 w-40 bg-[var(--vct-bg-card)] rounded animate-pulse mb-4" />
+    <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6">
+        <div className="h-5 w-40 bg-(--vct-bg-card) rounded animate-pulse mb-4" />
         <div className="space-y-3">
             {[...Array(rows)].map((_, i) => (
-                <div key={i} className="h-16 bg-[var(--vct-bg-card)] rounded-xl animate-pulse" />
+                <div key={i} className="h-16 bg-(--vct-bg-card) rounded-xl animate-pulse" />
             ))}
         </div>
     </div>
@@ -158,7 +158,7 @@ export const Page_admin_user_detail = ({ userId }: PageAdminUserDetailProps) => 
     if (!user) {
         return (
             <VCT_PageContainer size="wide" animated>
-                <div className="mx-auto max-w-3xl rounded-[28px] border border-vct-border bg-vct-elevated p-8 text-center shadow-[var(--vct-shadow-md)]">
+                <div className="mx-auto max-w-3xl rounded-[28px] border border-vct-border bg-vct-elevated p-8 text-center shadow-(--vct-shadow-md)">
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
                         <VCT_Icons.AlertCircle size={28} />
                     </div>
@@ -202,7 +202,7 @@ export const Page_admin_user_detail = ({ userId }: PageAdminUserDetailProps) => 
                 <>
                     <SkeletonHero />
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-[var(--vct-bg-elevated)] rounded-2xl animate-pulse" />)}
+                        {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-(--vct-bg-elevated) rounded-2xl animate-pulse" />)}
                     </div>
                     <div className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
                         <div className="grid gap-6">
@@ -219,7 +219,7 @@ export const Page_admin_user_detail = ({ userId }: PageAdminUserDetailProps) => 
                 <>
                     {/* ── HERO SECTION ── */}
                     <section
-                        className="relative mb-8 overflow-hidden rounded-[28px] border border-vct-border p-6 shadow-[var(--vct-shadow-md)] tablet:p-8"
+                        className="relative mb-8 overflow-hidden rounded-[28px] border border-vct-border p-6 shadow-(--vct-shadow-md) tablet:p-8"
                         style={{ background: `linear-gradient(135deg, ${accentColor}1f 0%, rgba(15, 23, 42, 0.96) 55%, rgba(15, 118, 110, 0.12) 100%)` }}
                     >
                         <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-[90px]" style={{ backgroundColor: `${accentColor}55` }} />

@@ -21,6 +21,12 @@ const SERVICE_STATUS = [
     { name: 'Email Service', status: 'degraded', uptime: '98.50%', latency: '250ms' },
 ]
 
+const ACTIVE_ALERTS = [
+    { id: 'ALT-01', severity: 'warning', title: 'Email Service latency cao', detail: 'Latency trung bình 250ms (ngưỡng: 100ms)', time: '5 phút trước', service: 'Email Service' },
+    { id: 'ALT-02', severity: 'info', title: 'Backup hoàn tất', detail: 'PostgreSQL backup 2.3GB thành công', time: '25 phút trước', service: 'Database' },
+    { id: 'ALT-03', severity: 'error', title: 'Login brute-force detected', detail: '5 lần đăng nhập thất bại từ IP 45.67.89.12', time: '1 giờ trước', service: 'Auth' },
+]
+
 const TIMELINE_EVENTS: TimelineEvent[] = [
     { time: '00:32:15', title: 'Cập nhật cấu hình giải', description: 'admin@vct.vn · IP: 192.168.1.100', icon: <VCT_Icons.Settings size={14} />, color: '#0ea5e9' },
     { time: '00:28:40', title: 'Phê duyệt VĐV #ATH-156', description: 'btc@vct.vn · Nguyễn Văn A', icon: <VCT_Icons.CheckCircle size={14} />, color: '#10b981' },
@@ -33,35 +39,69 @@ const TIMELINE_EVENTS: TimelineEvent[] = [
 
 const QUICK_NAV = [
     { label: 'Quản lý Tài khoản', desc: 'Người dùng, vai trò & phân quyền', icon: VCT_Icons.Users, color: '#0ea5e9', href: '/admin/users' },
+    { label: 'Giải đấu', desc: 'Tạo, điều hành & theo dõi giải', icon: VCT_Icons.Trophy, color: '#f59e0b', href: '/admin/tournaments' },
+    { label: 'Nhân sự', desc: 'VĐV, HLV & Trọng tài', icon: VCT_Icons.Users, color: '#06b6d4', href: '/admin/people' },
+    { label: 'Tài chính', desc: 'Hóa đơn, ngân sách & tài trợ', icon: VCT_Icons.DollarSign, color: '#10b981', href: '/admin/finance' },
+    { label: 'Chấm điểm Live', desc: 'Giám sát trận đấu real-time', icon: VCT_Icons.Activity, color: '#ef4444', href: '/admin/scoring' },
+    { label: 'Xếp hạng', desc: 'ELO rating & thăng cấp đai', icon: VCT_Icons.Trophy, color: '#d97706', href: '/admin/rankings' },
+    { label: 'Liên đoàn', desc: 'Tổ chức & nhân sự các cấp', icon: VCT_Icons.Building, color: '#8b5cf6', href: '/admin/federation' },
+    { label: 'Câu lạc bộ', desc: 'CLB, cơ sở & thiết bị', icon: VCT_Icons.Home, color: '#059669', href: '/admin/clubs' },
     { label: 'Bảo mật', desc: 'Audit logs, giám sát liêm chính', icon: VCT_Icons.Shield, color: '#8b5cf6', href: '/admin/audit-logs' },
     { label: 'Cấu hình', desc: 'Feature flags & tham số hệ thống', icon: VCT_Icons.Settings, color: '#f59e0b', href: '/admin/system' },
+    { label: 'Dữ liệu tham chiếu', desc: 'Cấp đai, hạng cân, tiêu chí', icon: VCT_Icons.Layers, color: '#10b981', href: '/admin/reference-data' },
+    { label: 'Feature Flags', desc: 'Bật/tắt tính năng, rollout', icon: VCT_Icons.Flag, color: '#ef4444', href: '/admin/feature-flags' },
+    { label: 'Hỗ trợ KH', desc: 'Ticket hỗ trợ, FAQ, kỹ thuật', icon: VCT_Icons.Shield, color: '#ec4899', href: '/admin/support' },
+    { label: 'Subscription', desc: 'Gói dịch vụ, thanh toán & gia hạn', icon: VCT_Icons.CreditCard, color: '#a855f7', href: '/admin/subscriptions' },
 ]
+
+// ════════════════════════════════════════
+// HEALTH SCORE CALCULATION
+// ════════════════════════════════════════
+function getHealthScore(services: typeof SERVICE_STATUS): { score: number; grade: string; color: string } {
+    const onlineCount = services.filter(s => s.status === 'online').length
+    const total = services.length
+    const score = Math.round((onlineCount / total) * 100)
+    if (score >= 98) return { score, grade: 'A', color: '#10b981' }
+    if (score >= 90) return { score, grade: 'B', color: '#22c55e' }
+    if (score >= 75) return { score, grade: 'C', color: '#f59e0b' }
+    if (score >= 50) return { score, grade: 'D', color: '#ef4444' }
+    return { score, grade: 'F', color: '#dc2626' }
+}
 
 // ════════════════════════════════════════
 // SKELETON COMPONENTS
 // ════════════════════════════════════════
 const SkeletonServiceItem = () => (
-    <div className="flex items-center justify-between p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
+    <div className="flex items-center justify-between p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
         <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--vct-bg-elevated)] animate-pulse" />
-            <div className="h-4 w-32 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-(--vct-bg-elevated) animate-pulse" />
+            <div className="h-4 w-32 bg-(--vct-bg-elevated) rounded animate-pulse" />
         </div>
         <div className="flex items-center gap-4">
-            <div className="h-3 w-16 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
-            <div className="h-3 w-14 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
+            <div className="h-3 w-16 bg-(--vct-bg-elevated) rounded animate-pulse" />
+            <div className="h-3 w-14 bg-(--vct-bg-elevated) rounded animate-pulse" />
         </div>
     </div>
 )
 
 const SkeletonTimelineItem = () => (
     <div className="flex items-start gap-3 p-3">
-        <div className="w-8 h-8 rounded-full bg-[var(--vct-bg-elevated)] animate-pulse shrink-0" />
+        <div className="w-8 h-8 rounded-full bg-(--vct-bg-elevated) animate-pulse shrink-0" />
         <div className="flex-1 space-y-2">
-            <div className="h-4 w-3/4 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
-            <div className="h-3 w-1/2 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
+            <div className="h-4 w-3/4 bg-(--vct-bg-elevated) rounded animate-pulse" />
+            <div className="h-3 w-1/2 bg-(--vct-bg-elevated) rounded animate-pulse" />
         </div>
     </div>
 )
+
+// ════════════════════════════════════════
+// ALERT SEVERITY CONFIG
+// ════════════════════════════════════════
+const ALERT_SEVERITY: Record<string, { icon: React.ReactNode; bg: string; border: string; text: string }> = {
+    error: { icon: <VCT_Icons.Alert size={16} />, bg: 'bg-[#ef444410]', border: 'border-[#ef444440]', text: 'text-[#ef4444]' },
+    warning: { icon: <VCT_Icons.AlertTriangle size={16} />, bg: 'bg-[#f59e0b10]', border: 'border-[#f59e0b40]', text: 'text-[#f59e0b]' },
+    info: { icon: <VCT_Icons.Info size={16} />, bg: 'bg-[#0ea5e910]', border: 'border-[#0ea5e940]', text: 'text-[#0ea5e9]' },
+}
 
 // ════════════════════════════════════════
 // MAIN COMPONENT
@@ -94,20 +134,32 @@ export const Page_admin_dashboard = () => {
         setTimeout(() => setIsLoading(false), 500)
     }, [])
 
+    // Keyboard shortcut: R = refresh
+    useEffect(() => {
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+            if (e.key === 'r' || e.key === 'R') handleManualRefresh()
+        }
+        window.addEventListener('keydown', handleKey)
+        return () => window.removeEventListener('keydown', handleKey)
+    }, [handleManualRefresh])
+
+    const health = getHealthScore(SERVICE_STATUS)
+
     return (
         <VCT_PageContainer size="wide" animated>
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">VCT Platform Analytics</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Giám sát toàn bộ nền tảng VCT — hiệu suất, bảo mật và tải hệ thống.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">VCT Platform Analytics</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Giám sát toàn bộ nền tảng VCT — hiệu suất, bảo mật và tải hệ thống.</p>
                 </div>
                 <VCT_Stack direction="row" gap={8} align="center">
-                    <span className="text-[10px] text-[var(--vct-text-tertiary)]">
+                    <span className="text-[10px] text-(--vct-text-tertiary)">
                         Cập nhật: {lastRefreshed.toLocaleTimeString('vi-VN')}
                     </span>
                     <button
                         onClick={() => setAutoRefresh(!autoRefresh)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${autoRefresh ? 'bg-[#10b98120] border-[#10b981] text-[#10b981]' : 'bg-transparent border-[var(--vct-border-subtle)] text-[var(--vct-text-tertiary)]'}`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${autoRefresh ? 'bg-[#10b98120] border-[#10b981] text-[#10b981]' : 'bg-transparent border-(--vct-border-subtle) text-(--vct-text-tertiary)'}`}
                     >
                         {autoRefresh ? '● Auto' : '○ Manual'}
                     </button>
@@ -122,13 +174,71 @@ export const Page_admin_dashboard = () => {
                 { label: 'Uptime TB', value: '99.9%', icon: <VCT_Icons.Activity size={18} />, color: '#10b981' },
                 { label: 'Online', value: onlineCount, icon: <VCT_Icons.Users size={18} />, color: '#0ea5e9' },
                 { label: 'Req/phút', value: '2.4k', icon: <VCT_Icons.TrendingUp size={18} />, color: '#f59e0b' },
-                { label: 'Cảnh báo', value: 1, icon: <VCT_Icons.Alert size={18} />, color: '#ef4444' },
+                { label: 'Cảnh báo', value: ACTIVE_ALERTS.length, icon: <VCT_Icons.Alert size={18} />, color: '#ef4444' },
             ] as StatItem[]} className="mb-8" />
+
+            {/* ── HEALTH SCORE + ACTIVE ALERTS ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Health Score Widget */}
+                <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                    <div className="text-[10px] uppercase tracking-widest text-(--vct-text-tertiary) font-bold mb-3">System Health</div>
+                    <div
+                        className="w-24 h-24 rounded-full flex items-center justify-center mb-3 relative"
+                        style={{
+                            background: `conic-gradient(${health.color} ${health.score * 3.6}deg, transparent 0deg)`,
+                        }}
+                    >
+                        <div className="w-20 h-20 rounded-full bg-(--vct-bg-elevated) flex items-center justify-center">
+                            <span className="text-3xl font-black" style={{ color: health.color }}>{health.grade}</span>
+                        </div>
+                    </div>
+                    <div className="text-sm font-bold text-(--vct-text-primary)">{health.score}% Services Online</div>
+                    <div className="text-[11px] text-(--vct-text-tertiary) mt-1">
+                        {SERVICE_STATUS.filter(s => s.status === 'online').length}/{SERVICE_STATUS.length} dịch vụ hoạt động
+                    </div>
+                </div>
+
+                {/* Active Alerts Panel */}
+                <div className="lg:col-span-2 bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="font-bold text-lg text-(--vct-text-primary) flex items-center gap-2">
+                            <VCT_Icons.Alert size={20} className="text-[#ef4444]" /> Cảnh báo hoạt động
+                        </h2>
+                        <VCT_Badge type={ACTIVE_ALERTS.some(a => a.severity === 'error') ? 'danger' : 'warning'} text={`${ACTIVE_ALERTS.length} cảnh báo`} />
+                    </div>
+                    {isLoading ? (
+                        <div className="space-y-3">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="h-16 bg-(--vct-bg-base) rounded-xl animate-pulse" />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {ACTIVE_ALERTS.map(alert => {
+                                const sev = ALERT_SEVERITY[alert.severity] ?? ALERT_SEVERITY.info!
+                                return (
+                                    <div key={alert.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors hover:bg-white/5 ${sev.bg} ${sev.border}`}>
+                                        <div className={`mt-0.5 ${sev.text}`}>{sev.icon}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`font-semibold text-sm ${sev.text}`}>{alert.title}</span>
+                                                <VCT_Badge type={alert.severity === 'error' ? 'danger' : alert.severity === 'warning' ? 'warning' : 'info'} text={alert.severity.toUpperCase()} />
+                                            </div>
+                                            <div className="text-xs text-(--vct-text-secondary) mt-0.5 line-clamp-1">{alert.detail}</div>
+                                            <div className="text-[10px] text-(--vct-text-tertiary) mt-1">{alert.service} · {alert.time}</div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* ── SERVICE STATUS ── */}
-                <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-6">
-                    <h2 className="font-bold text-lg text-[var(--vct-text-primary)] mb-4 flex items-center gap-2">
+                <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6">
+                    <h2 className="font-bold text-lg text-(--vct-text-primary) mb-4 flex items-center gap-2">
                         <VCT_Icons.Activity size={20} className="text-[#10b981]" /> Trạng thái dịch vụ
                     </h2>
                     <div className="space-y-3">
@@ -136,14 +246,14 @@ export const Page_admin_dashboard = () => {
                             [...Array(6)].map((_, i) => <SkeletonServiceItem key={i} />)
                         ) : (
                             SERVICE_STATUS.map(svc => (
-                                <div key={svc.name} className="flex items-center justify-between p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
+                                <div key={svc.name} className="flex items-center justify-between p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-2.5 h-2.5 rounded-full ${svc.status === 'online' ? 'bg-[#10b981] shadow-[0_0_8px_#10b981]' : 'bg-[#f59e0b] shadow-[0_0_8px_#f59e0b] animate-pulse'}`}></div>
-                                        <span className="font-semibold text-sm text-[var(--vct-text-primary)]">{svc.name}</span>
+                                        <span className="font-semibold text-sm text-(--vct-text-primary)">{svc.name}</span>
                                     </div>
-                                    <div className="flex items-center gap-4 text-[11px] text-[var(--vct-text-tertiary)]">
-                                        <span>Uptime: <span className="font-bold text-[var(--vct-text-primary)]">{svc.uptime}</span></span>
-                                        <span>Latency: <span className="font-bold text-[var(--vct-accent-cyan)]">{svc.latency}</span></span>
+                                    <div className="flex items-center gap-4 text-[11px] text-(--vct-text-tertiary)">
+                                        <span>Uptime: <span className="font-bold text-(--vct-text-primary)">{svc.uptime}</span></span>
+                                        <span>Latency: <span className="font-bold text-(--vct-accent-cyan)">{svc.latency}</span></span>
                                     </div>
                                 </div>
                             ))
@@ -152,9 +262,9 @@ export const Page_admin_dashboard = () => {
                 </div>
 
                 {/* ── RECENT ACTIVITY TIMELINE ── */}
-                <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-6">
+                <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="font-bold text-lg text-[var(--vct-text-primary)] flex items-center gap-2">
+                        <h2 className="font-bold text-lg text-(--vct-text-primary) flex items-center gap-2">
                             <VCT_Icons.Clock size={20} className="text-[#f59e0b]" /> Hoạt động gần đây
                         </h2>
                         <VCT_Badge type="info" text={`${TIMELINE_EVENTS.length} sự kiện`} />
@@ -170,20 +280,26 @@ export const Page_admin_dashboard = () => {
             </div>
 
             {/* ── QUICK NAV CARDS ── */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {QUICK_NAV.map(nav => (
                     <button
                         key={nav.href}
                         type="button"
                         onClick={() => router.push(nav.href)}
-                        className={`bg-gradient-to-br from-[${nav.color}20] to-transparent border border-[${nav.color}40] rounded-xl p-6 flex items-center gap-4 cursor-pointer hover:border-[${nav.color}] transition-colors text-left`}
+                        className="rounded-xl p-5 flex items-center gap-4 cursor-pointer transition-all text-left hover:scale-[1.02] hover:shadow-lg"
+                        style={{
+                            background: `linear-gradient(135deg, ${nav.color}15, transparent)`,
+                            border: `1px solid ${nav.color}30`,
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = nav.color }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${nav.color}30` }}
                     >
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg`} style={{ backgroundColor: nav.color, boxShadow: `0 10px 15px -3px ${nav.color}40` }}>
-                            <nav.icon size={24} />
+                        <div className="w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg" style={{ backgroundColor: nav.color, boxShadow: `0 8px 16px -4px ${nav.color}40` }}>
+                            <nav.icon size={22} />
                         </div>
                         <div>
-                            <div className="font-bold text-[var(--vct-text-primary)] text-lg">{nav.label}</div>
-                            <div className="text-sm text-[var(--vct-text-secondary)]">{nav.desc}</div>
+                            <div className="font-bold text-(--vct-text-primary) text-sm">{nav.label}</div>
+                            <div className="text-xs text-(--vct-text-secondary)">{nav.desc}</div>
                         </div>
                     </button>
                 ))}

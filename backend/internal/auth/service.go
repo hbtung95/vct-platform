@@ -1,11 +1,14 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -190,6 +193,7 @@ type ServiceConfig struct {
 	CleanupInterval time.Duration
 	AllowDemoUsers  bool
 	CredentialsJSON string
+	DB              *sql.DB // optional — enables persistent user storage in core.users
 }
 
 type userCredential struct {
@@ -250,6 +254,7 @@ type Service struct {
 	allowSelfRegister bool
 	roleBindings      *RoleBindingStore // Multi-role context support
 	otpStore          *OTPStore         // Pending OTP verifications
+	userStore         UserStore         // persistent user storage (nil = in-memory only)
 }
 
 func NewService(config ServiceConfig) *Service {
@@ -281,6 +286,14 @@ func NewService(config ServiceConfig) *Service {
 		stopCh:            make(chan struct{}),
 		roleBindings:      NewRoleBindingStore(),
 		otpStore:          NewOTPStore(),
+	}
+
+	// Wire PostgreSQL user store if DB connection is provided
+	if config.DB != nil {
+		svc.userStore = NewPgUserStore(config.DB)
+		log.Println("[auth] PostgreSQL user store enabled — users will be persisted to core.users")
+		// Sync bootstrap/demo credentials to database
+		svc.syncCredentialsToDB(credentials)
 	}
 
 	// Background cleanup goroutine
@@ -510,17 +523,50 @@ func (s *Service) Login(input LoginRequest, requestCtx RequestContext) (LoginRes
 	}
 
 	now := time.Now().UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cleanupLocked(now)
 
-	cred, ok := s.credentials[username]
-	if !ok {
+	// ── Try database lookup first ───────────────────────────────
+	var cred userCredential
+	var found bool
+
+	if s.userStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		stored, err := s.userStore.FindByUsername(ctx, username)
+		if err != nil {
+			log.Printf("[auth] DB lookup error for %s: %v — falling back to in-memory", username, err)
+		}
+		if stored != nil && stored.IsActive {
+			cred = userCredential{
+				passwordHash: stored.PasswordHash,
+				displayName:  stored.FullName,
+				allowedRole:  stored.Roles,
+				userID:       stored.ID,
+			}
+			found = true
+		}
+	}
+
+	// ── Fallback to in-memory credentials ────────────────────────
+	if !found {
+		s.mu.RLock()
+		var memCred userCredential
+		memCred, found = s.credentials[username]
+		s.mu.RUnlock()
+		if found {
+			cred = memCred
+		}
+	}
+
+	if !found {
+		s.mu.Lock()
 		s.addAuditLocked("auth.login", false, requestCtx, AuthUser{Username: username, Role: role}, map[string]any{"reason": "invalid_credentials"})
+		s.mu.Unlock()
 		return LoginResult{}, wrapCodedError(ErrInvalidCredentials, CodeInvalidCredentials, "sai thông tin đăng nhập")
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(cred.passwordHash), []byte(password)); err != nil {
+		s.mu.Lock()
 		s.addAuditLocked("auth.login", false, requestCtx, AuthUser{Username: username, Role: role}, map[string]any{"reason": "invalid_credentials"})
+		s.mu.Unlock()
 		return LoginResult{}, wrapCodedError(ErrInvalidCredentials, CodeInvalidCredentials, "sai thông tin đăng nhập")
 	}
 
@@ -532,7 +578,9 @@ func (s *Service) Login(input LoginRequest, requestCtx RequestContext) (LoginRes
 			return LoginResult{}, wrapCodedError(ErrForbidden, CodeForbidden, "tài khoản không có role nào được phép")
 		}
 	} else if !containsRole(cred.allowedRole, role) {
+		s.mu.Lock()
 		s.addAuditLocked("auth.login", false, requestCtx, AuthUser{Username: username, Role: role}, map[string]any{"reason": "invalid_role"})
+		s.mu.Unlock()
 		return LoginResult{}, wrapCodedError(ErrForbidden, CodeForbidden, "role không hợp lệ với tài khoản")
 	}
 
@@ -545,6 +593,10 @@ func (s *Service) Login(input LoginRequest, requestCtx RequestContext) (LoginRes
 
 	tournamentCode := normalizeTournamentCode(input.TournamentCode)
 	operationShift := normalizeOperationShift(input.OperationShift)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cleanupLocked(now)
 
 	sessionID := randomID(16)
 	refreshJTI := randomID(20)
@@ -577,6 +629,15 @@ func (s *Service) Login(input LoginRequest, requestCtx RequestContext) (LoginRes
 	// Ensure multi-role store has at least the primary binding
 	if s.roleBindings != nil {
 		s.roleBindings.EnsureDefaultBinding(user)
+	}
+
+	// Update last_login_at in database (async, non-blocking)
+	if s.userStore != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			_ = s.userStore.UpdateLastLogin(ctx, user.ID)
+		}()
 	}
 
 	return LoginResult{
@@ -1040,6 +1101,7 @@ func wrapCodedError(base error, code string, message string) error {
 }
 
 // Register creates a new user credential with bcrypt-hashed password and UUID v7 ID.
+// When a UserStore is configured, the user is persisted to the database.
 func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (LoginResult, error) {
 	username := strings.TrimSpace(strings.ToLower(input.Username))
 	password := strings.TrimSpace(input.Password)
@@ -1064,10 +1126,27 @@ func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (Lo
 		return LoginResult{}, wrapCodedError(ErrForbidden, CodeForbidden, "role này không cho phép tự đăng ký")
 	}
 
+	// ── Check for duplicates in database first ──────────────────
+	if s.userStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		existing, err := s.userStore.FindByUsername(ctx, username)
+		if err != nil {
+			log.Printf("[auth] DB duplicate check error for %s: %v", username, err)
+		}
+		if existing != nil {
+			s.mu.Lock()
+			s.addAuditLocked("auth.register", false, requestCtx, AuthUser{Username: username, Role: role}, map[string]any{"reason": "duplicate_username"})
+			s.mu.Unlock()
+			return LoginResult{}, wrapCodedError(ErrConflict, CodeConflict, "tên đăng nhập đã tồn tại")
+		}
+	}
+
 	now := time.Now().UTC()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// Also check in-memory
 	if _, exists := s.credentials[username]; exists {
 		s.addAuditLocked("auth.register", false, requestCtx, AuthUser{Username: username, Role: role}, map[string]any{"reason": "duplicate_username"})
 		return LoginResult{}, wrapCodedError(ErrConflict, CodeConflict, "tên đăng nhập đã tồn tại")
@@ -1079,6 +1158,38 @@ func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (Lo
 	}
 
 	userID := util.NewUUIDv7()
+
+	// ── Persist to database if available ─────────────────────────
+	if s.userStore != nil {
+		ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel2()
+
+		email := ""
+		// If username looks like an email (from OTP flow), use it as email too
+		if strings.Contains(username, "@") {
+			email = username
+		}
+
+		if dbErr := s.userStore.Create(ctx2, &StoredUser{
+			ID:           userID,
+			TenantID:     SystemTenantID,
+			Username:     username,
+			Email:        email,
+			PasswordHash: string(hash),
+			FullName:     displayName,
+			Role:         role,
+			Roles:        []UserRole{role},
+			IsActive:     true,
+			Locale:       "vi",
+			Timezone:     "Asia/Ho_Chi_Minh",
+		}); dbErr != nil {
+			log.Printf("[auth] DB persist failed for %s: %v — user saved in-memory only", username, dbErr)
+		} else {
+			log.Printf("[auth] User %s persisted to database (id=%s)", username, userID)
+		}
+	}
+
+	// Always save to in-memory map as well (for session consistency)
 	s.credentials[username] = userCredential{
 		passwordHash: string(hash),
 		displayName:  displayName,
@@ -1126,6 +1237,55 @@ func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (Lo
 		TournamentCode: "VCT-2026",
 		OperationShift: "sang",
 	}, nil
+}
+
+// syncCredentialsToDB upserts bootstrap/demo credentials into core.users.
+// Runs once at startup. Errors are logged but non-fatal.
+func (s *Service) syncCredentialsToDB(credentials map[string]userCredential) {
+	if s.userStore == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	synced := 0
+	for username, cred := range credentials {
+		// Check if already exists
+		existing, err := s.userStore.FindByUsername(ctx, username)
+		if err != nil {
+			log.Printf("[auth] sync check failed for %s: %v", username, err)
+			continue
+		}
+		if existing != nil {
+			continue // already in DB
+		}
+
+		email := ""
+		if strings.Contains(username, "@") {
+			email = username
+		}
+
+		if err := s.userStore.Create(ctx, &StoredUser{
+			ID:           cred.userID,
+			TenantID:     SystemTenantID,
+			Username:     username,
+			Email:        email,
+			PasswordHash: cred.passwordHash,
+			FullName:     cred.displayName,
+			Role:         cred.allowedRole[0],
+			Roles:        cred.allowedRole,
+			IsActive:     true,
+			Locale:       "vi",
+			Timezone:     "Asia/Ho_Chi_Minh",
+		}); err != nil {
+			log.Printf("[auth] sync failed for %s: %v", username, err)
+		} else {
+			synced++
+		}
+	}
+	if synced > 0 {
+		log.Printf("[auth] synced %d bootstrap users to database", synced)
+	}
 }
 
 // ── UUID-Centric RBAC Resolver ──────────────────────────────────

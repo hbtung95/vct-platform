@@ -1,7 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useCallback } from 'react'
+import { useState, useMemo } from 'react'
+import { useAdminToast } from './hooks/useAdminToast'
+import { exportToCSV } from './utils/adminExport'
 import {
     VCT_Badge, VCT_Button, VCT_Stack, VCT_Toast,
     VCT_PageContainer, VCT_StatRow, VCT_Modal, VCT_Input, VCT_Field,
@@ -47,19 +49,24 @@ const STORAGE_METRICS = [
 interface ConfigParam {
     key: string
     value: string
+    defaultValue: string
     unit: string
     description: string
+    type: 'number' | 'boolean' | 'string'
+    min?: number
+    max?: number
+    step?: number
 }
 
 const INITIAL_CONFIG_PARAMS: ConfigParam[] = [
-    { key: 'session.timeout', value: '3600', unit: 'giây', description: 'Thời gian hết hạn session' },
-    { key: 'scoring.max_judges', value: '7', unit: '', description: 'Số giám khảo tối đa chấm quyền thuật' },
-    { key: 'scoring.drop_highest', value: 'true', unit: '', description: 'Bỏ điểm cao nhất khi tổng hợp' },
-    { key: 'scoring.drop_lowest', value: 'true', unit: '', description: 'Bỏ điểm thấp nhất khi tổng hợp' },
-    { key: 'registration.deadline_hours', value: '48', unit: 'giờ', description: 'Hạn đăng ký trước giải' },
-    { key: 'weigh_in.tolerance_kg', value: '0.5', unit: 'kg', description: 'Sai số cho phép khi cân' },
-    { key: 'ranking.elo_k_factor', value: '32', unit: '', description: 'K-Factor cho ELO rating' },
-    { key: 'upload.max_size_mb', value: '50', unit: 'MB', description: 'Kích thước upload tối đa' },
+    { key: 'session.timeout', value: '3600', defaultValue: '3600', unit: 'giây', description: 'Thời gian hết hạn session', type: 'number', min: 300, max: 86400, step: 300 },
+    { key: 'scoring.max_judges', value: '7', defaultValue: '7', unit: '', description: 'Số giám khảo tối đa chấm quyền thuật', type: 'number', min: 3, max: 15, step: 2 },
+    { key: 'scoring.drop_highest', value: 'true', defaultValue: 'true', unit: '', description: 'Bỏ điểm cao nhất khi tổng hợp', type: 'boolean' },
+    { key: 'scoring.drop_lowest', value: 'true', defaultValue: 'true', unit: '', description: 'Bỏ điểm thấp nhất khi tổng hợp', type: 'boolean' },
+    { key: 'registration.deadline_hours', value: '48', defaultValue: '48', unit: 'giờ', description: 'Hạn đăng ký trước giải', type: 'number', min: 1, max: 168, step: 1 },
+    { key: 'weigh_in.tolerance_kg', value: '0.5', defaultValue: '0.5', unit: 'kg', description: 'Sai số cho phép khi cân', type: 'number', min: 0.1, max: 2.0, step: 0.1 },
+    { key: 'ranking.elo_k_factor', value: '32', defaultValue: '32', unit: '', description: 'K-Factor cho ELO rating', type: 'number', min: 10, max: 64, step: 2 },
+    { key: 'upload.max_size_mb', value: '50', defaultValue: '50', unit: 'MB', description: 'Kích thước upload tối đa', type: 'number', min: 5, max: 500, step: 5 },
 ]
 
 const INITIAL_BACKUP_HISTORY = [
@@ -73,16 +80,16 @@ const INITIAL_BACKUP_HISTORY = [
 // SKELETON COMPONENTS
 // ════════════════════════════════════════
 const SkeletonMetricCard = () => (
-    <div className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
-        <div className="h-3 w-20 bg-[var(--vct-bg-elevated)] rounded animate-pulse mb-2" />
-        <div className="h-5 w-16 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
+    <div className="p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
+        <div className="h-3 w-20 bg-(--vct-bg-elevated) rounded animate-pulse mb-2" />
+        <div className="h-5 w-16 bg-(--vct-bg-elevated) rounded animate-pulse" />
     </div>
 )
 
 const SkeletonMetricGrid = ({ title, color }: { title: string; color: string }) => (
-    <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-5">
-        <h3 className="font-bold text-[var(--vct-text-primary)] mb-4 flex items-center gap-2" style={{ color }}>
-            <div className="w-[18px] h-[18px] bg-[var(--vct-bg-card)] rounded animate-pulse" /> {title}
+    <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-5">
+        <h3 className="font-bold text-(--vct-text-primary) mb-4 flex items-center gap-2" style={{ color }}>
+            <div className="w-[18px] h-[18px] bg-(--vct-bg-card) rounded animate-pulse" /> {title}
         </h3>
         <div className="grid grid-cols-2 gap-3">
             {[...Array(4)].map((_, i) => <SkeletonMetricCard key={i} />)}
@@ -92,25 +99,25 @@ const SkeletonMetricGrid = ({ title, color }: { title: string; color: string }) 
 
 const SkeletonConfigRow = () => (
     <tr>
-        <td className="p-3"><div className="h-4 w-28 bg-[var(--vct-bg-elevated)] rounded animate-pulse" /></td>
-        <td className="p-3"><div className="h-4 w-16 bg-[var(--vct-bg-elevated)] rounded animate-pulse" /></td>
-        <td className="p-3"><div className="h-4 w-40 bg-[var(--vct-bg-elevated)] rounded animate-pulse" /></td>
-        <td className="p-3"><div className="h-4 w-6 bg-[var(--vct-bg-elevated)] rounded animate-pulse" /></td>
+        <td className="p-3"><div className="h-4 w-28 bg-(--vct-bg-elevated) rounded animate-pulse" /></td>
+        <td className="p-3"><div className="h-4 w-16 bg-(--vct-bg-elevated) rounded animate-pulse" /></td>
+        <td className="p-3"><div className="h-4 w-40 bg-(--vct-bg-elevated) rounded animate-pulse" /></td>
+        <td className="p-3"><div className="h-4 w-6 bg-(--vct-bg-elevated) rounded animate-pulse" /></td>
     </tr>
 )
 
 const SkeletonBackupItem = () => (
-    <div className="flex items-center justify-between p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
+    <div className="flex items-center justify-between p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
         <div className="flex items-center gap-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--vct-bg-elevated)] animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-(--vct-bg-elevated) animate-pulse" />
             <div className="space-y-1">
-                <div className="h-4 w-32 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
-                <div className="h-3 w-20 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
+                <div className="h-4 w-32 bg-(--vct-bg-elevated) rounded animate-pulse" />
+                <div className="h-3 w-20 bg-(--vct-bg-elevated) rounded animate-pulse" />
             </div>
         </div>
         <div className="flex items-center gap-3">
-            <div className="h-5 w-16 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
-            <div className="h-8 w-8 bg-[var(--vct-bg-elevated)] rounded animate-pulse" />
+            <div className="h-5 w-16 bg-(--vct-bg-elevated) rounded animate-pulse" />
+            <div className="h-8 w-8 bg-(--vct-bg-elevated) rounded animate-pulse" />
         </div>
     </div>
 )
@@ -119,17 +126,17 @@ const SkeletonBackupItem = () => (
 // METRIC CARD COMPONENT
 // ════════════════════════════════════════
 const MetricGrid = ({ title, icon, metrics, color }: { title: string; icon: React.ReactNode; metrics: typeof DB_METRICS; color: string }) => (
-    <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-5">
-        <h3 className="font-bold text-[var(--vct-text-primary)] mb-4 flex items-center gap-2" style={{ color }}>
+    <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-5">
+        <h3 className="font-bold text-(--vct-text-primary) mb-4 flex items-center gap-2" style={{ color }}>
             {icon} {title}
         </h3>
         <div className="grid grid-cols-2 gap-3">
             {metrics.map(m => (
-                <div key={m.label} className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
-                    <div className="text-[10px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold mb-1">{m.label}</div>
+                <div key={m.label} className="p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
+                    <div className="text-[10px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold mb-1">{m.label}</div>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></div>
-                        <span className="font-black text-sm text-[var(--vct-text-primary)]">{m.value}</span>
+                        <span className="font-black text-sm text-(--vct-text-primary)">{m.value}</span>
                     </div>
                 </div>
             ))}
@@ -143,36 +150,61 @@ const MetricGrid = ({ title, icon, metrics, color }: { title: string; icon: Reac
 export const Page_admin_system = () => {
     const [configParams, setConfigParams] = useState(INITIAL_CONFIG_PARAMS)
     const [backups, setBackups] = useState(INITIAL_BACKUP_HISTORY)
-    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })
+    const { toast, showToast, dismiss } = useAdminToast()
     const [showEditModal, setShowEditModal] = useState(false)
     const [editingParam, setEditingParam] = useState<ConfigParam | null>(null)
     const [editValue, setEditValue] = useState('')
+    const [editError, setEditError] = useState('')
     const [confirmBackup, setConfirmBackup] = useState(false)
     const [confirmClearCache, setConfirmClearCache] = useState(false)
+    const [confirmReset, setConfirmReset] = useState<ConfigParam | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [drawerParam, setDrawerParam] = useState<ConfigParam | null>(null)
+    const [configSearch, setConfigSearch] = useState('')
+    const currentEnv = 'development' as 'development' | 'staging' | 'production'
+
+    const modifiedCount = useMemo(() => configParams.filter(p => p.value !== p.defaultValue).length, [configParams])
 
     React.useEffect(() => {
         const t = setTimeout(() => setIsLoading(false), 800)
         return () => clearTimeout(t)
     }, [])
 
-    const showToast = useCallback((msg: string, type = 'success') => {
-        setToast({ show: true, msg, type })
-        setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3500)
-    }, [])
+    const validateValue = (param: ConfigParam, val: string): string => {
+        if (param.type === 'boolean') return ''
+        if (param.type === 'number') {
+            const num = Number(val)
+            if (isNaN(num)) return 'Giá trị phải là số'
+            if (param.min !== undefined && num < param.min) return `Tối thiểu: ${param.min}`
+            if (param.max !== undefined && num > param.max) return `Tối đa: ${param.max}`
+        }
+        if (!val.trim()) return 'Giá trị không được để trống'
+        return ''
+    }
 
     const handleEditParam = (param: ConfigParam) => {
         setEditingParam(param)
         setEditValue(param.value)
+        setEditError('')
         setShowEditModal(true)
     }
 
     const handleSaveParam = () => {
         if (!editingParam) return
+        const err = validateValue(editingParam, editValue)
+        if (err) { setEditError(err); return }
         setConfigParams(prev => prev.map(p => p.key === editingParam.key ? { ...p, value: editValue } : p))
         showToast(`Đã cập nhật "${editingParam.key}" = ${editValue}`)
         setShowEditModal(false)
+    }
+
+    const handleResetParam = (param: ConfigParam) => {
+        setConfigParams(prev => prev.map(p => p.key === param.key ? { ...p, value: p.defaultValue } : p))
+        showToast(`Đã khôi phục "${param.key}" về mặc định: ${param.defaultValue}`)
+        setConfirmReset(null)
+        if (drawerParam?.key === param.key) {
+            setDrawerParam(prev => prev ? { ...prev, value: param.defaultValue } : null)
+        }
     }
 
     const handleBackup = () => {
@@ -199,25 +231,34 @@ export const Page_admin_system = () => {
 
     return (
         <VCT_PageContainer size="wide" animated>
-            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={dismiss} />
 
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Cấu Hình & Giám Sát Hệ Thống</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Giám sát cơ sở hạ tầng, tham số cấu hình và quản lý backup.</p>
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-(--vct-text-primary)">Cấu Hình & Giám Sát Hệ Thống</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Giám sát cơ sở hạ tầng, tham số cấu hình và quản lý backup.</p>
                 </div>
-                <VCT_Stack direction="row" gap={12}>
+                <VCT_Stack direction="row" gap={12} className="flex-wrap">
                     <VCT_Button variant="outline" icon={<VCT_Icons.Download size={16} />} onClick={() => setConfirmBackup(true)}>Tạo Backup</VCT_Button>
                     <VCT_Button variant="outline" icon={<VCT_Icons.RotateCcw size={16} />} onClick={() => setConfirmClearCache(true)}>Xóa Cache</VCT_Button>
                     <VCT_Button variant="outline" icon={<VCT_Icons.Download size={16} />} onClick={() => {
-                        const header = 'Key,Giá trị,Đơn vị,Mô tả'
-                        const csv = [header, ...configParams.map(p => `${p.key},${p.value},${p.unit},"${p.description}"`)].join('\n')
-                        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-                        const url = URL.createObjectURL(blob)
-                        const a = document.createElement('a'); a.href = url; a.download = `vct_config_${new Date().toISOString().slice(0, 10)}.csv`; a.click()
-                        URL.revokeObjectURL(url)
+                        exportToCSV({
+                            headers: ['Key', 'Giá trị', 'Mặc định', 'Đơn vị', 'Loại', 'Mô tả'],
+                            rows: configParams.map(p => [p.key, p.value, p.defaultValue, p.unit, p.type, p.description]),
+                            filename: `vct_config_${new Date().toISOString().slice(0, 10)}.csv`,
+                        })
+                        showToast('Đã xuất cấu hình!')
                     }}>Xuất CSV</VCT_Button>
                 </VCT_Stack>
+            </div>
+
+            {/* ── ENVIRONMENT BADGE ── */}
+            <div className="mb-4 flex items-center gap-2">
+                <span className="text-xs text-(--vct-text-tertiary)">Môi trường:</span>
+                <VCT_Badge
+                    type={currentEnv === 'production' ? 'danger' : currentEnv === 'staging' ? 'warning' : 'info'}
+                    text={currentEnv === 'production' ? 'PRODUCTION' : currentEnv === 'staging' ? 'STAGING' : 'DEVELOPMENT'}
+                />
             </div>
 
             {/* ── KPI ── */}
@@ -248,37 +289,62 @@ export const Page_admin_system = () => {
             </div>
 
             {/* ── CONFIG PARAMS ── */}
-            <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-6 mb-8">
-                <h2 className="font-bold text-lg text-[var(--vct-text-primary)] mb-4 flex items-center gap-2">
-                    <VCT_Icons.Settings size={20} className="text-[#8b5cf6]" /> Tham Số Cấu Hình
-                </h2>
-                <div className="overflow-hidden rounded-xl border border-[var(--vct-border-subtle)]">
+            <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-lg text-(--vct-text-primary) flex items-center gap-2">
+                        <VCT_Icons.Settings size={20} className="text-[#8b5cf6]" /> Tham Số Cấu Hình
+                    </h2>
+                    {modifiedCount > 0 && (
+                        <VCT_Badge type="warning" text={`${modifiedCount} đã thay đổi`} />
+                    )}
+                </div>
+
+                {/* CONFIG SEARCH */}
+                <div className="mb-4">
+                    <input
+                        type="text"
+                        placeholder="Tìm theo key hoặc mô tả..."
+                        value={configSearch}
+                        onChange={e => setConfigSearch(e.target.value)}
+                        className="w-full px-3 py-2 bg-(--vct-bg-base) border border-(--vct-border-subtle) rounded-lg text-sm text-(--vct-text-primary) placeholder:text-(--vct-text-tertiary) focus:outline-none focus:border-(--vct-accent-cyan)"
+                    />
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-(--vct-border-subtle)">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-[var(--vct-bg-card)] text-[11px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold">
+                            <tr className="bg-(--vct-bg-card) text-[11px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold">
                                 <th className="p-3 text-left">Key</th>
                                 <th className="p-3 text-left">Giá trị</th>
                                 <th className="p-3 text-left">Mô tả</th>
                                 <th className="p-3 w-12"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--vct-border-subtle)]">
+                        <tbody className="divide-y divide-(--vct-border-subtle)">
                             {isLoading ? (
                                 [...Array(5)].map((_, i) => <SkeletonConfigRow key={i} />)
                             ) : (
-                                configParams.map(param => (
+                                configParams
+                                    .filter(p => {
+                                        if (!configSearch) return true
+                                        const q = configSearch.toLowerCase()
+                                        return p.key.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+                                    })
+                                    .map(param => (
                                     <tr key={param.key} className="hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setDrawerParam(param)}>
-                                        <td className="p-3 font-mono text-xs font-bold text-[var(--vct-accent-cyan)]">{param.key}</td>
+                                        <td className="p-3 font-mono text-xs font-bold text-(--vct-accent-cyan)">{param.key}</td>
                                         <td className="p-3">
-                                            <span className="font-bold text-sm text-[var(--vct-text-primary)]">{param.value}</span>
-                                            {param.unit && <span className="text-[10px] text-[var(--vct-text-tertiary)] ml-1">{param.unit}</span>}
+                                            <span className={`font-bold text-sm ${param.value !== param.defaultValue ? 'text-[#f59e0b]' : 'text-(--vct-text-primary)'}`}>{param.value}</span>
+                                            {param.unit && <span className="text-[10px] text-(--vct-text-tertiary) ml-1">{param.unit}</span>}
+                                            {param.value !== param.defaultValue && <span className="text-[9px] text-(--vct-text-tertiary) ml-2">(mặc định: {param.defaultValue})</span>}
                                         </td>
-                                        <td className="p-3 text-sm text-[var(--vct-text-secondary)]">{param.description}</td>
+                                        <td className="p-3 text-sm text-(--vct-text-secondary)">{param.description}</td>
                                         <td className="p-3">
                                             <button
+                                                title="Chỉnh sửa tham số"
                                                 type="button"
-                                                onClick={() => handleEditParam(param)}
-                                                className="p-1 text-[var(--vct-text-tertiary)] hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded hover:bg-white/10"
+                                                onClick={(e) => { e.stopPropagation(); handleEditParam(param) }}
+                                                className="p-1 text-(--vct-text-tertiary) hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded hover:bg-white/10"
                                             >
                                                 <VCT_Icons.Edit size={14} />
                                             </button>
@@ -292,8 +358,8 @@ export const Page_admin_system = () => {
             </div>
 
             {/* ── BACKUP HISTORY ── */}
-            <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-6">
-                <h2 className="font-bold text-lg text-[var(--vct-text-primary)] mb-4 flex items-center gap-2">
+            <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6">
+                <h2 className="font-bold text-lg text-(--vct-text-primary) mb-4 flex items-center gap-2">
                     <VCT_Icons.Download size={20} className="text-[#10b981]" /> Lịch Sử Backup
                 </h2>
                 <div className="space-y-2">
@@ -301,12 +367,12 @@ export const Page_admin_system = () => {
                         [...Array(4)].map((_, i) => <SkeletonBackupItem key={i} />)
                     ) : (
                         backups.map(bk => (
-                            <div key={bk.id} className="flex items-center justify-between p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)] hover:border-[var(--vct-accent-cyan)] transition-colors">
+                            <div key={bk.id} className="flex items-center justify-between p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle) hover:border-(--vct-accent-cyan) transition-colors">
                                 <div className="flex items-center gap-4">
                                     <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></div>
                                     <div>
-                                        <div className="font-semibold text-sm text-[var(--vct-text-primary)]">{bk.time}</div>
-                                        <div className="text-[11px] text-[var(--vct-text-tertiary)]">{bk.type} • {bk.size}</div>
+                                        <div className="font-semibold text-sm text-(--vct-text-primary)">{bk.time}</div>
+                                        <div className="text-[11px] text-(--vct-text-tertiary)">{bk.type} • {bk.size}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -320,24 +386,90 @@ export const Page_admin_system = () => {
             </div>
 
             {/* ── EDIT CONFIG MODAL ── */}
-            <VCT_Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Chỉnh sửa tham số" width="450px" footer={
+            <VCT_Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Chỉnh sửa tham số" width="480px" footer={
                 <>
                     <VCT_Button variant="secondary" onClick={() => setShowEditModal(false)}>Hủy</VCT_Button>
-                    <VCT_Button onClick={handleSaveParam}>Lưu thay đổi</VCT_Button>
+                    <VCT_Button onClick={handleSaveParam} disabled={!!editError}>Lưu thay đổi</VCT_Button>
                 </>
             }>
                 {editingParam && (
                     <VCT_Stack gap={16}>
                         <div>
-                            <div className="text-[11px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold mb-1">Key</div>
-                            <div className="font-mono text-sm text-[var(--vct-accent-cyan)]">{editingParam.key}</div>
+                            <div className="text-[11px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold mb-1">Key</div>
+                            <div className="font-mono text-sm text-(--vct-accent-cyan)">{editingParam.key}</div>
                         </div>
                         <div>
-                            <div className="text-[11px] text-[var(--vct-text-secondary)] mb-2">{editingParam.description}</div>
+                            <div className="text-[11px] text-(--vct-text-secondary) mb-1">{editingParam.description}</div>
+                            <div className="text-[10px] text-(--vct-text-tertiary)">
+                                Loại: <span className="font-bold uppercase">{editingParam.type}</span>
+                                {editingParam.min !== undefined && ` · Min: ${editingParam.min}`}
+                                {editingParam.max !== undefined && ` · Max: ${editingParam.max}`}
+                                {editingParam.defaultValue && ` · Mặc định: ${editingParam.defaultValue}`}
+                            </div>
                         </div>
-                        <VCT_Field label={`Giá trị${editingParam.unit ? ` (${editingParam.unit})` : ''}`}>
-                            <VCT_Input value={editValue} onChange={(e: any) => setEditValue(e.target.value)} />
-                        </VCT_Field>
+
+                        {/* Type-aware input */}
+                        {editingParam.type === 'boolean' ? (
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditValue(editValue === 'true' ? 'false' : 'true')}
+                                    aria-label={`Chuyển đổi ${editingParam.key}`}
+                                    className={`relative w-14 h-7 rounded-full transition-colors ${
+                                        editValue === 'true' ? 'bg-[#10b981]' : 'bg-(--vct-bg-base) border border-(--vct-border-strong)'
+                                    }`}
+                                >
+                                    <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                                        editValue === 'true' ? 'translate-x-7' : 'translate-x-0.5'
+                                    }`} />
+                                </button>
+                                <span className={`text-sm font-bold ${editValue === 'true' ? 'text-[#10b981]' : 'text-(--vct-text-tertiary)'}`}>
+                                    {editValue === 'true' ? 'BẬT' : 'TẮT'}
+                                </span>
+                            </div>
+                        ) : editingParam.type === 'number' ? (
+                            <VCT_Field label={`Giá trị${editingParam.unit ? ` (${editingParam.unit})` : ''}`}>
+                                <div className="space-y-2">
+                                    <VCT_Input
+                                        type="number"
+                                        value={editValue}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                            setEditValue(e.target.value)
+                                            setEditError(validateValue(editingParam, e.target.value))
+                                        }}
+                                        min={editingParam.min}
+                                        max={editingParam.max}
+                                        step={editingParam.step}
+                                    />
+                                    {editingParam.min !== undefined && editingParam.max !== undefined && (
+                                        <input
+                                            type="range"
+                                            aria-label={`Phạm vi ${editingParam.key}`}
+                                            min={editingParam.min}
+                                            max={editingParam.max}
+                                            step={editingParam.step}
+                                            value={Number(editValue) || editingParam.min}
+                                            onChange={e => { setEditValue(e.target.value); setEditError('') }}
+                                            className="w-full accent-(--vct-accent-cyan,#0ea5e9)"
+                                        />
+                                    )}
+                                    {editError && <div className="text-xs text-[#ef4444] font-semibold">{editError}</div>}
+                                </div>
+                            </VCT_Field>
+                        ) : (
+                            <VCT_Field label="Giá trị">
+                                <VCT_Input value={editValue} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditValue(e.target.value)} />
+                            </VCT_Field>
+                        )}
+
+                        {/* Reset to default */}
+                        {editingParam.value !== editingParam.defaultValue && (
+                            <button
+                                type="button"
+                                onClick={() => { setEditValue(editingParam.defaultValue); setEditError('') }}
+                                className="text-xs text-(--vct-accent-cyan) hover:underline self-start"
+                            >↺ Khôi phục mặc định ({editingParam.defaultValue})</button>
+                        )}
                     </VCT_Stack>
                 )}
             </VCT_Modal>
@@ -364,33 +496,46 @@ export const Page_admin_system = () => {
             <VCT_Drawer isOpen={!!drawerParam} onClose={() => setDrawerParam(null)} title="Chi tiết tham số" width={480}>
                 {drawerParam && (
                     <div className="space-y-5">
-                        <div className="pb-4 border-b border-[var(--vct-border-subtle)]">
-                            <div className="font-mono text-lg font-bold text-[var(--vct-accent-cyan)]">{drawerParam.key}</div>
-                            <p className="text-sm text-[var(--vct-text-secondary)] mt-1">{drawerParam.description}</p>
+                        <div className="pb-4 border-b border-(--vct-border-subtle)">
+                            <div className="font-mono text-lg font-bold text-(--vct-accent-cyan)">{drawerParam.key}</div>
+                            <p className="text-sm text-(--vct-text-secondary) mt-1">{drawerParam.description}</p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
-                                <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Giá trị hiện tại</div>
-                                <div className="text-2xl font-black text-[var(--vct-text-primary)]">{drawerParam.value}<span className="text-xs text-[var(--vct-text-tertiary)] ml-1">{drawerParam.unit}</span></div>
+                            <div className="p-4 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
+                                <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Giá trị hiện tại</div>
+                                <div className="text-2xl font-black text-(--vct-text-primary)">{drawerParam.value}<span className="text-xs text-(--vct-text-tertiary) ml-1">{drawerParam.unit}</span></div>
                             </div>
-                            <div className="p-4 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
-                                <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Loại</div>
-                                <div className="text-sm font-semibold text-[var(--vct-text-primary)]">{drawerParam.value === 'true' || drawerParam.value === 'false' ? 'Boolean' : isNaN(Number(drawerParam.value)) ? 'String' : 'Number'}</div>
+                            <div className="p-4 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
+                                <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Loại</div>
+                                <div className="text-sm font-semibold text-(--vct-text-primary)">{drawerParam.value === 'true' || drawerParam.value === 'false' ? 'Boolean' : isNaN(Number(drawerParam.value)) ? 'String' : 'Number'}</div>
                             </div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-2">Lịch sử thay đổi</div>
+                            <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-2">Lịch sử thay đổi</div>
                             <VCT_Timeline events={[
                                 { time: '10/03/2024 08:00', title: `Giá trị hiện tại: ${drawerParam.value}`, description: 'admin@vct.vn cập nhật', icon: <VCT_Icons.Edit size={14} />, color: '#0ea5e9' },
                                 { time: '01/03/2024 09:30', title: 'Giá trị trước: —', description: 'Thiết lập ban đầu', icon: <VCT_Icons.Plus size={14} />, color: '#10b981' },
                             ] as TimelineEvent[]} maxHeight={180} />
                         </div>
-                        <div className="flex gap-3 pt-4 border-t border-[var(--vct-border-subtle)]">
+                        <div className="flex gap-3 pt-4 border-t border-(--vct-border-subtle)">
                             <VCT_Button variant="outline" size="sm" icon={<VCT_Icons.Edit size={14} />} onClick={() => { handleEditParam(drawerParam); setDrawerParam(null) }}>Chỉnh sửa</VCT_Button>
+                            {drawerParam.value !== drawerParam.defaultValue && (
+                                <VCT_Button variant="ghost" size="sm" icon={<VCT_Icons.RotateCcw size={14} />} onClick={() => setConfirmReset(drawerParam)}>Khôi phục mặc định</VCT_Button>
+                            )}
                         </div>
                     </div>
                 )}
             </VCT_Drawer>
+
+            {/* ── CONFIRM RESET DEFAULT ── */}
+            <VCT_ConfirmDialog
+                isOpen={!!confirmReset}
+                onClose={() => setConfirmReset(null)}
+                onConfirm={() => confirmReset && handleResetParam(confirmReset)}
+                title="Khôi phục mặc định"
+                message={`Bạn có chắc muốn khôi phục "${confirmReset?.key}" về giá trị mặc định (${confirmReset?.defaultValue})?`}
+                confirmLabel="Khôi phục"
+            />
         </VCT_PageContainer>
     )
 }

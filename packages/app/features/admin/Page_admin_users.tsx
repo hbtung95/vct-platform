@@ -14,6 +14,7 @@ import {
 import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
 import { VCT_Drawer } from '../components/VCT_Drawer'
+import { AdminSkeletonRow } from './components/AdminSkeletonRow'
 import { VCT_Timeline } from '../components/VCT_Timeline'
 import type { TimelineEvent } from '../components/VCT_Timeline'
 import {
@@ -30,18 +31,7 @@ import {
 // ════════════════════════════════════════
 const BLANK_FORM = { name: '', email: '', phone: '', role: 'VIEWER', scope: '' }
 
-// ════════════════════════════════════════
-// SKELETON ROW
-// ════════════════════════════════════════
-const SkeletonRow = () => (
-    <tr>
-        {[...Array(7)].map((_, j) => (
-            <td key={j} style={{ padding: '14px 16px' }}>
-                <div className="h-4 bg-[var(--vct-bg-elevated)] rounded animate-pulse" style={{ width: `${50 + Math.random() * 50}%` }} />
-            </td>
-        ))}
-    </tr>
-)
+
 
 // ════════════════════════════════════════
 // MAIN COMPONENT
@@ -163,8 +153,8 @@ export const Page_admin_users = () => {
 
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Quản Lý Tài Khoản</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Quản lý người dùng, phân quyền và trạng thái tài khoản trong hệ thống.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">Quản Lý Tài Khoản</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Quản lý người dùng, phân quyền và trạng thái tài khoản trong hệ thống.</p>
                 </div>
                 <VCT_Stack direction="row" gap={12}>
                     <VCT_Button variant="outline" icon={<VCT_Icons.Download size={16} />} onClick={() => {
@@ -189,7 +179,7 @@ export const Page_admin_users = () => {
             ] as StatItem[]} className="mb-8" />
 
             {/* ── TABS & SEARCH ── */}
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--vct-border-subtle)] pb-4">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-(--vct-border-subtle) pb-4">
                 <VCT_Tabs
                     tabs={[
                         { key: 'all', label: 'Tất cả' },
@@ -205,10 +195,10 @@ export const Page_admin_users = () => {
 
             {/* ── TABLE ── */}
             {isLoading ? (
-                <div className="overflow-hidden rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)]">
+                <div className="overflow-hidden rounded-2xl border border-(--vct-border-subtle) bg-(--vct-bg-glass)">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="border-b border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)]">
+                            <tr className="border-b border-(--vct-border-strong) bg-(--vct-bg-card)">
                                 <th style={{ padding: '14px 16px', width: 40 }} />
                                 {['Người dùng', 'Vai trò', 'Phạm vi', 'Trạng thái', 'Đăng nhập cuối', ''].map((h, i) => (
                                     <th key={i} style={{ padding: '14px 16px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, textAlign: i === 3 ? 'center' : 'left' }}>{h}</th>
@@ -216,19 +206,19 @@ export const Page_admin_users = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {[...Array(5)].map((_, i) => <SkeletonRow key={i} />)}
+                            {[...Array(5)].map((_, i) => <AdminSkeletonRow key={i} cols={7} />)}
                         </tbody>
                     </table>
                 </div>
             ) : filtered.length === 0 ? (
                 <VCT_EmptyState title="Không tìm thấy tài khoản" description="Thử thay đổi bộ lọc hoặc từ khóa." actionLabel="Thêm tài khoản" onAction={openAddModal} icon="👤" />
             ) : (
-                <div className="overflow-hidden rounded-2xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-glass)]">
+                <div className="overflow-hidden rounded-2xl border border-(--vct-border-subtle) bg-(--vct-bg-glass)">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="border-b border-[var(--vct-border-strong)] bg-[var(--vct-bg-card)]">
+                            <tr className="border-b border-(--vct-border-strong) bg-(--vct-bg-card)">
                                 <th style={{ padding: '14px 16px', width: 40, textAlign: 'center' }}>
-                                    <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />
+                                    <input type="checkbox" aria-label="Chọn tất cả" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />
                                 </th>
                                 {['Người dùng', 'Vai trò', 'Phạm vi', 'Trạng thái', 'Đăng nhập cuối', ''].map((h, i) => (
                                     <th key={i} style={{ padding: '14px 16px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', opacity: 0.5, textAlign: i === 3 ? 'center' : 'left' }}>{h}</th>
@@ -239,7 +229,7 @@ export const Page_admin_users = () => {
                             {pagination.paginatedItems.map((user, idx) => (
                                 <tr key={user.id} className="group" style={{ borderBottom: '1px solid var(--vct-border-subtle)', background: selectedIds.has(user.id) ? 'rgba(34, 211, 238, 0.05)' : idx % 2 === 0 ? 'transparent' : 'rgba(128,128,128,0.02)' }}>
                                     <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                                        <input type="checkbox" checked={selectedIds.has(user.id)} onChange={() => toggleSelect(user.id)} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />
+                                        <input type="checkbox" aria-label="Chọn người dùng" checked={selectedIds.has(user.id)} onChange={() => toggleSelect(user.id)} style={{ width: 16, height: 16, accentColor: '#22d3ee' }} />
                                     </td>
                                     <td style={{ padding: '14px 16px' }}>
                                         <VCT_Stack direction="row" gap={10} align="center">
@@ -248,7 +238,7 @@ export const Page_admin_users = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => openUserDetail(user)}
-                                                    className="text-left text-[13px] font-bold text-[var(--vct-text-primary)] transition-colors hover:text-[var(--vct-accent-cyan)]"
+                                                    className="text-left text-[13px] font-bold text-(--vct-text-primary) transition-colors hover:text-(--vct-accent-cyan)"
                                                 >
                                                     {user.name}
                                                 </button>
@@ -270,9 +260,9 @@ export const Page_admin_users = () => {
                                     </td>
                                     <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                                         <VCT_Stack direction="row" gap={4} justify="flex-end">
-                                            <button type="button" onClick={() => openUserDetail(user)} className="p-1.5 text-[var(--vct-text-tertiary)] hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-white/10"><VCT_Icons.Eye size={16} /></button>
-                                            <button type="button" onClick={() => openEditModal(user)} className="p-1.5 text-[var(--vct-text-tertiary)] hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-white/10"><VCT_Icons.Edit size={16} /></button>
-                                            <button type="button" onClick={() => setDeleteTarget(user)} className="p-1.5 text-[#ef4444] opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-[#ef444420]"><VCT_Icons.Trash size={16} /></button>
+                                            <button type="button" aria-label="Xem chi tiết" onClick={() => openUserDetail(user)} className="p-1.5 text-(--vct-text-tertiary) hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-white/10"><VCT_Icons.Eye size={16} /></button>
+                                            <button type="button" aria-label="Chỉnh sửa" onClick={() => openEditModal(user)} className="p-1.5 text-(--vct-text-tertiary) hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-white/10"><VCT_Icons.Edit size={16} /></button>
+                                            <button type="button" aria-label="Xóa" onClick={() => setDeleteTarget(user)} className="p-1.5 text-[#ef4444] opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-[#ef444420]"><VCT_Icons.Trash size={16} /></button>
                                         </VCT_Stack>
                                     </td>
                                 </tr>
@@ -280,14 +270,14 @@ export const Page_admin_users = () => {
                         </tbody>
                     </table>
                     {pagination.totalPages > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--vct-border-subtle)]">
-                            <span className="text-xs text-[var(--vct-text-tertiary)]">
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-(--vct-border-subtle)">
+                            <span className="text-xs text-(--vct-text-tertiary)">
                                 Hiển thị {(pagination.currentPage - 1) * pagination.pageSize + 1}–{Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} / {pagination.totalItems}
                             </span>
                             <div className="flex gap-2">
-                                <button onClick={pagination.prev} disabled={!pagination.hasPrev} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">← Trước</button>
-                                <span className="px-3 py-1 text-xs text-[var(--vct-text-tertiary)]">{pagination.currentPage}/{pagination.totalPages}</span>
-                                <button onClick={pagination.next} disabled={!pagination.hasNext} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">Sau →</button>
+                                <button onClick={pagination.prev} disabled={!pagination.hasPrev} className="px-3 py-1 text-xs rounded-lg bg-(--vct-bg-elevated) text-(--vct-text-secondary) disabled:opacity-30 hover:bg-(--vct-bg-base) transition-colors">← Trước</button>
+                                <span className="px-3 py-1 text-xs text-(--vct-text-tertiary)">{pagination.currentPage}/{pagination.totalPages}</span>
+                                <button onClick={pagination.next} disabled={!pagination.hasNext} className="px-3 py-1 text-xs rounded-lg bg-(--vct-bg-elevated) text-(--vct-text-secondary) disabled:opacity-30 hover:bg-(--vct-bg-base) transition-colors">Sau →</button>
                             </div>
                         </div>
                     )}
@@ -334,26 +324,26 @@ export const Page_admin_users = () => {
                 {drawerUser && (
                     <div className="space-y-6">
                         {/* Header */}
-                        <div className="flex items-center gap-4 pb-4 border-b border-[var(--vct-border-subtle)]">
+                        <div className="flex items-center gap-4 pb-4 border-b border-(--vct-border-subtle)">
                             <VCT_AvatarLetter name={drawerUser.name} size={56} />
                             <div>
-                                <div className="text-lg font-bold text-[var(--vct-text-primary)]">{drawerUser.name}</div>
-                                <div className="text-sm text-[var(--vct-text-secondary)]">{drawerUser.email}</div>
+                                <div className="text-lg font-bold text-(--vct-text-primary)">{drawerUser.name}</div>
+                                <div className="text-sm text-(--vct-text-secondary)">{drawerUser.email}</div>
                                 <VCT_Badge text={STATUS_MAP[drawerUser.status]?.label || 'N/A'} type={STATUS_MAP[drawerUser.status]?.type || 'neutral'} />
                             </div>
                         </div>
                         {/* Info Grid */}
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">ID</div><div className="font-mono text-[var(--vct-accent-cyan)]">{drawerUser.id}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">SĐT</div><div className="text-[var(--vct-text-primary)]">{drawerUser.phone}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Vai trò</div><span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, color: ROLE_COLORS[drawerUser.role] || '#94a3b8', background: `${ROLE_COLORS[drawerUser.role] || '#94a3b8'}15` }}>{getRoleLabel(drawerUser.role)}</span></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Phạm vi</div><div className="text-[var(--vct-text-primary)]">{drawerUser.scope}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Đăng nhập cuối</div><div className="text-[var(--vct-text-primary)]">{drawerUser.last_login}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Ngày tạo</div><div className="text-[var(--vct-text-primary)]">{drawerUser.created_at}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">ID</div><div className="font-mono text-(--vct-accent-cyan)">{drawerUser.id}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">SĐT</div><div className="text-(--vct-text-primary)">{drawerUser.phone}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Vai trò</div><span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, color: ROLE_COLORS[drawerUser.role] || '#94a3b8', background: `${ROLE_COLORS[drawerUser.role] || '#94a3b8'}15` }}>{getRoleLabel(drawerUser.role)}</span></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Phạm vi</div><div className="text-(--vct-text-primary)">{drawerUser.scope}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Đăng nhập cuối</div><div className="text-(--vct-text-primary)">{drawerUser.last_login}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Ngày tạo</div><div className="text-(--vct-text-primary)">{drawerUser.created_at}</div></div>
                         </div>
                         {/* Login History */}
                         <div>
-                            <h3 className="font-bold text-sm text-[var(--vct-text-primary)] mb-3 flex items-center gap-2"><VCT_Icons.Clock size={14} /> Lịch sử hoạt động</h3>
+                            <h3 className="font-bold text-sm text-(--vct-text-primary) mb-3 flex items-center gap-2"><VCT_Icons.Clock size={14} /> Lịch sử hoạt động</h3>
                             <VCT_Timeline events={MOCK_LOGIN_HISTORY} maxHeight={280} />
                         </div>
                     </div>

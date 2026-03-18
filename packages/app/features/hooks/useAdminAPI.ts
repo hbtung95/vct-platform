@@ -5,15 +5,14 @@ import { useApiQuery, useApiMutation } from './useApiQuery'
 // ═══════════════════════════════════════════════════════════════
 // VCT PLATFORM — ADMIN API HOOKS
 // Typed React hooks for admin workspace: users, audit logs,
-// system config, data quality, documents, notifications, integrity.
+// system config, data quality, documents, notifications, integrity,
+// tournaments, people, finance, federation, clubs, scoring, rankings.
 //
-// NOTE: Backend admin APIs are not yet implemented.
-// These hooks are wired to future endpoints and will return
-// isLoading=false + data=null until the backend is ready.
-// Pages should fall back to mock data when data === null.
+// Hooks are wired to backend endpoints. When the API returns an
+// error (e.g. 404), pages gracefully fall back to mock data.
 // ═══════════════════════════════════════════════════════════════
 
-// ── Types ────────────────────────────────────────────────────
+// ── Types (original) ────────────────────────────────────────
 
 export interface AdminUser {
     id: string; name: string; email: string; phone: string
@@ -81,7 +80,60 @@ export interface IntegrityAlert {
     reported_at: string
 }
 
-// ── Query Hooks ──────────────────────────────────────────────
+// ── Types (new domains) ─────────────────────────────────────
+
+export interface AdminTournament {
+    id: string; name: string; type: string
+    status: 'draft' | 'registration' | 'in_progress' | 'completed' | 'cancelled'
+    start_date: string; end_date: string; location: string
+    athletes_count: number; events_count: number
+    organizer: string; budget: string
+}
+
+export interface AdminPerson {
+    id: string; name: string; dob: string; gender: string
+    club: string; province: string; phone: string; email: string
+    type: 'athlete' | 'coach' | 'referee'
+    status: 'active' | 'pending' | 'suspended' | 'retired'
+    belt?: string; weight_class?: string
+    cert_level?: string; specialization?: string
+}
+
+export interface AdminInvoice {
+    id: string; tournament: string; payer: string
+    amount: number; type: string
+    status: 'pending' | 'paid' | 'overdue' | 'cancelled'
+    due_date: string; paid_date?: string
+}
+
+export interface AdminFederation {
+    id: string; name: string; type: 'national' | 'provincial' | 'sub_association'
+    president: string; members: number; clubs: number; athletes: number
+    status: 'active' | 'pending' | 'suspended'
+}
+
+export interface AdminClub {
+    id: string; name: string; province: string; head_coach: string
+    members: number; athletes: number; status: 'active' | 'pending' | 'suspended'
+    equipment_score: number
+}
+
+export interface AdminLiveMatch {
+    id: string; event_name: string; category: string
+    athlete_red: string; athlete_blue: string
+    score_red: number; score_blue: number
+    round: number; max_rounds: number
+    status: 'live' | 'paused' | 'finished' | 'upcoming'
+    arena: string; referee: string
+}
+
+export interface AdminRankedAthlete {
+    id: string; rank: number; name: string; club: string
+    elo: number; elo_change: number
+    wins: number; losses: number; belt: string; weight_class: string
+}
+
+// ── Query Hooks (original — now enabled) ────────────────────
 
 /** Fetch system users list — GET /api/v1/admin/users */
 export function useAdminUsers(params?: { role?: string; status?: string }) {
@@ -90,8 +142,7 @@ export function useAdminUsers(params?: { role?: string; status?: string }) {
     if (params?.status) qs.set('status', params.status)
     const query = qs.toString()
     return useApiQuery<{ data: AdminUser[]; total: number }>(
-        `/api/v1/admin/users${query ? '?' + query : ''}`,
-        { enabled: false } // Enable when backend is ready
+        `/api/v1/admin/users${query ? '?' + query : ''}`
     )
 }
 
@@ -102,52 +153,98 @@ export function useAuditLogs(params?: { severity?: string; action?: string }) {
     if (params?.action) qs.set('action', params.action)
     const query = qs.toString()
     return useApiQuery<{ data: AuditLogEntry[]; total: number }>(
-        `/api/v1/admin/audit-logs${query ? '?' + query : ''}`,
-        { enabled: false }
+        `/api/v1/admin/audit-logs${query ? '?' + query : ''}`
     )
 }
 
 /** Fetch system config — GET /api/v1/admin/system/config */
 export function useSystemConfig() {
     return useApiQuery<{ data: { params: SystemConfigParam[]; backups: BackupEntry[] } }>(
-        '/api/v1/admin/system/config',
-        { enabled: false }
+        '/api/v1/admin/system/config'
     )
 }
 
 /** Fetch data quality scores + rules — GET /api/v1/admin/data-quality */
 export function useDataQuality() {
     return useApiQuery<{ data: { scores: DataQualityScore[]; rules: DataQualityRule[] } }>(
-        '/api/v1/admin/data-quality',
-        { enabled: false }
+        '/api/v1/admin/data-quality'
     )
 }
 
 /** Fetch document templates + issued — GET /api/v1/admin/documents */
 export function useDocumentTemplates() {
     return useApiQuery<{ data: { templates: DocumentTemplate[]; issued: IssuedDocument[] } }>(
-        '/api/v1/admin/documents',
-        { enabled: false }
+        '/api/v1/admin/documents'
     )
 }
 
 /** Fetch notification templates + stats — GET /api/v1/admin/notifications */
 export function useNotificationTemplates() {
     return useApiQuery<{ data: { templates: NotificationTemplate[]; stats: NotificationStat[] } }>(
-        '/api/v1/admin/notifications',
-        { enabled: false }
+        '/api/v1/admin/notifications'
     )
 }
 
 /** Fetch integrity alerts — GET /api/v1/admin/integrity */
 export function useIntegrityAlerts() {
     return useApiQuery<{ data: IntegrityAlert[]; total: number }>(
-        '/api/v1/admin/integrity',
-        { enabled: false }
+        '/api/v1/admin/integrity'
     )
 }
 
-// ── Mutation Hooks ───────────────────────────────────────────
+// ── Query Hooks (new domains) ───────────────────────────────
+
+/** Fetch tournaments list — GET /api/v1/tournaments */
+export function useTournamentAdmin() {
+    return useApiQuery<{ data: AdminTournament[]; total: number }>(
+        '/api/v1/tournaments'
+    )
+}
+
+/** Fetch people (athletes/coaches/referees) — GET /api/v1/athletes */
+export function usePeopleAdmin(type?: string) {
+    const path = type === 'coach' ? '/api/v1/referees' : type === 'referee' ? '/api/v1/referees' : '/api/v1/athletes'
+    return useApiQuery<{ data: AdminPerson[]; total: number }>(path)
+}
+
+/** Fetch invoices — GET /api/v1/finance/invoices */
+export function useFinanceAdmin() {
+    return useApiQuery<{ data: AdminInvoice[]; total: number }>(
+        '/api/v1/finance/invoices'
+    )
+}
+
+/** Fetch federation units — GET /api/v1/federation/provinces */
+export function useFederationAdmin() {
+    return useApiQuery<{ data: AdminFederation[]; total: number }>(
+        '/api/v1/federation/provinces'
+    )
+}
+
+/** Fetch clubs — GET /api/v1/clubs */
+export function useClubAdmin() {
+    return useApiQuery<{ data: AdminClub[]; total: number }>(
+        '/api/v1/clubs'
+    )
+}
+
+/** Fetch live matches — GET /api/v1/scoring/matches */
+export function useScoringAdmin() {
+    return useApiQuery<{ data: AdminLiveMatch[]; total: number }>(
+        '/api/v1/scoring/matches',
+        { refetchInterval: 5000 } // Poll every 5s for live data
+    )
+}
+
+/** Fetch rankings — GET /api/v1/rankings */
+export function useRankingAdmin(weightClass?: string) {
+    const qs = weightClass ? `?weight_class=${weightClass}` : ''
+    return useApiQuery<{ data: AdminRankedAthlete[]; total: number }>(
+        `/api/v1/rankings${qs}`
+    )
+}
+
+// ── Mutation Hooks (original) ───────────────────────────────
 
 /** Create a document template — POST /api/v1/admin/documents/templates */
 export function useCreateDocTemplate() {
@@ -195,5 +292,56 @@ export function useCreateAdminUser() {
 export function useDeleteAdminUser(userId: string) {
     return useApiMutation<Record<string, never>, void>(
         'DELETE', `/api/v1/admin/users/${userId}`
+    )
+}
+
+// ── Mutation Hooks (new domains) ────────────────────────────
+
+/** Update tournament status — PATCH /api/v1/tournaments/:id */
+export function useUpdateTournament(tournamentId: string) {
+    return useApiMutation<Partial<AdminTournament>, { data: AdminTournament }>(
+        'PATCH', `/api/v1/tournaments/${tournamentId}`
+    )
+}
+
+/** Approve person (athlete/coach/referee) — POST /api/v1/athletes/:id/approve */
+export function useApprovePerson(personId: string) {
+    return useApiMutation<Record<string, never>, { data: AdminPerson }>(
+        'POST', `/api/v1/athletes/${personId}/approve`
+    )
+}
+
+/** Confirm invoice payment — POST /api/v1/finance/payments */
+export function useConfirmPayment() {
+    return useApiMutation<{ invoice_id: string }, { data: AdminInvoice }>(
+        'POST', '/api/v1/finance/payments'
+    )
+}
+
+/** Approve federation — POST /api/v1/federation/provinces/:id/approve */
+export function useApproveFederation(fedId: string) {
+    return useApiMutation<Record<string, never>, { data: AdminFederation }>(
+        'POST', `/api/v1/federation/provinces/${fedId}/approve`
+    )
+}
+
+/** Approve club — POST /api/v1/clubs/:id/approve */
+export function useApproveClub(clubId: string) {
+    return useApiMutation<Record<string, never>, { data: AdminClub }>(
+        'POST', `/api/v1/clubs/${clubId}/approve`
+    )
+}
+
+/** Override match score — POST /api/v1/scoring/matches/:id/override */
+export function useOverrideScore(matchId: string) {
+    return useApiMutation<{ score_red: number; score_blue: number }, { data: AdminLiveMatch }>(
+        'POST', `/api/v1/scoring/matches/${matchId}/override`
+    )
+}
+
+/** Adjust athlete ELO — PATCH /api/v1/rankings/:id/elo */
+export function useAdjustElo(athleteId: string) {
+    return useApiMutation<{ elo_delta: number; reason: string }, { data: AdminRankedAthlete }>(
+        'PATCH', `/api/v1/rankings/${athleteId}/elo`
     )
 }

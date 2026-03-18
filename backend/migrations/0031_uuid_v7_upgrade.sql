@@ -23,12 +23,12 @@ BEGIN
   BEGIN
       v_time := (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
       v_bytes := gen_random_bytes(16);
-      v_bytes := set_byte(v_bytes, 0, (v_time >> 40)::INT & 255);
-      v_bytes := set_byte(v_bytes, 1, (v_time >> 32)::INT & 255);
-      v_bytes := set_byte(v_bytes, 2, (v_time >> 24)::INT & 255);
-      v_bytes := set_byte(v_bytes, 3, (v_time >> 16)::INT & 255);
-      v_bytes := set_byte(v_bytes, 4, (v_time >>  8)::INT & 255);
-      v_bytes := set_byte(v_bytes, 5,  v_time        ::INT & 255);
+      v_bytes := set_byte(v_bytes, 0, ((v_time >> 40) & 255)::INT);
+      v_bytes := set_byte(v_bytes, 1, ((v_time >> 32) & 255)::INT);
+      v_bytes := set_byte(v_bytes, 2, ((v_time >> 24) & 255)::INT);
+      v_bytes := set_byte(v_bytes, 3, ((v_time >> 16) & 255)::INT);
+      v_bytes := set_byte(v_bytes, 4, ((v_time >>  8) & 255)::INT);
+      v_bytes := set_byte(v_bytes, 5, ( v_time        & 255)::INT);
       v_bytes := set_byte(v_bytes, 6, (get_byte(v_bytes, 6) & 15) | 112);
       v_bytes := set_byte(v_bytes, 8, (get_byte(v_bytes, 8) & 63) | 128);
       v_hex := encode(v_bytes, 'hex');

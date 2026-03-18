@@ -58,7 +58,7 @@ const MOCK_REF_TABLES: RefTable[] = [
     ]},
 ]
 
-const SkeletonRow = () => (<tr className="animate-pulse"><td className="p-4"><div className="h-4 w-6 bg-[var(--vct-bg-card)] rounded mx-auto" /></td><td className="p-4"><div className="h-5 w-16 bg-[var(--vct-bg-card)] rounded" /></td><td className="p-4"><div className="h-4 w-28 bg-[var(--vct-bg-card)] rounded" /></td><td className="p-4"><div className="h-4 w-24 bg-[var(--vct-bg-card)] rounded" /></td><td className="p-4"><div className="h-5 w-16 bg-[var(--vct-bg-card)] rounded mx-auto" /></td><td className="p-4"><div className="h-4 w-12 bg-[var(--vct-bg-card)] rounded mx-auto" /></td></tr>)
+const SkeletonRow = () => (<tr className="animate-pulse"><td className="p-4"><div className="h-4 w-6 bg-(--vct-bg-card) rounded mx-auto" /></td><td className="p-4"><div className="h-5 w-16 bg-(--vct-bg-card) rounded" /></td><td className="p-4"><div className="h-4 w-28 bg-(--vct-bg-card) rounded" /></td><td className="p-4"><div className="h-4 w-24 bg-(--vct-bg-card) rounded" /></td><td className="p-4"><div className="h-5 w-16 bg-(--vct-bg-card) rounded mx-auto" /></td><td className="p-4"><div className="h-4 w-12 bg-(--vct-bg-card) rounded mx-auto" /></td></tr>)
 
 export const Page_admin_reference_data = () => {
     const [tables, setTables] = useState<RefTable[]>(MOCK_REF_TABLES)
@@ -116,8 +116,8 @@ export const Page_admin_reference_data = () => {
             <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Dữ Liệu Tham Chiếu</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Quản lý bảng lookup: cấp đai, hạng cân, tiêu chí, lứa tuổi...</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">Dữ Liệu Tham Chiếu</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Quản lý bảng lookup: cấp đai, hạng cân, tiêu chí, lứa tuổi...</p>
                 </div>
                 <VCT_Button icon={<VCT_Icons.Plus size={16} />} onClick={openAdd}>Thêm mục mới</VCT_Button>
             </div>
@@ -129,30 +129,30 @@ export const Page_admin_reference_data = () => {
                 { label: 'Đã ẩn', value: tables.reduce((s,t) => s + t.items.filter(i => !i.is_active).length, 0), icon: <VCT_Icons.Eye size={18} />, color: '#f59e0b' },
             ] as StatItem[]} className="mb-8" />
 
-            <div className="mb-6 border-b border-[var(--vct-border-subtle)] pb-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="mb-6 border-b border-(--vct-border-subtle) pb-4 flex flex-wrap items-center justify-between gap-4">
                 <VCT_Tabs tabs={tables.map(t => ({ key: t.key, label: `${t.label} (${t.items.length})` }))} activeTab={activeTable} onChange={setActiveTable} />
                 <div className="w-full md:w-[300px]"><VCT_SearchInput placeholder="Tìm theo tên, mã..." value={search} onChange={setSearch} onClear={() => setSearch('')} /></div>
             </div>
 
-            {currentTable && <div className="mb-4 p-3 bg-[var(--vct-bg-elevated)] rounded-xl border border-[var(--vct-border-subtle)] flex items-center gap-3"><VCT_Icons.Info size={16} className="text-[var(--vct-accent-cyan)] shrink-0" /><span className="text-sm text-[var(--vct-text-secondary)]">{currentTable.description}</span></div>}
+            {currentTable && <div className="mb-4 p-3 bg-(--vct-bg-elevated) rounded-xl border border-(--vct-border-subtle) flex items-center gap-3"><VCT_Icons.Info size={16} className="text-(--vct-accent-cyan) shrink-0" /><span className="text-sm text-(--vct-text-secondary)">{currentTable.description}</span></div>}
 
-            <div className="bg-[var(--vct-bg-card)] border border-[var(--vct-border-strong)] rounded-2xl overflow-hidden">
+            <div className="bg-(--vct-bg-card) border border-(--vct-border-strong) rounded-2xl overflow-hidden">
                 <table className="w-full text-left border-collapse">
-                    <thead><tr className="bg-[var(--vct-bg-elevated)] border-b border-[var(--vct-border-strong)] text-[11px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold">
+                    <thead><tr className="bg-(--vct-bg-elevated) border-b border-(--vct-border-strong) text-[11px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold">
                         <th className="p-4 w-16 text-center">#</th><th className="p-4 w-28">Mã</th><th className="p-4">Tên (VI)</th><th className="p-4">Tên (EN)</th><th className="p-4 w-28 text-center">Trạng thái</th><th className="p-4 w-20 text-center"></th>
                     </tr></thead>
-                    <tbody className="divide-y divide-[var(--vct-border-subtle)]">
+                    <tbody className="divide-y divide-(--vct-border-subtle)">
                         {isLoading ? [...Array(5)].map((_,i) => <SkeletonRow key={i} />) : paginatedItems.length === 0 ? (
                             <tr><td colSpan={6} className="p-8"><VCT_EmptyState title="Không có dữ liệu" description="Thử thay đổi bộ lọc hoặc thêm mục mới." icon="📋" /></td></tr>
                         ) : paginatedItems.map(item => (
                             <tr key={item.id} className="hover:bg-white/5 transition-colors group">
-                                <td className="p-4 text-center font-mono text-sm text-[var(--vct-text-tertiary)]">{item.sort_order}</td>
-                                <td className="p-4"><span className="font-mono text-xs font-bold text-[var(--vct-accent-cyan)] bg-[var(--vct-accent-cyan)]/10 px-2 py-1 rounded">{item.code}</span></td>
-                                <td className="p-4 font-semibold text-sm text-[var(--vct-text-primary)]">{item.name_vi}</td>
-                                <td className="p-4 text-sm text-[var(--vct-text-secondary)]">{item.name_en}</td>
+                                <td className="p-4 text-center font-mono text-sm text-(--vct-text-tertiary)">{item.sort_order}</td>
+                                <td className="p-4"><span className="font-mono text-xs font-bold text-(--vct-accent-cyan) bg-(--vct-accent-cyan)/10 px-2 py-1 rounded">{item.code}</span></td>
+                                <td className="p-4 font-semibold text-sm text-(--vct-text-primary)">{item.name_vi}</td>
+                                <td className="p-4 text-sm text-(--vct-text-secondary)">{item.name_en}</td>
                                 <td className="p-4 text-center"><VCT_Badge text={item.is_active ? 'Hoạt động' : 'Đã ẩn'} type={item.is_active ? 'success' : 'neutral'} /></td>
                                 <td className="p-4 text-center"><VCT_Stack direction="row" gap={4} justify="center">
-                                    <button onClick={() => openEdit(item)} className="p-1.5 text-[var(--vct-text-tertiary)] hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-white/10"><VCT_Icons.Edit size={14} /></button>
+                                    <button onClick={() => openEdit(item)} className="p-1.5 text-(--vct-text-tertiary) hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-white/10"><VCT_Icons.Edit size={14} /></button>
                                     <button onClick={() => setDeleteTarget(item)} className="p-1.5 text-[#ef4444] opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-[#ef444420]"><VCT_Icons.Trash size={14} /></button>
                                 </VCT_Stack></td>
                             </tr>
@@ -163,12 +163,12 @@ export const Page_admin_reference_data = () => {
 
             {/* Pagination */}
             {!isLoading && totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 text-sm text-[var(--vct-text-secondary)]">
+                <div className="flex items-center justify-between mt-4 text-sm text-(--vct-text-secondary)">
                     <span>Trang {currentPage}/{totalPages} · {filteredItems.length} mục</span>
                     <div className="flex gap-1">
-                        <button onClick={prev} disabled={currentPage===1} className="px-3 py-1.5 rounded-lg border border-[var(--vct-border-subtle)] hover:bg-white/5 disabled:opacity-30 transition-all">←</button>
-                        {[...Array(totalPages)].map((_,i) => <button key={i} onClick={() => goToPage(i+1)} className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage===i+1 ? 'bg-[var(--vct-accent-cyan)] text-white border-transparent' : 'border-[var(--vct-border-subtle)] hover:bg-white/5'}`}>{i+1}</button>)}
-                        <button onClick={next} disabled={currentPage===totalPages} className="px-3 py-1.5 rounded-lg border border-[var(--vct-border-subtle)] hover:bg-white/5 disabled:opacity-30 transition-all">→</button>
+                        <button onClick={prev} disabled={currentPage===1} className="px-3 py-1.5 rounded-lg border border-(--vct-border-subtle) hover:bg-white/5 disabled:opacity-30 transition-all">←</button>
+                        {[...Array(totalPages)].map((_,i) => <button key={i} onClick={() => goToPage(i+1)} className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage===i+1 ? 'bg-(--vct-accent-cyan) text-white border-transparent' : 'border-(--vct-border-subtle) hover:bg-white/5'}`}>{i+1}</button>)}
+                        <button onClick={next} disabled={currentPage===totalPages} className="px-3 py-1.5 rounded-lg border border-(--vct-border-subtle) hover:bg-white/5 disabled:opacity-30 transition-all">→</button>
                     </div>
                 </div>
             )}

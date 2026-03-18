@@ -101,7 +101,7 @@ export const Page_finance = () => {
             )}
 
             {/* ── QUICK ACTIONS ── */}
-            <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-[#10b98120] to-transparent border border-[#10b98140] rounded-xl p-6 flex items-center gap-4 cursor-pointer hover:border-[#10b981] transition-colors">
                     <div className="w-12 h-12 rounded-full bg-[#10b981] flex items-center justify-center text-white shrink-0 shadow-lg shadow-[#10b98140]">
                         <VCT_Icons.ArrowDownLeft size={24} />
@@ -131,6 +131,16 @@ export const Page_finance = () => {
                         <div className="text-sm text-[var(--vct-text-secondary)]">Quản lý các đợt thu phí</div>
                     </div>
                 </div>
+
+                <a href="/finance/subscriptions" className="bg-gradient-to-br from-[#a855f720] to-transparent border border-[#a855f740] rounded-xl p-6 flex items-center gap-4 cursor-pointer hover:border-[#a855f7] transition-colors no-underline">
+                    <div className="w-12 h-12 rounded-full bg-[#a855f7] flex items-center justify-center text-white shrink-0 shadow-lg shadow-[#a855f740]">
+                        <VCT_Icons.CreditCard size={24} />
+                    </div>
+                    <div>
+                        <div className="font-bold text-[var(--vct-text-primary)] text-lg">Subscription</div>
+                        <div className="text-sm text-[var(--vct-text-secondary)]">Gói dịch vụ & gia hạn</div>
+                    </div>
+                </a>
             </div>
 
             {/* ── TOOLBAR ── */}

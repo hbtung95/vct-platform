@@ -4,12 +4,17 @@ import * as React from 'react'
 import { useState, useMemo, useCallback } from 'react'
 import {
     VCT_Button, VCT_Stack, VCT_SearchInput, VCT_Badge, VCT_Select,
-    VCT_Toast
+    VCT_Toast, VCT_PageContainer, VCT_StatRow
 } from '../components/vct-ui'
+import type { StatItem } from '../components/VCT_StatRow'
 import { VCT_Icons } from '../components/vct-icons'
 import { VCT_Drawer } from '../components/VCT_Drawer'
 import { VCT_ConfirmDialog } from '../components/vct-ui-overlay'
 import { usePagination } from '../hooks/usePagination'
+import { AdminPaginationBar } from './components/AdminPaginationBar'
+import { AdminSkeletonRow } from './components/AdminSkeletonRow'
+import { useAdminToast } from './hooks/useAdminToast'
+import { exportToCSV } from './utils/adminExport'
 
 // ════════════════════════════════════════
 // MOCK DATA — Tenants / Organizations
@@ -68,18 +73,7 @@ const STATUS_OPTIONS = [
     { value: 'suspended', label: '🚫 Suspended' },
 ]
 
-// ════════════════════════════════════════
-// SKELETON LOADER
-// ════════════════════════════════════════
-const SkeletonRow = () => (
-    <tr>
-        {[...Array(7)].map((_, i) => (
-            <td key={i} className="p-4">
-                <div className="h-4 bg-[var(--vct-bg-elevated)] rounded animate-pulse" style={{ width: `${50 + Math.random() * 50}%` }} />
-            </td>
-        ))}
-    </tr>
-)
+// SkeletonRow is now shared from ./components/AdminSkeletonRow
 
 // ════════════════════════════════════════
 // MAIN COMPONENT
@@ -92,7 +86,9 @@ export const Page_admin_tenants = () => {
     const [isLoading, setIsLoading] = useState(true)
     const [drawer, setDrawer] = useState<Tenant | null>(null)
     const [confirmAction, setConfirmAction] = useState<{ tenant: Tenant; action: 'suspend' | 'activate' | 'approve' } | null>(null)
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+    const [bulkConfirm, setBulkConfirm] = useState<{ action: 'approve' | 'suspend' } | null>(null)
+    const [selected, setSelected] = useState<Set<string>>(new Set())
+    const { toast, showToast, dismiss } = useAdminToast()
 
     React.useEffect(() => {
         const t = setTimeout(() => setIsLoading(false), 700)
@@ -112,10 +108,7 @@ export const Page_admin_tenants = () => {
 
     const pagination = usePagination(filtered, { pageSize: 10 })
 
-    const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-        setToast({ message, type })
-        setTimeout(() => setToast(null), 3000)
-    }, [])
+
 
     const handleConfirm = useCallback(() => {
         if (!confirmAction) return
@@ -135,16 +128,41 @@ export const Page_admin_tenants = () => {
         }
     }, [confirmAction, drawer, showToast])
 
+    const toggleSelect = useCallback((id: string) => {
+        setSelected(prev => {
+            const next = new Set(prev)
+            next.has(id) ? next.delete(id) : next.add(id)
+            return next
+        })
+    }, [])
+
+    const toggleSelectAll = useCallback(() => {
+        if (selected.size === pagination.paginatedItems.length) {
+            setSelected(new Set())
+        } else {
+            setSelected(new Set(pagination.paginatedItems.map(t => t.id)))
+        }
+    }, [pagination.paginatedItems, selected.size])
+
+    const handleBulkConfirm = useCallback(() => {
+        if (!bulkConfirm || selected.size === 0) return
+        const newStatus = bulkConfirm.action === 'suspend' ? 'suspended' as const : 'active' as const
+        setTenants(prev => prev.map(t => selected.has(t.id) ? { ...t, status: newStatus } : t))
+        const label = bulkConfirm.action === 'suspend' ? 'đình chỉ' : 'phê duyệt'
+        showToast(`Đã ${label} ${selected.size} tổ chức`)
+        setSelected(new Set())
+        setBulkConfirm(null)
+    }, [bulkConfirm, selected, showToast])
+
     const handleExport = useCallback(() => {
-        const header = 'ID,Tên,Loại,Gói,Trạng thái,Thành viên,Admins,Khu vực,Email,Ngày tạo\n'
-        const rows = filtered.map(t =>
-            `${t.id},"${t.name}",${t.type},${t.plan},${t.status},${t.members},${t.admins},"${t.region}",${t.contact_email},${t.created_at}`
-        ).join('\n')
-        const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url; a.download = 'vct_tenants.csv'; a.click()
-        URL.revokeObjectURL(url)
+        exportToCSV({
+            headers: ['ID', 'Tên', 'Loại', 'Gói', 'Trạng thái', 'Thành viên', 'Admins', 'Khu vực', 'Email', 'Ngày tạo'],
+            rows: filtered.map(t => [
+                t.id, t.name, t.type, t.plan, t.status,
+                String(t.members), String(t.admins), t.region, t.contact_email, t.created_at
+            ]),
+            filename: 'vct_tenants.csv',
+        })
         showToast('Đã xuất danh sách tổ chức!')
     }, [filtered, showToast])
 
@@ -157,38 +175,26 @@ export const Page_admin_tenants = () => {
     }), [tenants])
 
     return (
-        <div className="mx-auto max-w-[1400px] p-4 pb-24">
-            {toast && <VCT_Toast isVisible={!!toast} message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        <VCT_PageContainer size="wide" animated>
+            <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={dismiss} />
 
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Quản Lý Tổ Chức (Tenants)</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Phê duyệt, quản lý và giám sát các tổ chức sử dụng nền tảng VCT PLATFORM.</p>
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-(--vct-text-primary)">Quản Lý Tổ Chức (Tenants)</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Phê duyệt, quản lý và giám sát các tổ chức sử dụng nền tảng VCT PLATFORM.</p>
                 </div>
                 <VCT_Stack direction="row" gap={8}>
-                    <VCT_Button variant="ghost" icon={<VCT_Icons.Download size={16} />} onClick={handleExport}>Xuất CSV</VCT_Button>
+                    <VCT_Button variant="outline" icon={<VCT_Icons.Download size={16} />} onClick={handleExport}>Xuất CSV</VCT_Button>
                 </VCT_Stack>
             </div>
 
-            {/* ── STAT CARDS ── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {[
-                    { label: 'Tổng tổ chức', value: stats.total, color: 'var(--vct-accent-blue,#3b82f6)', icon: VCT_Icons.Building },
-                    { label: 'Đang hoạt động', value: stats.active, color: 'var(--vct-accent-green,#22c55e)', icon: VCT_Icons.CheckCircle },
-                    { label: 'Tổng thành viên', value: stats.totalMembers.toLocaleString(), color: 'var(--vct-accent-cyan,#06b6d4)', icon: VCT_Icons.Users },
-                    { label: 'Chờ xử lý', value: stats.pending, color: 'var(--vct-accent-yellow,#eab308)', icon: VCT_Icons.Clock },
-                ].map(card => (
-                    <div key={card.label} className="bg-[var(--vct-bg-card)] border border-[var(--vct-border-subtle)] rounded-2xl p-5 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${card.color}20` }}>
-                            <card.icon size={22} color={card.color} />
-                        </div>
-                        <div>
-                            <div className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</div>
-                            <div className="text-xs text-[var(--vct-text-tertiary)]">{card.label}</div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {/* ── KPI ── */}
+            <VCT_StatRow items={[
+                { label: 'Tổng TC', value: stats.total, icon: <VCT_Icons.Building size={18} />, color: '#3b82f6' },
+                { label: 'Hoạt động', value: stats.active, icon: <VCT_Icons.CheckCircle size={18} />, color: '#10b981' },
+                { label: 'Thành viên', value: stats.totalMembers.toLocaleString(), icon: <VCT_Icons.Users size={18} />, color: '#0ea5e9' },
+                { label: 'Chờ xử lý', value: stats.pending, icon: <VCT_Icons.Clock size={18} />, color: '#f59e0b' },
+            ] as StatItem[]} className="mb-8" />
 
             {/* ── FILTERS ── */}
             <div className="flex flex-wrap gap-4 mb-6">
@@ -199,11 +205,38 @@ export const Page_admin_tenants = () => {
                 <VCT_Select value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
             </div>
 
+            {/* ── BULK ACTION BAR ── */}
+            {selected.size > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3 bg-(--vct-bg-elevated) rounded-xl border border-(--vct-accent-cyan,#0ea5e940) animate-in">
+                    <span className="text-sm font-semibold text-(--vct-accent-cyan)">
+                        ✓ Đã chọn {selected.size} tổ chức
+                    </span>
+                    <div className="flex gap-2">
+                        <VCT_Button variant="primary" size="sm" icon={<VCT_Icons.CheckCircle size={14} />}
+                            onClick={() => setBulkConfirm({ action: 'approve' })}
+                        >Phê duyệt tất cả</VCT_Button>
+                        <VCT_Button variant="danger" size="sm" icon={<VCT_Icons.AlertTriangle size={14} />}
+                            onClick={() => setBulkConfirm({ action: 'suspend' })}
+                        >Đình chỉ tất cả</VCT_Button>
+                        <button onClick={() => setSelected(new Set())} className="px-3 py-1.5 text-xs rounded-lg text-(--vct-text-tertiary) hover:text-(--vct-text-primary) transition-colors">Bỏ chọn</button>
+                    </div>
+                </div>
+            )}
+
             {/* ── TABLE ── */}
-            <div className="bg-[var(--vct-bg-card)] border border-[var(--vct-border-strong)] rounded-2xl overflow-hidden">
-                <table className="w-full text-left border-collapse">
+            <div className="bg-(--vct-bg-card) border border-(--vct-border-strong) rounded-2xl overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
-                        <tr className="bg-[var(--vct-bg-elevated)] border-b border-[var(--vct-border-strong)] text-[11px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold">
+                        <tr className="bg-(--vct-bg-elevated) border-b border-(--vct-border-strong) text-[11px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold">
+                            <th className="p-4 w-12">
+                                <input
+                                    type="checkbox"
+                                    aria-label="Chọn tất cả"
+                                    checked={!isLoading && pagination.paginatedItems.length > 0 && selected.size === pagination.paginatedItems.length}
+                                    onChange={toggleSelectAll}
+                                    className="w-4 h-4 accent-(--vct-accent-blue,#3b82f6) cursor-pointer"
+                                />
+                            </th>
                             <th className="p-4 w-20">T.Thái</th>
                             <th className="p-4">Tên tổ chức</th>
                             <th className="p-4 w-28">Loại</th>
@@ -213,39 +246,34 @@ export const Page_admin_tenants = () => {
                             <th className="p-4 w-28">Ngày tạo</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--vct-border-subtle)]">
+                    <tbody className="divide-y divide-(--vct-border-subtle)">
                         {isLoading ? (
-                            [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+                            [...Array(5)].map((_, i) => <AdminSkeletonRow key={i} cols={8} />)
                         ) : pagination.paginatedItems.length === 0 ? (
-                            <tr><td colSpan={7} className="p-12 text-center text-[var(--vct-text-tertiary)]">Không tìm thấy tổ chức nào</td></tr>
+                            <tr><td colSpan={8} className="p-12 text-center text-(--vct-text-tertiary)">Không tìm thấy tổ chức nào</td></tr>
                         ) : (
                             pagination.paginatedItems.map(t => (
-                                <tr key={t.id} className="hover:bg-white/5 transition-colors text-sm cursor-pointer" onClick={() => setDrawer(t)}>
+                                <tr key={t.id} className={`hover:bg-white/5 transition-colors text-sm cursor-pointer ${selected.has(t.id) ? 'bg-white/5' : ''}`} onClick={() => setDrawer(t)}>
+                                    <td className="p-4" onClick={e => { e.stopPropagation(); toggleSelect(t.id) }}>
+                                        <input type="checkbox" aria-label={`Chọn ${t.name}`} checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-(--vct-accent-blue,#3b82f6) cursor-pointer" />
+                                    </td>
                                     <td className="p-4"><VCT_Badge type={STATUS_BADGE[t.status]?.type ?? 'neutral'} text={STATUS_BADGE[t.status]?.label ?? t.status} /></td>
                                     <td className="p-4">
-                                        <div className="font-semibold text-[var(--vct-text-primary)]">{t.name}</div>
-                                        <div className="text-[11px] text-[var(--vct-text-tertiary)] font-mono">{t.contact_email}</div>
+                                        <div className="font-semibold text-(--vct-text-primary)">{t.name}</div>
+                                        <div className="text-[11px] text-(--vct-text-tertiary) font-mono">{t.contact_email}</div>
                                     </td>
-                                    <td className="p-4 text-xs text-[var(--vct-text-secondary)] capitalize">{t.type === 'federation' ? '🏛️ Liên đoàn' : t.type === 'club' ? '🏠 CLB' : '🤝 Hiệp hội'}</td>
+                                    <td className="p-4 text-xs text-(--vct-text-secondary) capitalize">{t.type === 'federation' ? '🏛️ Liên đoàn' : t.type === 'club' ? '🏠 CLB' : '🤝 Hiệp hội'}</td>
                                     <td className="p-4"><VCT_Badge type={PLAN_BADGE[t.plan]?.type ?? 'neutral'} text={PLAN_BADGE[t.plan]?.label ?? t.plan} /></td>
-                                    <td className="p-4 text-right font-mono text-[12px] text-[var(--vct-accent-cyan)]">{t.members.toLocaleString()}</td>
-                                    <td className="p-4 text-xs text-[var(--vct-text-secondary)]">{t.region}</td>
-                                    <td className="p-4 font-mono text-[11px] text-[var(--vct-text-tertiary)]">{t.created_at}</td>
+                                    <td className="p-4 text-right font-mono text-[12px] text-(--vct-accent-cyan)">{t.members.toLocaleString()}</td>
+                                    <td className="p-4 text-xs text-(--vct-text-secondary)">{t.region}</td>
+                                    <td className="p-4 font-mono text-[11px] text-(--vct-text-tertiary)">{t.created_at}</td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
                 {!isLoading && pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--vct-border-subtle)]">
-                        <span className="text-xs text-[var(--vct-text-tertiary)]">
-                            Hiển thị {(pagination.currentPage - 1) * 10 + 1}–{Math.min(pagination.currentPage * 10, filtered.length)} / {filtered.length}
-                        </span>
-                        <div className="flex gap-2">
-                            <button onClick={pagination.prev} disabled={!pagination.hasPrev} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">← Trước</button>
-                            <button onClick={pagination.next} disabled={!pagination.hasNext} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">Sau →</button>
-                        </div>
-                    </div>
+                    <AdminPaginationBar {...pagination} />
                 )}
             </div>
 
@@ -253,39 +281,39 @@ export const Page_admin_tenants = () => {
             <VCT_Drawer isOpen={!!drawer} onClose={() => setDrawer(null)} title="Chi tiết Tổ chức" width={520}>
                 {drawer && (
                     <div className="space-y-5">
-                        <div className="flex items-center gap-3 pb-4 border-b border-[var(--vct-border-subtle)]">
+                        <div className="flex items-center gap-3 pb-4 border-b border-(--vct-border-subtle)">
                             <VCT_Badge type={STATUS_BADGE[drawer.status]?.type ?? 'neutral'} text={STATUS_BADGE[drawer.status]?.label ?? drawer.status} />
                             <VCT_Badge type={PLAN_BADGE[drawer.plan]?.type ?? 'neutral'} text={PLAN_BADGE[drawer.plan]?.label ?? drawer.plan} />
-                            <span className="font-mono text-xs text-[var(--vct-text-tertiary)] ml-auto">{drawer.id}</span>
+                            <span className="font-mono text-xs text-(--vct-text-tertiary) ml-auto">{drawer.id}</span>
                         </div>
 
                         <div>
-                            <div className="text-lg font-bold text-[var(--vct-text-primary)]">{drawer.name}</div>
-                            <div className="text-sm text-[var(--vct-text-secondary)] mt-1 capitalize">
+                            <div className="text-lg font-bold text-(--vct-text-primary)">{drawer.name}</div>
+                            <div className="text-sm text-(--vct-text-secondary) mt-1 capitalize">
                                 {drawer.type === 'federation' ? '🏛️ Liên đoàn' : drawer.type === 'club' ? '🏠 Câu lạc bộ' : '🤝 Hiệp hội'} — {drawer.region}
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
-                                <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Thành viên</div>
-                                <div className="text-xl font-black text-[var(--vct-accent-cyan)]">{drawer.members.toLocaleString()}</div>
+                            <div className="p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
+                                <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Thành viên</div>
+                                <div className="text-xl font-black text-(--vct-accent-cyan)">{drawer.members.toLocaleString()}</div>
                             </div>
-                            <div className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
-                                <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Admins</div>
-                                <div className="text-xl font-black text-[var(--vct-accent-blue)]">{drawer.admins}</div>
+                            <div className="p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
+                                <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Admins</div>
+                                <div className="text-xl font-black text-(--vct-accent-blue)">{drawer.admins}</div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Email liên hệ</div><div className="font-mono text-[var(--vct-text-primary)]">{drawer.contact_email}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Ngày tạo</div><div className="font-mono text-[var(--vct-text-primary)]">{drawer.created_at}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Khu vực</div><div className="text-[var(--vct-text-primary)]">{drawer.region}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Hoạt động cuối</div><div className="font-mono text-[var(--vct-text-primary)]">{drawer.last_active}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Email liên hệ</div><div className="font-mono text-(--vct-text-primary)">{drawer.contact_email}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Ngày tạo</div><div className="font-mono text-(--vct-text-primary)">{drawer.created_at}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Khu vực</div><div className="text-(--vct-text-primary)">{drawer.region}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Hoạt động cuối</div><div className="font-mono text-(--vct-text-primary)">{drawer.last_active}</div></div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-3 pt-4 border-t border-[var(--vct-border-subtle)]">
+                        <div className="flex gap-3 pt-4 border-t border-(--vct-border-subtle)">
                             {drawer.status === 'pending' && (
                                 <VCT_Button variant="primary" icon={<VCT_Icons.CheckCircle size={14} />} onClick={() => setConfirmAction({ tenant: drawer, action: 'approve' })}>Phê duyệt</VCT_Button>
                             )}
@@ -312,6 +340,16 @@ export const Page_admin_tenants = () => {
                 message={`Bạn có chắc chắn muốn ${confirmAction?.action === 'suspend' ? 'đình chỉ' : confirmAction?.action === 'approve' ? 'phê duyệt' : 'kích hoạt lại'} tổ chức "${confirmAction?.tenant.name}"?`}
                 confirmLabel={confirmAction?.action === 'suspend' ? 'Đình chỉ' : 'Xác nhận'}
             />
-        </div>
+
+            {/* ── BULK CONFIRM DIALOG ── */}
+            <VCT_ConfirmDialog
+                isOpen={!!bulkConfirm}
+                onClose={() => setBulkConfirm(null)}
+                onConfirm={handleBulkConfirm}
+                title={bulkConfirm?.action === 'suspend' ? 'Đình chỉ hàng loạt' : 'Phê duyệt hàng loạt'}
+                message={`Bạn có chắc chắn muốn ${bulkConfirm?.action === 'suspend' ? 'đình chỉ' : 'phê duyệt'} ${selected.size} tổ chức đã chọn?`}
+                confirmLabel={bulkConfirm?.action === 'suspend' ? 'Đình chỉ tất cả' : 'Phê duyệt tất cả'}
+            />
+        </VCT_PageContainer>
     )
 }

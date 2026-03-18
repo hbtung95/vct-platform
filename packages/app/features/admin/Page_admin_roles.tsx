@@ -44,8 +44,8 @@ const MOCK_ROLES: Role[] = [
 
 const SCOPE_LABELS: Record<string, string> = { SYSTEM: 'Hệ thống', FEDERATION: 'Liên đoàn', CLUB: 'CLB', TOURNAMENT: 'Giải đấu', SELF: 'Cá nhân' }
 
-const SkeletonRoleItem = () => (<div className="p-4 rounded-xl border border-[var(--vct-border-subtle)] bg-[var(--vct-bg-elevated)] animate-pulse"><div className="h-4 w-28 bg-[var(--vct-bg-card)] rounded mb-2" /><div className="h-3 w-20 bg-[var(--vct-bg-card)] rounded mb-2" /><div className="h-3 w-full bg-[var(--vct-bg-card)] rounded" /></div>)
-const SkeletonPermGrid = () => (<div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-6 animate-pulse"><div className="h-6 w-48 bg-[var(--vct-bg-card)] rounded mb-6" />{[...Array(3)].map((_,i)=>(<div key={i} className="mb-6"><div className="h-3 w-20 bg-[var(--vct-bg-card)] rounded mb-3" /><div className="grid grid-cols-2 gap-2">{[...Array(4)].map((_,j)=>(<div key={j} className="h-12 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]" />))}</div></div>))}</div>)
+const SkeletonRoleItem = () => (<div className="p-4 rounded-xl border border-(--vct-border-subtle) bg-(--vct-bg-elevated) animate-pulse"><div className="h-4 w-28 bg-(--vct-bg-card) rounded mb-2" /><div className="h-3 w-20 bg-(--vct-bg-card) rounded mb-2" /><div className="h-3 w-full bg-(--vct-bg-card) rounded" /></div>)
+const SkeletonPermGrid = () => (<div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6 animate-pulse"><div className="h-6 w-48 bg-(--vct-bg-card) rounded mb-6" />{[...Array(3)].map((_,i)=>(<div key={i} className="mb-6"><div className="h-3 w-20 bg-(--vct-bg-card) rounded mb-3" /><div className="grid grid-cols-2 gap-2">{[...Array(4)].map((_,j)=>(<div key={j} className="h-12 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)" />))}</div></div>))}</div>)
 
 export const Page_admin_roles = () => {
     const [roles, setRoles] = useState<Role[]>(MOCK_ROLES)
@@ -114,8 +114,8 @@ export const Page_admin_roles = () => {
             <VCT_Toast isVisible={toast.show} message={toast.msg} type={toast.type} onClose={() => setToast(p => ({ ...p, show: false }))} />
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Phân Quyền & Vai Trò</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Quản lý vai trò, phân quyền RBAC trong hệ thống.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">Phân Quyền & Vai Trò</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Quản lý vai trò, phân quyền RBAC trong hệ thống.</p>
                 </div>
                 <VCT_Stack direction="row" gap={12}>
                     <VCT_Button variant="outline" icon={<VCT_Icons.Download size={16} />} onClick={handleExport}>Xuất ma trận</VCT_Button>
@@ -135,14 +135,14 @@ export const Page_admin_roles = () => {
                     <div className="mb-4"><VCT_SearchInput placeholder="Tìm vai trò..." value={search} onChange={setSearch} onClear={() => setSearch('')} /></div>
                     <div className="space-y-2">
                         {isLoading ? [...Array(4)].map((_,i) => <SkeletonRoleItem key={i} />) : filtered.map(role => (
-                            <div key={role.id} onClick={() => setSelectedRole(role)} className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedRole?.id === role.id ? 'bg-[var(--vct-accent-cyan)]/10 border-[var(--vct-accent-cyan)]' : 'bg-[var(--vct-bg-elevated)] border-[var(--vct-border-subtle)] hover:border-[var(--vct-accent-cyan)]'}`}>
+                            <div key={role.id} onClick={() => setSelectedRole(role)} className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedRole?.id === role.id ? 'bg-(--vct-accent-cyan)/10 border-(--vct-accent-cyan)' : 'bg-(--vct-bg-elevated) border-(--vct-border-subtle) hover:border-(--vct-accent-cyan)'}`}>
                                 <div className="flex items-center justify-between mb-1">
-                                    <div className="font-bold text-sm text-[var(--vct-text-primary)]">{role.name}</div>
+                                    <div className="font-bold text-sm text-(--vct-text-primary)">{role.name}</div>
                                     {role.is_system && <VCT_Badge type="info" text="HT" />}
                                 </div>
-                                <div className="text-[11px] font-mono text-[var(--vct-accent-cyan)] mb-1">{role.code}</div>
-                                <div className="text-[11px] text-[var(--vct-text-tertiary)]">{role.description}</div>
-                                <div className="flex items-center gap-3 mt-2 text-[10px] text-[var(--vct-text-tertiary)]">
+                                <div className="text-[11px] font-mono text-(--vct-accent-cyan) mb-1">{role.code}</div>
+                                <div className="text-[11px] text-(--vct-text-tertiary)">{role.description}</div>
+                                <div className="flex items-center gap-3 mt-2 text-[10px] text-(--vct-text-tertiary)">
                                     <span className="flex items-center gap-1"><VCT_Icons.Users size={10} /> {role.user_count}</span>
                                     <span className="flex items-center gap-1"><VCT_Icons.Shield size={10} /> {role.permissions.length} quyền</span>
                                     <span className="flex items-center gap-1"><VCT_Icons.Layers size={10} /> {SCOPE_LABELS[role.scope_type]}</span>
@@ -153,22 +153,22 @@ export const Page_admin_roles = () => {
                 </div>
                 <div className="lg:col-span-2">
                     {isLoading ? <SkeletonPermGrid /> : selectedRole ? (
-                        <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-6">
+                        <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-6">
                             <div className="flex items-center justify-between mb-6">
-                                <div><h2 className="font-bold text-lg text-[var(--vct-text-primary)]">Ma Trận Phân Quyền</h2><p className="text-sm text-[var(--vct-text-secondary)] mt-1">Vai trò: <span className="font-bold text-[var(--vct-accent-cyan)]">{selectedRole.name}</span></p></div>
-                                <div className="flex items-center gap-2 text-[11px] text-[var(--vct-text-tertiary)]"><div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#10b981]" /> Có</div><div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[var(--vct-border-strong)]" /> Không</div></div>
+                                <div><h2 className="font-bold text-lg text-(--vct-text-primary)">Ma Trận Phân Quyền</h2><p className="text-sm text-(--vct-text-secondary) mt-1">Vai trò: <span className="font-bold text-(--vct-accent-cyan)">{selectedRole.name}</span></p></div>
+                                <div className="flex items-center gap-2 text-[11px] text-(--vct-text-tertiary)"><div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#10b981]" /> Có</div><div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-(--vct-border-strong)" /> Không</div></div>
                             </div>
                             <div className="space-y-6">
                                 {Object.entries(permModules).map(([mod, perms]) => (
-                                    <div key={mod}><div className="text-[11px] font-bold uppercase tracking-wider text-[var(--vct-text-tertiary)] mb-3 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[var(--vct-accent-cyan)]" />{mod}</div>
+                                    <div key={mod}><div className="text-[11px] font-bold uppercase tracking-wider text-(--vct-text-tertiary) mb-3 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-(--vct-accent-cyan)" />{mod}</div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{perms.map(perm => {
                                             const has = selectedRole.permissions.includes(perm.key)
-                                            return (<button key={perm.key} onClick={() => togglePerm(selectedRole.id, perm.key)} className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${has ? 'bg-[#10b98115] border-[#10b98140] hover:border-[#10b981]' : 'bg-[var(--vct-bg-base)] border-[var(--vct-border-subtle)] hover:border-[var(--vct-border-strong)]'}`}><div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${has ? 'bg-[#10b981] text-white' : 'bg-[var(--vct-border-strong)]'}`}>{has && <VCT_Icons.Check size={12} />}</div><div><div className="text-sm font-semibold text-[var(--vct-text-primary)]">{perm.label}</div><div className="text-[10px] font-mono text-[var(--vct-text-tertiary)]">{perm.key}</div></div></button>)
+                                            return (<button key={perm.key} onClick={() => togglePerm(selectedRole.id, perm.key)} className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${has ? 'bg-[#10b98115] border-[#10b98140] hover:border-[#10b981]' : 'bg-(--vct-bg-base) border-(--vct-border-subtle) hover:border-(--vct-border-strong)'}`}><div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${has ? 'bg-[#10b981] text-white' : 'bg-(--vct-border-strong)'}`}>{has && <VCT_Icons.Check size={12} />}</div><div><div className="text-sm font-semibold text-(--vct-text-primary)">{perm.label}</div><div className="text-[10px] font-mono text-(--vct-text-tertiary)">{perm.key}</div></div></button>)
                                         })}</div></div>
                                 ))}
                             </div>
                         </div>
-                    ) : (<div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-subtle)] rounded-2xl p-12 text-center"><VCT_Icons.Shield size={48} className="text-[var(--vct-text-tertiary)] mx-auto mb-4" /><div className="text-[var(--vct-text-secondary)]">Chọn một vai trò</div></div>)}
+                    ) : (<div className="bg-(--vct-bg-elevated) border border-(--vct-border-subtle) rounded-2xl p-12 text-center"><VCT_Icons.Shield size={48} className="text-(--vct-text-tertiary) mx-auto mb-4" /><div className="text-(--vct-text-secondary)">Chọn một vai trò</div></div>)}
                 </div>
             </div>
 

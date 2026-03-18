@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"log"
@@ -131,7 +132,20 @@ func (svc *Service) SendOTP(input SendOTPRequest, emailService *email.Service) (
 		role = RoleAthlete
 	}
 
-	// Check if username (email) already registered
+	// Check if username (email) already registered — database first
+	if svc.userStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		existing, err := svc.userStore.FindByUsername(ctx, emailAddr)
+		if err != nil {
+			log.Printf("[otp] DB lookup error for %s: %v", emailAddr, err)
+		}
+		if existing != nil {
+			return SendOTPResponse{}, wrapCodedError(ErrConflict, CodeConflict, "email đã được đăng ký")
+		}
+	}
+
+	// Fallback: check in-memory credentials
 	svc.mu.RLock()
 	_, exists := svc.credentials[emailAddr]
 	svc.mu.RUnlock()

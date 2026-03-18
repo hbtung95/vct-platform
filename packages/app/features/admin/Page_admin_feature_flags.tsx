@@ -51,26 +51,26 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bgColor: str
 // SKELETON COMPONENT
 // ════════════════════════════════════════
 const SkeletonFlagCard = () => (
-    <div className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-5 animate-pulse">
+    <div className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-5 animate-pulse">
         <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
-                    <div className="h-5 w-40 bg-[var(--vct-bg-card)] rounded" />
-                    <div className="h-4 w-24 bg-[var(--vct-bg-card)] rounded" />
+                    <div className="h-5 w-40 bg-(--vct-bg-card) rounded" />
+                    <div className="h-4 w-24 bg-(--vct-bg-card) rounded" />
                 </div>
-                <div className="h-4 w-3/4 bg-[var(--vct-bg-card)] rounded" />
+                <div className="h-4 w-3/4 bg-(--vct-bg-card) rounded" />
                 <div className="flex gap-4">
-                    <div className="h-3 w-20 bg-[var(--vct-bg-card)] rounded" />
-                    <div className="h-3 w-28 bg-[var(--vct-bg-card)] rounded" />
-                    <div className="h-3 w-24 bg-[var(--vct-bg-card)] rounded" />
+                    <div className="h-3 w-20 bg-(--vct-bg-card) rounded" />
+                    <div className="h-3 w-28 bg-(--vct-bg-card) rounded" />
+                    <div className="h-3 w-24 bg-(--vct-bg-card) rounded" />
                 </div>
             </div>
             <div className="flex items-center gap-4 shrink-0">
-                <div className="h-5 w-[120px] bg-[var(--vct-bg-card)] rounded" />
-                <div className="h-7 w-14 bg-[var(--vct-bg-card)] rounded-full" />
+                <div className="h-5 w-[120px] bg-(--vct-bg-card) rounded" />
+                <div className="h-7 w-14 bg-(--vct-bg-card) rounded-full" />
             </div>
         </div>
-        <div className="mt-3 h-1 rounded-full bg-[var(--vct-border-strong)]" />
+        <div className="mt-3 h-1 rounded-full bg-(--vct-border-strong)" />
     </div>
 )
 
@@ -147,8 +147,8 @@ export const Page_admin_feature_flags = () => {
 
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Feature Flags</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Bật/tắt tính năng, kiểm soát rollout theo phần trăm hoặc phạm vi.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">Feature Flags</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Bật/tắt tính năng, kiểm soát rollout theo phần trăm hoặc phạm vi.</p>
                 </div>
                 <VCT_Button variant="outline" icon={<VCT_Icons.Download size={16} />} onClick={handleExportCSV}>Xuất CSV</VCT_Button>
             </div>
@@ -162,7 +162,7 @@ export const Page_admin_feature_flags = () => {
             ] as StatItem[]} className="mb-8" />
 
             {/* ── FILTER ── */}
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--vct-border-subtle)] pb-4">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-(--vct-border-subtle) pb-4">
                 <VCT_Tabs
                     tabs={MODULE_FILTERS.map(m => ({ key: m, label: m }))}
                     activeTab={moduleFilter}
@@ -183,16 +183,16 @@ export const Page_admin_feature_flags = () => {
                     filtered.map(flag => {
                         const st = STATUS_STYLES[flag.status] || STATUS_STYLES.disabled!
                         return (
-                            <div key={flag.id} className="bg-[var(--vct-bg-elevated)] border border-[var(--vct-border-strong)] rounded-2xl p-5 hover:border-[var(--vct-accent-cyan)] transition-all">
+                            <div key={flag.id} className="bg-(--vct-bg-elevated) border border-(--vct-border-strong) rounded-2xl p-5 hover:border-(--vct-accent-cyan) transition-all">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-1">
-                                            <span className="font-bold text-[var(--vct-text-primary)]">{flag.name}</span>
-                                            <span className="font-mono text-[10px] text-[var(--vct-accent-cyan)] bg-[var(--vct-accent-cyan)]/10 px-2 py-0.5 rounded">{flag.key}</span>
+                                            <span className="font-bold text-(--vct-text-primary)">{flag.name}</span>
+                                            <span className="font-mono text-[10px] text-(--vct-accent-cyan) bg-(--vct-accent-cyan)/10 px-2 py-0.5 rounded">{flag.key}</span>
                                             <VCT_Badge text={flag.module} type="info" />
                                         </div>
-                                        <p className="text-sm text-[var(--vct-text-secondary)] mb-3">{flag.description}</p>
-                                        <div className="flex items-center gap-4 text-[11px] text-[var(--vct-text-tertiary)]">
+                                        <p className="text-sm text-(--vct-text-secondary) mb-3">{flag.description}</p>
+                                        <div className="flex items-center gap-4 text-[11px] text-(--vct-text-tertiary)">
                                             <span className="flex items-center gap-1"><VCT_Icons.Layers size={10} /> Scope: {flag.scope}</span>
                                             <span className="flex items-center gap-1"><VCT_Icons.Clock size={10} /> {flag.updated_at}</span>
                                             <span className="flex items-center gap-1"><VCT_Icons.User size={10} /> {flag.updated_by}</span>
@@ -214,7 +214,7 @@ export const Page_admin_feature_flags = () => {
 
                                         {/* Toggle */}
                                         <button onClick={() => toggleFlag(flag)}
-                                            className={`relative w-14 h-7 rounded-full transition-all duration-300 ${flag.status !== 'disabled' ? 'bg-[#10b981] shadow-[0_0_12px_#10b98140]' : 'bg-[var(--vct-border-strong)]'
+                                            className={`relative w-14 h-7 rounded-full transition-all duration-300 ${flag.status !== 'disabled' ? 'bg-[#10b981] shadow-[0_0_12px_#10b98140]' : 'bg-(--vct-border-strong)'
                                                 }`}>
                                             <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${flag.status !== 'disabled' ? 'left-8' : 'left-1'
                                                 }`}></div>
@@ -223,7 +223,7 @@ export const Page_admin_feature_flags = () => {
                                 </div>
 
                                 {/* Progress bar */}
-                                <div className="mt-3 h-1 rounded-full bg-[var(--vct-border-strong)] overflow-hidden">
+                                <div className="mt-3 h-1 rounded-full bg-(--vct-border-strong) overflow-hidden">
                                     <div className="h-full rounded-full transition-all duration-500" style={{ width: `${flag.rollout_pct}%`, background: st.color }}></div>
                                 </div>
                             </div>

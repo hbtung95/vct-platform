@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useState, useMemo } from 'react'
 import {
-    VCT_Button, VCT_Stack, VCT_SearchInput, VCT_Badge, VCT_Select,
+    VCT_Button, VCT_SearchInput, VCT_Badge, VCT_Select,
     VCT_StatRow
 } from '../components/vct-ui'
 import type { StatItem } from '../components/VCT_StatRow'
@@ -12,6 +12,8 @@ import { VCT_Drawer } from '../components/VCT_Drawer'
 import { VCT_Timeline } from '../components/VCT_Timeline'
 import type { TimelineEvent } from '../components/VCT_Timeline'
 import { usePagination } from '../hooks/usePagination'
+import { AdminSkeletonRow } from './components/AdminSkeletonRow'
+import { AdminPaginationBar } from './components/AdminPaginationBar'
 
 // ════════════════════════════════════════
 // MOCK DATA — Integrity Monitoring
@@ -53,34 +55,7 @@ const TYPE_LABELS: Record<string, string> = {
     MANUAL_REPORT: 'Báo cáo thủ công',
 }
 
-// ════════════════════════════════════════
-// SKELETON + PAGINATION BAR
-// ════════════════════════════════════════
-const SkeletonRow = () => (
-    <tr>
-        {[...Array(7)].map((_, i) => (
-            <td key={i} className="p-4">
-                <div className="h-4 bg-[var(--vct-bg-elevated)] rounded animate-pulse" style={{ width: `${50 + Math.random() * 50}%` }} />
-            </td>
-        ))}
-    </tr>
-)
 
-const PaginationBar = ({ currentPage, totalPages, totalItems, pageSize, hasPrev, hasNext, prev, next }: {
-    currentPage: number; totalPages: number; totalItems: number; pageSize: number
-    hasPrev: boolean; hasNext: boolean; prev: () => void; next: () => void
-}) => totalPages <= 1 ? null : (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--vct-border-subtle)]">
-        <span className="text-xs text-[var(--vct-text-tertiary)]">
-            Hiển thị {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, totalItems)} / {totalItems}
-        </span>
-        <div className="flex gap-2">
-            <button onClick={prev} disabled={!hasPrev} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">← Trước</button>
-            <span className="px-3 py-1 text-xs text-[var(--vct-text-tertiary)]">{currentPage}/{totalPages}</span>
-            <button onClick={next} disabled={!hasNext} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">Sau →</button>
-        </div>
-    </div>
-)
 
 // ════════════════════════════════════════
 // MAIN COMPONENT
@@ -121,8 +96,8 @@ export const Page_integrity = () => {
         <div className="mx-auto max-w-[1400px] p-4 pb-24">
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Giám Sát Liêm Chính</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Anti-match-fixing. Theo dõi cảnh báo bất thường trong thi đấu, chấm điểm, cân nặng.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">Giám Sát Liêm Chính</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Anti-match-fixing. Theo dõi cảnh báo bất thường trong thi đấu, chấm điểm, cân nặng.</p>
                 </div>
                 <VCT_Button variant="outline" icon={<VCT_Icons.Download size={16} />} onClick={() => {
                     const header = 'Mức độ,Trạng thái,Loại,Giải đấu,Chi tiết,Phụ trách,Thời gian'
@@ -165,10 +140,10 @@ export const Page_integrity = () => {
             </div>
 
             {/* ── ALERTS TABLE ── */}
-            <div className="bg-[var(--vct-bg-card)] border border-[var(--vct-border-strong)] rounded-2xl overflow-hidden">
+            <div className="bg-(--vct-bg-card) border border-(--vct-border-strong) rounded-2xl overflow-hidden">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="bg-[var(--vct-bg-elevated)] border-b border-[var(--vct-border-strong)] text-[11px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold">
+                        <tr className="bg-(--vct-bg-elevated) border-b border-(--vct-border-strong) text-[11px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold">
                             <th className="p-4 w-20">Mức độ</th>
                             <th className="p-4 w-20">T.Thái</th>
                             <th className="p-4 w-44">Loại</th>
@@ -178,54 +153,54 @@ export const Page_integrity = () => {
                             <th className="p-4 w-36">Thời gian</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--vct-border-subtle)]">
+                    <tbody className="divide-y divide-(--vct-border-subtle)">
                         {isLoading ? (
-                            [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+                            [...Array(5)].map((_, i) => <AdminSkeletonRow key={i} cols={7} />)
                         ) : pagination.paginatedItems.length === 0 ? (
-                            <tr><td colSpan={7} className="p-12 text-center text-[var(--vct-text-tertiary)]">Không tìm thấy cảnh báo nào</td></tr>
+                            <tr><td colSpan={7} className="p-12 text-center text-(--vct-text-tertiary)">Không tìm thấy cảnh báo nào</td></tr>
                         ) : (
                             pagination.paginatedItems.map(alert => (
                                 <tr key={alert.id} className="hover:bg-white/5 transition-colors text-sm cursor-pointer" onClick={() => setDrawerAlert(alert)}>
                                     <td className="p-4"><VCT_Badge type={SEVERITY_MAP[alert.severity]?.type || 'info'} text={alert.severity} /></td>
                                     <td className="p-4"><VCT_Badge type={STATUS_MAP[alert.status]?.type || 'neutral'} text={alert.status.replace(/_/g, ' ')} /></td>
-                                    <td className="p-4 text-[var(--vct-text-primary)] font-semibold">{TYPE_LABELS[alert.type] || alert.type}</td>
-                                    <td className="p-4 text-[var(--vct-text-secondary)]">{alert.tournament}</td>
-                                    <td className="p-4 text-[var(--vct-text-secondary)]">
+                                    <td className="p-4 text-(--vct-text-primary) font-semibold">{TYPE_LABELS[alert.type] || alert.type}</td>
+                                    <td className="p-4 text-(--vct-text-secondary)">{alert.tournament}</td>
+                                    <td className="p-4 text-(--vct-text-secondary)">
                                         <div className="line-clamp-2 text-[12px]">{alert.detail}</div>
                                     </td>
-                                    <td className="p-4 text-[var(--vct-accent-cyan)]">{alert.assigned_to || '—'}</td>
-                                    <td className="p-4 font-mono text-[11px] text-[var(--vct-text-tertiary)]">{alert.reported_at}</td>
+                                    <td className="p-4 text-(--vct-accent-cyan)">{alert.assigned_to || '—'}</td>
+                                    <td className="p-4 font-mono text-[11px] text-(--vct-text-tertiary)">{alert.reported_at}</td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
-                {!isLoading && <PaginationBar {...pagination} />}
+                {!isLoading && <AdminPaginationBar {...pagination} />}
             </div>
 
             {/* ── ALERT DETAIL DRAWER ── */}
             <VCT_Drawer isOpen={!!drawerAlert} onClose={() => setDrawerAlert(null)} title="Chi tiết cảnh báo" width={560}>
                 {drawerAlert && (
                     <div className="space-y-5">
-                        <div className="flex items-center gap-3 pb-4 border-b border-[var(--vct-border-subtle)]">
+                        <div className="flex items-center gap-3 pb-4 border-b border-(--vct-border-subtle)">
                             <VCT_Badge type={SEVERITY_MAP[drawerAlert.severity]?.type || 'info'} text={drawerAlert.severity} />
                             <VCT_Badge type={STATUS_MAP[drawerAlert.status]?.type || 'neutral'} text={drawerAlert.status.replace(/_/g, ' ')} />
-                            <span className="font-mono text-xs text-[var(--vct-text-tertiary)] ml-auto">{drawerAlert.id}</span>
+                            <span className="font-mono text-xs text-(--vct-text-tertiary) ml-auto">{drawerAlert.id}</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Loại</div><div className="font-semibold text-[var(--vct-text-primary)]">{TYPE_LABELS[drawerAlert.type] || drawerAlert.type}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Nguồn</div><div className="text-[var(--vct-text-primary)]">{drawerAlert.source.replace(/_/g, ' ')}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Giải đấu</div><div className="text-[var(--vct-accent-cyan)]">{drawerAlert.tournament}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Trận</div><div className="text-[var(--vct-text-primary)]">{drawerAlert.match || '—'}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Phụ trách</div><div className="font-semibold text-[var(--vct-accent-cyan)]">{drawerAlert.assigned_to || 'Chưa giao'}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Thời gian</div><div className="font-mono text-[var(--vct-text-primary)]">{drawerAlert.reported_at}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Loại</div><div className="font-semibold text-(--vct-text-primary)">{TYPE_LABELS[drawerAlert.type] || drawerAlert.type}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Nguồn</div><div className="text-(--vct-text-primary)">{drawerAlert.source.replace(/_/g, ' ')}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Giải đấu</div><div className="text-(--vct-accent-cyan)">{drawerAlert.tournament}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Trận</div><div className="text-(--vct-text-primary)">{drawerAlert.match || '—'}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Phụ trách</div><div className="font-semibold text-(--vct-accent-cyan)">{drawerAlert.assigned_to || 'Chưa giao'}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Thời gian</div><div className="font-mono text-(--vct-text-primary)">{drawerAlert.reported_at}</div></div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-2">Chi tiết forensic</div>
-                            <div className="text-sm text-[var(--vct-text-primary)] p-4 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)] leading-relaxed">{drawerAlert.detail}</div>
+                            <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-2">Chi tiết forensic</div>
+                            <div className="text-sm text-(--vct-text-primary) p-4 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle) leading-relaxed">{drawerAlert.detail}</div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-2">Lịch sử xử lý</div>
+                            <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-2">Lịch sử xử lý</div>
                             <VCT_Timeline events={[
                                 { time: drawerAlert.reported_at, title: 'Cảnh báo được tạo', description: `Nguồn: ${drawerAlert.source.replace(/_/g, ' ')}`, icon: <VCT_Icons.Alert size={14} />, color: '#ef4444' },
                                 ...(drawerAlert.assigned_to ? [{ time: drawerAlert.reported_at.replace(/\d{2}:\d{2}$/, '12:00'), title: `Giao cho ${drawerAlert.assigned_to}`, description: 'Bởi System Admin', icon: <VCT_Icons.Users size={14} />, color: '#0ea5e9' }] : []),

@@ -9,6 +9,8 @@ import {
 import { VCT_Icons } from '../components/vct-icons'
 import { VCT_Drawer } from '../components/VCT_Drawer'
 import { usePagination } from '../hooks/usePagination'
+import { AdminSkeletonRow } from './components/AdminSkeletonRow'
+import { AdminPaginationBar } from './components/AdminPaginationBar'
 
 // ════════════════════════════════════════
 // MOCK DATA — Document Templates
@@ -50,37 +52,7 @@ const TYPE_LABELS: Record<string, string> = TYPE_OPTIONS.reduce<Record<string, s
 
 const BLANK_TEMPLATE = { name: '', type: 'MEDAL_CERTIFICATE', fieldsText: '', is_active: true }
 
-// ════════════════════════════════════════
-// SKELETON LOADER
-// ════════════════════════════════════════
-const SkeletonRow = () => (
-    <tr>
-        {[...Array(6)].map((_, i) => (
-            <td key={i} className="p-4">
-                <div className="h-4 bg-[var(--vct-bg-elevated)] rounded animate-pulse" style={{ width: `${50 + Math.random() * 50}%` }} />
-            </td>
-        ))}
-    </tr>
-)
 
-// ════════════════════════════════════════
-// PAGINATION BAR
-// ════════════════════════════════════════
-const PaginationBar = ({ currentPage, totalPages, totalItems, pageSize, hasPrev, hasNext, prev, next }: {
-    currentPage: number; totalPages: number; totalItems: number; pageSize: number
-    hasPrev: boolean; hasNext: boolean; prev: () => void; next: () => void
-}) => totalPages <= 1 ? null : (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--vct-border-subtle)]">
-        <span className="text-xs text-[var(--vct-text-tertiary)]">
-            Hiển thị {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, totalItems)} / {totalItems}
-        </span>
-        <div className="flex gap-2">
-            <button onClick={prev} disabled={!hasPrev} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">← Trước</button>
-            <span className="px-3 py-1 text-xs text-[var(--vct-text-tertiary)]">{currentPage}/{totalPages}</span>
-            <button onClick={next} disabled={!hasNext} className="px-3 py-1 text-xs rounded-lg bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] disabled:opacity-30 hover:bg-[var(--vct-bg-base)] transition-colors">Sau →</button>
-        </div>
-    </div>
-)
 
 // ════════════════════════════════════════
 // MAIN COMPONENT
@@ -166,8 +138,8 @@ export const Page_documents = () => {
 
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--vct-text-primary)]">Quản Lý Chứng Chỉ & Tài Liệu</h1>
-                    <p className="text-sm text-[var(--vct-text-secondary)] mt-1">Quản lý mẫu chứng chỉ, giấy phép, thẻ VĐV. Ký số + xác minh QR.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-(--vct-text-primary)">Quản Lý Chứng Chỉ & Tài Liệu</h1>
+                    <p className="text-sm text-(--vct-text-secondary) mt-1">Quản lý mẫu chứng chỉ, giấy phép, thẻ VĐV. Ký số + xác minh QR.</p>
                 </div>
                 <VCT_Stack direction="row" gap={8}>
                     <VCT_Button variant="ghost" icon={<VCT_Icons.Download size={16} />} onClick={handleExport}>Xuất CSV</VCT_Button>
@@ -183,9 +155,9 @@ export const Page_documents = () => {
                     { label: 'Đã cấp', value: totalIssued.toLocaleString(), color: 'var(--vct-accent-cyan,#06b6d4)' },
                     { label: 'Loại mẫu', value: new Set(templates.map(t => t.type)).size, color: 'var(--vct-accent-purple,#8b5cf6)' },
                 ].map(card => (
-                    <div key={card.label} className="bg-[var(--vct-bg-card)] border border-[var(--vct-border-subtle)] rounded-2xl p-5 text-center">
+                    <div key={card.label} className="bg-(--vct-bg-card) border border-(--vct-border-subtle) rounded-2xl p-5 text-center">
                         <div className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</div>
-                        <div className="text-xs text-[var(--vct-text-tertiary)] mt-1">{card.label}</div>
+                        <div className="text-xs text-(--vct-text-tertiary) mt-1">{card.label}</div>
                     </div>
                 ))}
             </div>
@@ -194,11 +166,11 @@ export const Page_documents = () => {
             <div className="flex gap-2 mb-6">
                 <button
                     onClick={() => setTab('templates')}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'templates' ? 'bg-[var(--vct-accent-blue,#3b82f6)] text-white' : 'bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] hover:text-[var(--vct-text-primary)]'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'templates' ? 'bg-(--vct-accent-blue,#3b82f6) text-white' : 'bg-(--vct-bg-elevated) text-(--vct-text-secondary) hover:text-(--vct-text-primary)'}`}
                 >Mẫu tài liệu</button>
                 <button
                     onClick={() => setTab('issued')}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'issued' ? 'bg-[var(--vct-accent-blue,#3b82f6)] text-white' : 'bg-[var(--vct-bg-elevated)] text-[var(--vct-text-secondary)] hover:text-[var(--vct-text-primary)]'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === 'issued' ? 'bg-(--vct-accent-blue,#3b82f6) text-white' : 'bg-(--vct-bg-elevated) text-(--vct-text-secondary) hover:text-(--vct-text-primary)'}`}
                 >Đã cấp ({MOCK_ISSUED.length})</button>
             </div>
 
@@ -219,10 +191,10 @@ export const Page_documents = () => {
             </div>
 
             {tab === 'templates' ? (
-                <div className="bg-[var(--vct-bg-card)] border border-[var(--vct-border-strong)] rounded-2xl overflow-hidden">
+                <div className="bg-(--vct-bg-card) border border-(--vct-border-strong) rounded-2xl overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-[var(--vct-bg-elevated)] border-b border-[var(--vct-border-strong)] text-[11px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold">
+                            <tr className="bg-(--vct-bg-elevated) border-b border-(--vct-border-strong) text-[11px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold">
                                 <th className="p-4 w-20">T.Thái</th>
                                 <th className="p-4 w-32">Loại</th>
                                 <th className="p-4">Tên mẫu</th>
@@ -231,25 +203,25 @@ export const Page_documents = () => {
                                 <th className="p-4 w-44">Trường bắt buộc</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--vct-border-subtle)]">
+                        <tbody className="divide-y divide-(--vct-border-subtle)">
                             {isLoading ? (
-                                [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+                                [...Array(5)].map((_, i) => <AdminSkeletonRow key={i} cols={6} />)
                             ) : tplPagination.paginatedItems.length === 0 ? (
-                                <tr><td colSpan={6} className="p-12 text-center text-[var(--vct-text-tertiary)]">Không tìm thấy mẫu tài liệu nào</td></tr>
+                                <tr><td colSpan={6} className="p-12 text-center text-(--vct-text-tertiary)">Không tìm thấy mẫu tài liệu nào</td></tr>
                             ) : (
                                 tplPagination.paginatedItems.map(tpl => (
                                     <tr key={tpl.id} className="hover:bg-white/5 transition-colors text-sm cursor-pointer" onClick={() => setDrawerTemplate(tpl)}>
                                         <td className="p-4"><VCT_Badge type={tpl.is_active ? 'success' : 'neutral'} text={tpl.is_active ? 'Active' : 'Off'} /></td>
                                         <td className="p-4 text-[12px]">{TYPE_LABELS[tpl.type] || tpl.type}</td>
-                                        <td className="p-4 font-semibold text-[var(--vct-text-primary)]">{tpl.name}</td>
-                                        <td className="p-4 text-center text-[var(--vct-text-tertiary)]">v{tpl.version}</td>
-                                        <td className="p-4 text-right font-mono text-[12px] text-[var(--vct-accent-cyan)]">{tpl.issued_count.toLocaleString()}</td>
+                                        <td className="p-4 font-semibold text-(--vct-text-primary)">{tpl.name}</td>
+                                        <td className="p-4 text-center text-(--vct-text-tertiary)">v{tpl.version}</td>
+                                        <td className="p-4 text-right font-mono text-[12px] text-(--vct-accent-cyan)">{tpl.issued_count.toLocaleString()}</td>
                                         <td className="p-4">
                                             <div className="flex flex-wrap gap-1">
                                                 {tpl.fields.slice(0, 3).map(f => (
-                                                    <span key={f} className="bg-[var(--vct-bg-base)] border border-[var(--vct-border-subtle)] px-1.5 py-0.5 rounded text-[9px] font-mono text-[var(--vct-text-tertiary)]">{f}</span>
+                                                    <span key={f} className="bg-(--vct-bg-base) border border-(--vct-border-subtle) px-1.5 py-0.5 rounded text-[9px] font-mono text-(--vct-text-tertiary)">{f}</span>
                                                 ))}
-                                                {tpl.fields.length > 3 && <span className="text-[9px] text-[var(--vct-text-tertiary)]">+{tpl.fields.length - 3}</span>}
+                                                {tpl.fields.length > 3 && <span className="text-[9px] text-(--vct-text-tertiary)">+{tpl.fields.length - 3}</span>}
                                             </div>
                                         </td>
                                     </tr>
@@ -257,13 +229,13 @@ export const Page_documents = () => {
                             )}
                         </tbody>
                     </table>
-                    {!isLoading && <PaginationBar {...tplPagination} />}
+                    {!isLoading && <AdminPaginationBar {...tplPagination} />}
                 </div>
             ) : (
-                <div className="bg-[var(--vct-bg-card)] border border-[var(--vct-border-strong)] rounded-2xl overflow-hidden">
+                <div className="bg-(--vct-bg-card) border border-(--vct-border-strong) rounded-2xl overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-[var(--vct-bg-elevated)] border-b border-[var(--vct-border-strong)] text-[11px] uppercase tracking-wider text-[var(--vct-text-tertiary)] font-bold">
+                            <tr className="bg-(--vct-bg-elevated) border-b border-(--vct-border-strong) text-[11px] uppercase tracking-wider text-(--vct-text-tertiary) font-bold">
                                 <th className="p-4 w-20">T.Thái</th>
                                 <th className="p-4 w-48">Mã số</th>
                                 <th className="p-4 w-32">Loại</th>
@@ -272,26 +244,26 @@ export const Page_documents = () => {
                                 <th className="p-4 w-32">Mã xác minh</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--vct-border-subtle)]">
+                        <tbody className="divide-y divide-(--vct-border-subtle)">
                             {isLoading ? (
-                                [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+                                [...Array(5)].map((_, i) => <AdminSkeletonRow key={i} cols={6} />)
                             ) : issuedPagination.paginatedItems.length === 0 ? (
-                                <tr><td colSpan={6} className="p-12 text-center text-[var(--vct-text-tertiary)]">Không tìm thấy tài liệu nào</td></tr>
+                                <tr><td colSpan={6} className="p-12 text-center text-(--vct-text-tertiary)">Không tìm thấy tài liệu nào</td></tr>
                             ) : (
                                 issuedPagination.paginatedItems.map(doc => (
                                     <tr key={doc.id} className="hover:bg-white/5 transition-colors text-sm cursor-pointer" onClick={() => setDrawerDoc(doc)}>
                                         <td className="p-4"><VCT_Badge type={doc.status === 'valid' ? 'success' : 'danger'} text={doc.status === 'valid' ? 'Valid' : 'Revoked'} /></td>
-                                        <td className="p-4 font-mono text-[12px] text-[var(--vct-text-primary)]">{doc.doc_number}</td>
+                                        <td className="p-4 font-mono text-[12px] text-(--vct-text-primary)">{doc.doc_number}</td>
                                         <td className="p-4 text-[12px]">{TYPE_LABELS[doc.type] || doc.type}</td>
-                                        <td className="p-4 text-[var(--vct-accent-cyan)] font-semibold">{doc.recipient}</td>
-                                        <td className="p-4 font-mono text-[11px] text-[var(--vct-text-tertiary)]">{doc.issued_at}</td>
-                                        <td className="p-4 font-mono text-[11px] text-[var(--vct-text-secondary)]">{doc.verification_code}</td>
+                                        <td className="p-4 text-(--vct-accent-cyan) font-semibold">{doc.recipient}</td>
+                                        <td className="p-4 font-mono text-[11px] text-(--vct-text-tertiary)">{doc.issued_at}</td>
+                                        <td className="p-4 font-mono text-[11px] text-(--vct-text-secondary)">{doc.verification_code}</td>
                                     </tr>
                                 ))
                             )}
                         </tbody>
                     </table>
-                    {!isLoading && <PaginationBar {...issuedPagination} />}
+                    {!isLoading && <AdminPaginationBar {...issuedPagination} />}
                 </div>
             )}
 
@@ -311,12 +283,12 @@ export const Page_documents = () => {
                         <input
                             type="checkbox" id="tpl-active" checked={form.is_active}
                             onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
-                            className="w-4 h-4 accent-[var(--vct-accent-blue,#3b82f6)]"
+                            className="w-4 h-4 accent-(--vct-accent-blue,#3b82f6)"
                         />
-                        <label htmlFor="tpl-active" className="text-sm text-[var(--vct-text-secondary)]">Kích hoạt ngay</label>
+                        <label htmlFor="tpl-active" className="text-sm text-(--vct-text-secondary)">Kích hoạt ngay</label>
                     </div>
                 </VCT_Stack>
-                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--vct-border-subtle)]">
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-(--vct-border-subtle)">
                     <VCT_Button variant="ghost" onClick={() => setShowAddModal(false)}>Hủy</VCT_Button>
                     <VCT_Button variant="primary" onClick={handleSubmitTemplate} disabled={!form.name.trim()}>Tạo mẫu</VCT_Button>
                 </div>
@@ -326,33 +298,33 @@ export const Page_documents = () => {
             <VCT_Drawer isOpen={!!drawerTemplate} onClose={() => setDrawerTemplate(null)} title="Chi tiết mẫu tài liệu" width={520}>
                 {drawerTemplate && (
                     <div className="space-y-5">
-                        <div className="flex items-center gap-3 pb-4 border-b border-[var(--vct-border-subtle)]">
+                        <div className="flex items-center gap-3 pb-4 border-b border-(--vct-border-subtle)">
                             <VCT_Badge type={drawerTemplate.is_active ? 'success' : 'neutral'} text={drawerTemplate.is_active ? 'Active' : 'Off'} />
-                            <span className="font-mono text-xs text-[var(--vct-text-tertiary)] ml-auto">{drawerTemplate.id}</span>
+                            <span className="font-mono text-xs text-(--vct-text-tertiary) ml-auto">{drawerTemplate.id}</span>
                         </div>
                         <div>
-                            <div className="text-lg font-bold text-[var(--vct-text-primary)]">{drawerTemplate.name}</div>
-                            <div className="text-sm text-[var(--vct-text-secondary)] mt-1">{TYPE_LABELS[drawerTemplate.type] || drawerTemplate.type}</div>
+                            <div className="text-lg font-bold text-(--vct-text-primary)">{drawerTemplate.name}</div>
+                            <div className="text-sm text-(--vct-text-secondary) mt-1">{TYPE_LABELS[drawerTemplate.type] || drawerTemplate.type}</div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
-                            <div className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)] text-center">
-                                <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Version</div>
-                                <div className="text-xl font-black text-[var(--vct-accent-blue)]">v{drawerTemplate.version}</div>
+                            <div className="p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle) text-center">
+                                <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Version</div>
+                                <div className="text-xl font-black text-(--vct-accent-blue)">v{drawerTemplate.version}</div>
                             </div>
-                            <div className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)] text-center">
-                                <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Đã cấp</div>
-                                <div className="text-xl font-black text-[var(--vct-accent-cyan)]">{drawerTemplate.issued_count.toLocaleString()}</div>
+                            <div className="p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle) text-center">
+                                <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Đã cấp</div>
+                                <div className="text-xl font-black text-(--vct-accent-cyan)">{drawerTemplate.issued_count.toLocaleString()}</div>
                             </div>
-                            <div className="p-3 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)] text-center">
-                                <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Liên đoàn</div>
-                                <div className="text-sm font-bold text-[var(--vct-text-primary)]">{drawerTemplate.federation || '—'}</div>
+                            <div className="p-3 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle) text-center">
+                                <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Liên đoàn</div>
+                                <div className="text-sm font-bold text-(--vct-text-primary)">{drawerTemplate.federation || '—'}</div>
                             </div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-2">Trường dữ liệu</div>
+                            <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-2">Trường dữ liệu</div>
                             <div className="flex flex-wrap gap-2">
                                 {drawerTemplate.fields.map(f => (
-                                    <span key={f} className="bg-[var(--vct-bg-base)] border border-[var(--vct-border-subtle)] px-2 py-1 rounded-lg text-xs font-mono text-[var(--vct-text-secondary)]">{f}</span>
+                                    <span key={f} className="bg-(--vct-bg-base) border border-(--vct-border-subtle) px-2 py-1 rounded-lg text-xs font-mono text-(--vct-text-secondary)">{f}</span>
                                 ))}
                             </div>
                         </div>
@@ -364,23 +336,23 @@ export const Page_documents = () => {
             <VCT_Drawer isOpen={!!drawerDoc} onClose={() => setDrawerDoc(null)} title="Chi tiết tài liệu đã cấp" width={480}>
                 {drawerDoc && (
                     <div className="space-y-5">
-                        <div className="flex items-center gap-3 pb-4 border-b border-[var(--vct-border-subtle)]">
+                        <div className="flex items-center gap-3 pb-4 border-b border-(--vct-border-subtle)">
                             <VCT_Badge type={drawerDoc.status === 'valid' ? 'success' : 'danger'} text={drawerDoc.status === 'valid' ? 'Valid' : 'Revoked'} />
-                            <span className="font-mono text-xs text-[var(--vct-text-tertiary)] ml-auto">{drawerDoc.id}</span>
+                            <span className="font-mono text-xs text-(--vct-text-tertiary) ml-auto">{drawerDoc.id}</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Mã số</div><div className="font-mono font-bold text-[var(--vct-text-primary)]">{drawerDoc.doc_number}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Loại</div><div className="text-[var(--vct-text-primary)]">{TYPE_LABELS[drawerDoc.type] || drawerDoc.type}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Người nhận</div><div className="font-semibold text-[var(--vct-accent-cyan)]">{drawerDoc.recipient}</div></div>
-                            <div><div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-1">Ngày cấp</div><div className="font-mono text-[var(--vct-text-primary)]">{drawerDoc.issued_at}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Mã số</div><div className="font-mono font-bold text-(--vct-text-primary)">{drawerDoc.doc_number}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Loại</div><div className="text-(--vct-text-primary)">{TYPE_LABELS[drawerDoc.type] || drawerDoc.type}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Người nhận</div><div className="font-semibold text-(--vct-accent-cyan)">{drawerDoc.recipient}</div></div>
+                            <div><div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-1">Ngày cấp</div><div className="font-mono text-(--vct-text-primary)">{drawerDoc.issued_at}</div></div>
                         </div>
-                        <div className="p-4 bg-[var(--vct-bg-base)] rounded-xl border border-[var(--vct-border-subtle)]">
-                            <div className="text-[10px] uppercase text-[var(--vct-text-tertiary)] mb-2">Mã xác minh QR</div>
+                        <div className="p-4 bg-(--vct-bg-base) rounded-xl border border-(--vct-border-subtle)">
+                            <div className="text-[10px] uppercase text-(--vct-text-tertiary) mb-2">Mã xác minh QR</div>
                             <div className="flex items-center gap-3">
                                 <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
                                     <VCT_Icons.Shield size={48} />
                                 </div>
-                                <div className="font-mono text-lg font-black text-[var(--vct-accent-green)]">{drawerDoc.verification_code}</div>
+                                <div className="font-mono text-lg font-black text-(--vct-accent-green)">{drawerDoc.verification_code}</div>
                             </div>
                         </div>
                     </div>

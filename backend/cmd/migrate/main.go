@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -38,7 +39,7 @@ func main() {
 		exitWithError("missing database url: set VCT_POSTGRES_URL or DATABASE_URL")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	pool, err := pgxpool.New(ctx, databaseURL)
@@ -406,7 +407,7 @@ func applySQLFile(ctx context.Context, pool *pgxpool.Pool, path string) error {
 	if sqlText == "" {
 		return nil
 	}
-	_, err = pool.Exec(ctx, sqlText)
+	_, err = pool.Exec(ctx, sqlText, pgx.QueryExecModeSimpleProtocol)
 	return err
 }
 
