@@ -306,7 +306,7 @@ const Page_admin_tenants_Content = () => {
                         render: (t) => <div className="font-mono text-[11px] text-(--vct-text-tertiary)">{t.created_at}</div>
                     }
                 ]}
-                onRowClick={setDrawer}
+                onRowClick={(item) => setDrawer(item)}
             />
 
             {/* ── TENANT DETAIL DRAWER ── */}

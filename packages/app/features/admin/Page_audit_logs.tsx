@@ -300,7 +300,7 @@ const Page_audit_logs_Content = () => {
                         render: (log) => <div className="text-sm text-(--vct-text-secondary) max-w-[300px] truncate" title={log.details}>{log.details}</div>
                     }
                 ]}
-                onRowClick={setDrawerLog}
+                onRowClick={(item) => setDrawerLog(item)}
             />
 
             {/* ── LOG DETAIL DRAWER ── */}

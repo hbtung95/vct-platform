@@ -235,7 +235,7 @@ const Page_admin_federation_Content = () => {
                                 )
                             }
                         ]}
-                        onRowClick={setSelected}
+                        onRowClick={(item) => setSelected(item)}
                     />
                 </>
             )}

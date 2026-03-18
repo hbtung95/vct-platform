@@ -229,7 +229,7 @@ const Page_admin_people_Content = () => {
                         )
                     }
                 ]}
-                onRowClick={setSelected}
+                onRowClick={(item) => setSelected(item)}
             />
 
             {/* ── Detail Drawer ── */}

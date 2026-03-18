@@ -249,7 +249,7 @@ const Page_admin_tournaments_Content = () => {
                         )
                     }
                 ]}
-                onRowClick={setSelected}
+                onRowClick={(item) => setSelected(item)}
             />
 
             {/* ── Hoạt động gần đây ── */}

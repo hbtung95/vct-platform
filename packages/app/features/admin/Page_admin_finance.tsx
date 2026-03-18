@@ -255,7 +255,7 @@ const Page_admin_finance_Content = () => {
                                 render: (inv) => <VCT_Badge type={STATUS_BADGE[inv.status]?.type ?? 'neutral'} text={STATUS_BADGE[inv.status]?.label ?? inv.status} />
                             }
                         ]}
-                        onRowClick={setSelected}
+                        onRowClick={(item) => setSelected(item)}
                     />
                 </>
             )}

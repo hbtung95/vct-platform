@@ -237,7 +237,7 @@ const Page_admin_rankings_Content = () => {
                                 render: (a) => <div className="text-(--vct-text-tertiary)">{a.tournaments}</div>
                             }
                         ]}
-                        onRowClick={setSelected}
+                        onRowClick={(item) => setSelected(item)}
                     />
                 </>
             )}

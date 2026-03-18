@@ -414,7 +414,7 @@ const Page_admin_system_Content = () => {
                             )
                         }
                     ]}
-                    onRowClick={setDrawerParam}
+                    onRowClick={(item) => setDrawerParam(item)}
                 />
             </div>
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import * as React from 'react'
 import { render } from '@testing-library/react'
 import { screen, fireEvent } from '@testing-library/dom'
@@ -46,9 +46,7 @@ describe('AdminErrorBoundary', () => {
 
     it('renders custom fallback when provided', () => {
         const fallback = React.createElement('div', null, 'Custom error')
-        render(React.createElement(AdminErrorBoundary, { fallback },
-            React.createElement(Bomb, { shouldThrow: true })
-        ))
+        render(React.createElement(AdminErrorBoundary, { fallback, children: React.createElement(Bomb, { shouldThrow: true }) }))
         expect(screen.getByText('Custom error')).toBeTruthy()
     })
 
