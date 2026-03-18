@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { getAccessToken } from '../../auth/token-storage'
 
 /**
  * Centralized admin API hook with auth, error handling, retry, and mock fallback.
@@ -37,11 +38,13 @@ interface MutateOptions {
     body?: unknown
 }
 
-// ── Auth helper — reads from cookie, NOT localStorage ──
+// ── Auth helper — reads from localStorage ──
 function getAuthHeaders(): Record<string, string> {
-    // Auth token should be set as httpOnly cookie by backend.
-    // We only send Content-Type; the browser auto-includes cookies.
-    return { 'Content-Type': 'application/json' }
+    const token = getAccessToken()
+    return { 
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
 }
 
 // ── Core fetch with retry ──

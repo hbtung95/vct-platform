@@ -176,7 +176,7 @@ const Page_admin_system_Content = () => {
     const [confirmBackup, setConfirmBackup] = useState(false)
     const [confirmClearCache, setConfirmClearCache] = useState(false)
     const [confirmReset, setConfirmReset] = useState<ConfigParam | null>(null)
-    const { isLoading } = useAdminFetch<null>('/admin/system/config', { mockData: null })
+    const { isLoading } = useAdminFetch<ConfigParam[]>('/admin/config', { mockData: INITIAL_CONFIG_PARAMS })
     const [drawerParam, setDrawerParam] = useState<ConfigParam | null>(null)
     const [search, setSearch] = useState('')
     const [sortCol, setSortCol] = useState<string>('key')
@@ -228,7 +228,7 @@ const Page_admin_system_Content = () => {
     }
 
     const { mutate: mutateConfig } = useAdminMutation<ConfigParam, { key: string; value: string }>(
-        '/admin/system/config',
+        '/admin/config',
         { method: 'PATCH', onError: () => showToast('Lỗi API, đã cập nhật cục bộ', 'warning') }
     )
     const { mutate: mutateBackup } = useAdminMutation<void>(
