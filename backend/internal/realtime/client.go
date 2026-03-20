@@ -80,7 +80,9 @@ func (c *Client) readPump() {
 					continue
 				}
 				if channel := strings.TrimSpace(msg.Channel); channel != "" {
-					c.hub.Subscribe(c, channel)
+					if err := c.hub.Subscribe(c, channel); err != nil {
+						c.logger.Warn("subscribe denied", "channel", channel, "error", err)
+					}
 				}
 			case "unsubscribe":
 				if c.authRequired && !c.authenticated {

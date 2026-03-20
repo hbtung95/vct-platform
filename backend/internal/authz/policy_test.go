@@ -80,3 +80,30 @@ func TestCanEntityAction(t *testing.T) {
 		})
 	}
 }
+
+func TestCanEntityActionForRoles(t *testing.T) {
+	roles := []auth.UserRole{auth.RoleDelegate, auth.RoleBTC}
+	if !CanEntityActionForRoles(roles, "medals", ActionExport) {
+		t.Fatal("expected role union to allow medal export when one role grants it")
+	}
+	if CanEntityActionForRoles([]auth.UserRole{auth.RoleDelegate}, "brackets", ActionView) {
+		t.Fatal("expected disallowed action when no provided role grants it")
+	}
+}
+
+func TestCanPrincipalEntityAction(t *testing.T) {
+	principal := auth.Principal{
+		User: auth.AuthUser{Role: auth.RoleDelegate},
+		Roles: []auth.RoleAssignment{
+			{RoleCode: string(auth.RoleDelegate)},
+			{RoleCode: string(auth.RoleBTC)},
+		},
+	}
+
+	if !CanPrincipalEntityAction(principal, "medals", ActionExport) {
+		t.Fatal("expected principal role assignments to be honored")
+	}
+	if CanPrincipalEntityAction(principal, "brackets", ActionDelete) {
+		t.Fatal("expected principal to be denied when none of its roles grants the action")
+	}
+}

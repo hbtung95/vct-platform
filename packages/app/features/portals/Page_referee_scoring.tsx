@@ -126,7 +126,7 @@ export function Page_RefereeScoringPortal() {
 
         if (connectionStatus === 'connected') {
             // POST to API directly and broadcast via WebSocket
-            console.log('Sending match result to server', matchResult)
+            // TODO: POST to API — fetch('/api/v1/matches/score', { method: 'POST', body: JSON.stringify(matchResult) })
             alert('Đã gửi điểm thành công!')
         } else {
             // Save locally for offline mode

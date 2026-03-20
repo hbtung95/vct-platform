@@ -22,7 +22,7 @@ export default [
       },
     },
     rules: {
-      'no-console': 'off',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       '@typescript-eslint/no-unused-vars': 'off',
       // React hooks — only classic recommended rules
       'react-hooks/rules-of-hooks': 'error',

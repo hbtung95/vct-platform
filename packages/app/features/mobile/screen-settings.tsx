@@ -41,11 +41,11 @@ export function ScreenSettings({
   onNavigatePrivacy,
   onNavigateTerms,
 }: SettingsScreenProps) {
-  const { theme, isDark, setThemeMode } = useVCTTheme()
+  const { theme, userMode, setThemeMode } = useVCTTheme()
   const toast = useToast()
 
   // Settings state
-  const [currentTheme, setCurrentTheme] = useState<ThemeMode>('system')
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(userMode)
   const [language, setLanguage] = useState<Language>('vi')
   const [pushNotifications, setPushNotifications] = useState(true)
   const [matchAlerts, setMatchAlerts] = useState(true)
@@ -59,6 +59,10 @@ export function ScreenSettings({
       setBiometricAvailable(status.hasHardware && status.isEnrolled)
     })
   }, [])
+
+  useEffect(() => {
+    setCurrentTheme(userMode)
+  }, [userMode])
 
   // ── Handlers ─────────────────────────────────────────────
 

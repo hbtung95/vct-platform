@@ -28,8 +28,10 @@ import { haptic } from './haptic-feedback'
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
 export interface ToastOptions {
+  /** Optional title shown above the message */
+  title?: string
   /** Toast message */
-  message: string
+  message?: string
   /** Visual type (default: 'info') */
   type?: ToastType
   /** Auto-dismiss duration in ms (default: 3000, 0 = sticky) */
@@ -44,6 +46,7 @@ export interface ToastOptions {
 
 interface ToastItem extends Required<Pick<ToastOptions, 'message' | 'type' | 'duration'>> {
   id: number
+  title?: string
   actionLabel?: string
   onAction?: () => void
   anim: Animated.Value
@@ -125,10 +128,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       const type = options.type ?? 'info'
       const duration = options.duration ?? 3000
       const anim = new Animated.Value(0)
+      const message = options.message ?? options.title ?? ''
 
       const item: ToastItem = {
         id,
-        message: options.message,
+        title: options.title,
+        message,
         type,
         duration,
         actionLabel: options.actionLabel,
@@ -216,9 +221,19 @@ function ToastView({
       ]}
     >
       <Text style={styles.icon}>{icon}</Text>
-      <Text style={styles.message} numberOfLines={2}>
-        {toast.message}
-      </Text>
+      <View style={styles.content}>
+        {toast.title ? (
+          <Text style={styles.title} numberOfLines={1}>
+            {toast.title}
+          </Text>
+        ) : null}
+        <Text
+          style={styles.message}
+          numberOfLines={toast.title ? 2 : 3}
+        >
+          {toast.message}
+        </Text>
+      </View>
       {toast.actionLabel && (
         <TouchableOpacity
           onPress={() => {
@@ -290,8 +305,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginRight: 10,
   },
-  message: {
+  content: {
     flex: 1,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  message: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',

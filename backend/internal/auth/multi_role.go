@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -83,7 +84,7 @@ func (s *RoleBindingStore) BindRole(binding RoleBinding) {
 		binding.GrantedAt = time.Now().UTC().Format(time.RFC3339)
 	}
 	if binding.ID == "" {
-		binding.ID = fmt.Sprintf("rb-%s-%s-%s", binding.UserID[:8], binding.Role, binding.ScopeID)
+		binding.ID = fmt.Sprintf("rb-%s-%s-%s", shortID(binding.UserID), binding.Role, binding.ScopeID)
 	}
 	binding.IsActive = true
 
@@ -155,7 +156,7 @@ func (s *RoleBindingStore) EnsureDefaultBinding(user AuthUser) {
 	scope := roleScopeType(user.Role)
 	s.bindings[user.ID] = []RoleBinding{
 		{
-			ID:        fmt.Sprintf("rb-%s-default", user.ID[:8]),
+			ID:        fmt.Sprintf("rb-%s-default", shortID(user.ID)),
 			UserID:    user.ID,
 			Role:      user.Role,
 			ScopeType: scope,
@@ -207,6 +208,7 @@ func ResolveRBACMultiRole(bindings []RoleBinding) ([]RoleAssignment, []string, [
 		for p := range permSet {
 			perms = append(perms, p)
 		}
+		sort.Strings(perms)
 	}
 
 	// Everyone gets spectator
@@ -277,8 +279,7 @@ func (svc *Service) SwitchContext(principal Principal, req SwitchContextRequest,
 	})
 
 	// Resolve RBAC for all bindings (full picture)
-	allBindings := svc.roleBindings.GetBindings(switchedUser.ID)
-	roles, perms, ws := ResolveRBACMultiRole(allBindings)
+	roles, perms, ws := svc.resolveRBACSnapshot(switchedUser)
 
 	return SwitchContextResult{
 		TokenResponse: tokenResp,
@@ -360,4 +361,11 @@ func scopeNameForDefault(scopeType string) string {
 	default:
 		return "Cá nhân"
 	}
+}
+
+func shortID(id string) string {
+	if len(id) <= 8 {
+		return id
+	}
+	return id[:8]
 }

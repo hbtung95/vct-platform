@@ -162,3 +162,34 @@ func TestGetBinding_ByID(t *testing.T) {
 		t.Fatal("expected false for non-existent binding")
 	}
 }
+
+func TestRoleBindingStore_ShortUserIDDoesNotPanic(t *testing.T) {
+	store := NewRoleBindingStore()
+
+	store.BindRole(RoleBinding{
+		UserID:    "u1",
+		Role:      RoleCoach,
+		ScopeType: "club",
+		ScopeID:   "CLB-001",
+		ScopeName: "CLB test",
+	})
+
+	bindings := store.GetBindings("u1")
+	if len(bindings) != 1 {
+		t.Fatalf("expected 1 binding, got %d", len(bindings))
+	}
+	if bindings[0].ID == "" {
+		t.Fatal("expected generated binding id for short user id")
+	}
+
+	store.EnsureDefaultBinding(AuthUser{
+		ID:       "u2",
+		Username: "short-user",
+		Role:     RoleDelegate,
+	})
+
+	defaultBindings := store.GetBindings("u2")
+	if len(defaultBindings) != 1 {
+		t.Fatalf("expected 1 default binding for short user id, got %d", len(defaultBindings))
+	}
+}

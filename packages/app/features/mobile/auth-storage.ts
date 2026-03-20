@@ -59,6 +59,17 @@ export interface StoredUser {
   role: string
 }
 
+type StoredUserInput =
+  | StoredUser
+  | {
+      id?: string
+      userId?: string
+      user_id?: string
+      sub?: string
+      role?: string
+      roles?: string[]
+    }
+
 export interface SessionMetadata {
   loginAt: number
   deviceId?: string
@@ -278,3 +289,56 @@ export async function getAuthHealth(): Promise<AuthHealth> {
   }
 }
 
+function normalizeStoredUser(user: StoredUserInput): StoredUser {
+  const userId = String(
+    user.userId ??
+      user.user_id ??
+      user.id ??
+      user.sub ??
+      '',
+  ).trim()
+  const primaryRole = Array.isArray(user.roles) ? user.roles[0] : user.role
+  const role = String(primaryRole ?? 'member').trim() || 'member'
+
+  if (!userId) {
+    throw new Error('Cannot persist auth user without an id')
+  }
+
+  return { userId, role }
+}
+
+export const authStorage = {
+  saveTokens,
+  setTokens: async (
+    accessToken: string,
+    refreshToken?: string,
+    expiresIn?: number,
+  ) =>
+    saveTokens({
+      accessToken,
+      refreshToken,
+      expiresIn,
+    }),
+  getAccessToken,
+  getRefreshToken,
+  isTokenExpired,
+  getTokenExpiresIn,
+  getTokenAge,
+  saveUser,
+  setUser: async (user: StoredUserInput) => saveUser(normalizeStoredUser(user)),
+  getStoredUser,
+  getUser: getStoredUser,
+  saveSessionMeta,
+  getSessionMeta,
+  refreshAccessToken,
+  clearTokens,
+  clear: clearTokens,
+  isAuthenticated,
+  getAuthHealth,
+  onAuthChange,
+  removeAuthListener,
+  onChange: (listener: AuthChangeListener) => {
+    const id = onAuthChange(listener)
+    return () => removeAuthListener(id)
+  },
+} as const

@@ -2,17 +2,17 @@
 
 /**
  * VCT Offline & PWA Utilities
- * 
+ *
  * Service worker registration, offline status detection,
- * and offline data queue for background sync.
+ * offline data queue with retry + conflict detection,
+ * and background sync support.
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { VCT_Text } from 'app/features/components/vct-ui'
 
 const __DEV__ = process.env.NODE_ENV !== 'production'
-// eslint-disable-next-line no-console
 const devLog = (...args: unknown[]) => { if (__DEV__) console.log(...args) }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -119,29 +119,50 @@ export function VCT_OfflineIndicator() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   OFFLINE DATA QUEUE (IndexedDB)
+   OFFLINE DATA QUEUE (IndexedDB) — with Retry & Conflict Detection
    ═══════════════════════════════════════════════════════════════ */
 
 const DB_NAME = 'vct-offline'
-const DB_VERSION = 1
+const DB_VERSION = 2 // bumped for schema migration
 const STORE_NAME = 'pending-actions'
+const MAX_RETRY_ATTEMPTS = 5
+const STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
-interface PendingAction {
+export interface PendingAction {
     id: string
     type: 'score' | 'attendance' | 'injury' | 'general'
     endpoint: string
     method: 'POST' | 'PUT' | 'DELETE'
     body: Record<string, unknown>
     timestamp: number
+    retryCount: number
+    lastAttempt: number | null
+    lastModified: string | null  // For conflict detection
+    status: 'pending' | 'syncing' | 'conflict' | 'failed'
 }
 
 function openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION)
-        request.onupgradeneeded = () => {
+        request.onupgradeneeded = (event) => {
             const db = request.result
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
+            const oldVersion = event.oldVersion
+
+            if (oldVersion < 1) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'id' })
+            }
+            // v2: Add index on status for efficient querying
+            if (oldVersion < 2) {
+                const tx = (event.target as IDBOpenDBRequest).transaction
+                if (tx) {
+                    const store = tx.objectStore(STORE_NAME)
+                    if (!store.indexNames.contains('by_status')) {
+                        store.createIndex('by_status', 'status', { unique: false })
+                    }
+                    if (!store.indexNames.contains('by_timestamp')) {
+                        store.createIndex('by_timestamp', 'timestamp', { unique: false })
+                    }
+                }
             }
         }
         request.onsuccess = () => resolve(request.result)
@@ -149,15 +170,22 @@ function openDB(): Promise<IDBDatabase> {
     })
 }
 
-export async function queueOfflineAction(action: Omit<PendingAction, 'id' | 'timestamp'>): Promise<void> {
+export async function queueOfflineAction(
+    action: Omit<PendingAction, 'id' | 'timestamp' | 'retryCount' | 'lastAttempt' | 'lastModified' | 'status'>
+): Promise<string> {
     const db = await openDB()
     const tx = db.transaction(STORE_NAME, 'readwrite')
     const store = tx.objectStore(STORE_NAME)
 
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const entry: PendingAction = {
         ...action,
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id,
         timestamp: Date.now(),
+        retryCount: 0,
+        lastAttempt: null,
+        lastModified: null,
+        status: 'pending',
     }
 
     store.put(entry)
@@ -171,6 +199,8 @@ export async function queueOfflineAction(action: Omit<PendingAction, 'id' | 'tim
             devLog('[Offline] Background sync not available')
         }
     }
+
+    return id
 }
 
 export async function getPendingActions(): Promise<PendingAction[]> {
@@ -184,47 +214,203 @@ export async function getPendingActions(): Promise<PendingAction[]> {
     })
 }
 
+export async function updatePendingAction(action: PendingAction): Promise<void> {
+    const db = await openDB()
+    const tx = db.transaction(STORE_NAME, 'readwrite')
+    tx.objectStore(STORE_NAME).put(action)
+}
+
 export async function removePendingAction(id: string): Promise<void> {
     const db = await openDB()
     const tx = db.transaction(STORE_NAME, 'readwrite')
     tx.objectStore(STORE_NAME).delete(id)
 }
 
+/**
+ * Remove actions older than STALE_THRESHOLD_MS (default: 7 days).
+ * Call periodically to prevent IndexedDB from growing unbounded.
+ */
+export async function cleanStaleActions(): Promise<number> {
+    const db = await openDB()
+    const all = await getPendingActions()
+    const now = Date.now()
+    let cleaned = 0
+
+    const tx = db.transaction(STORE_NAME, 'readwrite')
+    const store = tx.objectStore(STORE_NAME)
+
+    for (const action of all) {
+        if (now - action.timestamp > STALE_THRESHOLD_MS) {
+            store.delete(action.id)
+            cleaned++
+        }
+    }
+
+    if (cleaned > 0) devLog(`[Offline] Cleaned ${cleaned} stale actions`)
+    return cleaned
+}
+
 /* ═══════════════════════════════════════════════════════════════
-   AUTO-SYNC HOOK (sync when back online)
+   PENDING COUNT HOOK — for badge display
    ═══════════════════════════════════════════════════════════════ */
 
-export function useOfflineSync() {
-    const isOnline = useOnlineStatus()
+export function usePendingCount() {
+    const [count, setCount] = useState(0)
 
-    const syncAll = useCallback(async () => {
-        const pending = await getPendingActions()
-        if (pending.length === 0) return
-
-        devLog(`[Sync] Processing ${pending.length} pending actions...`)
-
-        for (const action of pending) {
-            try {
-                const res = await fetch(action.endpoint, {
-                    method: action.method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(action.body),
-                })
-                if (res.ok) {
-                    await removePendingAction(action.id)
-                    devLog(`[Sync] ✓ ${action.type} synced`)
-                }
-            } catch {
-                devLog(`[Sync] ✗ ${action.type} failed, will retry`)
-            }
+    const refresh = useCallback(async () => {
+        try {
+            const actions = await getPendingActions()
+            setCount(actions.filter(a => a.status === 'pending' || a.status === 'syncing').length)
+        } catch {
+            setCount(0)
         }
     }, [])
+
+    useEffect(() => {
+        refresh()
+        // Poll every 5 seconds for changes
+        const interval = setInterval(refresh, 5000)
+        return () => clearInterval(interval)
+    }, [refresh])
+
+    return { count, refresh }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-SYNC HOOK — with retry backoff & conflict detection
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface SyncProgress {
+    total: number
+    synced: number
+    failed: number
+    conflicts: number
+}
+
+interface UseOfflineSyncOptions {
+    /** Called on each sync step */
+    onProgress?: (progress: SyncProgress) => void
+    /** Called when a conflict is detected */
+    onConflict?: (action: PendingAction) => void
+    /** Authorization token for API calls */
+    authToken?: string
+}
+
+export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
+    const isOnline = useOnlineStatus()
+    const [isSyncing, setIsSyncing] = useState(false)
+    const [lastSync, setLastSync] = useState<SyncProgress | null>(null)
+    const syncingRef = useRef(false)
+
+    const syncAll = useCallback(async () => {
+        if (syncingRef.current) return // prevent concurrent syncs
+        syncingRef.current = true
+        setIsSyncing(true)
+
+        try {
+            // Clean stale actions first
+            await cleanStaleActions()
+
+            const pending = await getPendingActions()
+            const actionable = pending.filter(a => a.status === 'pending' || a.status === 'failed')
+            if (actionable.length === 0) {
+                setIsSyncing(false)
+                syncingRef.current = false
+                return
+            }
+
+            devLog(`[Sync] Processing ${actionable.length} pending actions...`)
+
+            const progress: SyncProgress = { total: actionable.length, synced: 0, failed: 0, conflicts: 0 }
+
+            for (const action of actionable) {
+                // Skip if retried too many times
+                if (action.retryCount >= MAX_RETRY_ATTEMPTS) {
+                    action.status = 'failed'
+                    await updatePendingAction(action)
+                    progress.failed++
+                    options.onProgress?.(progress)
+                    continue
+                }
+
+                // Exponential backoff with jitter
+                if (action.lastAttempt) {
+                    const backoffMs = Math.min(
+                        1000 * Math.pow(2, action.retryCount) + Math.random() * 500,
+                        30_000
+                    )
+                    const elapsed = Date.now() - action.lastAttempt
+                    if (elapsed < backoffMs) {
+                        continue // Not yet time to retry
+                    }
+                }
+
+                try {
+                    // Mark as syncing
+                    action.status = 'syncing'
+                    action.lastAttempt = Date.now()
+                    action.retryCount++
+                    await updatePendingAction(action)
+
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+
+                    // Conflict detection via If-Unmodified-Since
+                    if (action.lastModified) {
+                        headers['If-Unmodified-Since'] = action.lastModified
+                    }
+                    if (options.authToken) {
+                        headers['Authorization'] = `Bearer ${options.authToken}`
+                    }
+
+                    const res = await fetch(action.endpoint, {
+                        method: action.method,
+                        headers,
+                        body: JSON.stringify(action.body),
+                    })
+
+                    if (res.ok) {
+                        await removePendingAction(action.id)
+                        progress.synced++
+                        devLog(`[Sync] ✓ ${action.type} synced`)
+                    } else if (res.status === 409 || res.status === 412) {
+                        // 409 Conflict or 412 Precondition Failed
+                        action.status = 'conflict'
+                        await updatePendingAction(action)
+                        progress.conflicts++
+                        options.onConflict?.(action)
+                        devLog(`[Sync] ⚠ ${action.type} conflict detected`)
+                    } else {
+                        // Server error → will retry
+                        action.status = 'pending'
+                        await updatePendingAction(action)
+                        progress.failed++
+                        devLog(`[Sync] ✗ ${action.type} server error ${res.status}, will retry`)
+                    }
+                } catch {
+                    // Network error → will retry
+                    action.status = 'pending'
+                    await updatePendingAction(action)
+                    progress.failed++
+                    devLog(`[Sync] ✗ ${action.type} network error, will retry`)
+                }
+
+                options.onProgress?.(progress)
+            }
+
+            setLastSync(progress)
+        } finally {
+            setIsSyncing(false)
+            syncingRef.current = false
+        }
+    }, [options])
 
     useEffect(() => {
         if (isOnline) {
             syncAll()
         }
     }, [isOnline, syncAll])
+
+    return { isSyncing, lastSync, syncAll }
 }
 
 /* ═══════════════════════════════════════════════════════════════

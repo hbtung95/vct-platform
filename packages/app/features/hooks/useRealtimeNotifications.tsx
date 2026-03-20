@@ -1,88 +1,256 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+'use client'
+
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useWebSocket } from './useWebSocket'
+
+// ═══════════════════════════════════════════════════════════════
+// Types
+// ═══════════════════════════════════════════════════════════════
+
+export type ToastType = 'success' | 'warning' | 'info' | 'error'
 
 export interface ToastMessage {
-    id: string;
-    title: string;
-    description: string;
-    type: 'success' | 'warning' | 'info';
+    id: string
+    title: string
+    description: string
+    type: ToastType
+    channel?: string
+    timestamp: number
 }
 
-export function useRealtimeNotifications() {
-    const [toasts, setToasts] = useState<ToastMessage[]>([]);
+interface UseRealtimeNotificationsOptions {
+    /** Channels to subscribe for notifications (default: ['notifications', 'system']) */
+    channels?: string[]
+    /** Maximum number of visible toasts (default: 5) */
+    maxVisible?: number
+    /** Auto-dismiss duration in ms (default: 6000) */
+    dismissAfter?: number
+    /** Enable vibration on warning/error (default: true) */
+    vibrate?: boolean
+    /** Only connect when true (default: true) */
+    enabled?: boolean
+}
 
-    useEffect(() => {
-        // Simulate WebSocket connection
-        console.log('[WebSocket] Connecting to wss://vct.vn/ws/federation...');
+// ═══════════════════════════════════════════════════════════════
+// Constants
+// ═══════════════════════════════════════════════════════════════
+
+const DEFAULT_CHANNELS = ['notifications', 'system']
+const MAX_VISIBLE = 5
+const DISMISS_AFTER = 6000
+
+const TOAST_ICON: Record<ToastType, string> = {
+    success: '✅',
+    warning: '⚠️',
+    info: 'ℹ️',
+    error: '🚨',
+}
+
+const TOAST_STYLE: Record<ToastType, string> = {
+    success: 'bg-emerald-500/10 border-emerald-500/30',
+    warning: 'bg-amber-500/10 border-amber-500/30',
+    info: 'bg-sky-500/10 border-sky-500/30',
+    error: 'bg-red-500/10 border-red-500/30',
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Helper: map backend EntityChangeEvent → ToastMessage
+// ═══════════════════════════════════════════════════════════════
+
+function mapEventToToast(event: {
+    type?: string
+    entity?: string
+    action?: string
+    itemId?: string
+    payload?: Record<string, unknown>
+    channel?: string
+}): ToastMessage | null {
+    const action = event.action ?? event.type ?? 'update'
+    const entity = event.entity ?? 'item'
+
+    // Derive toast type from action semantics
+    let toastType: ToastType = 'info'
+    if (action.includes('delete') || action.includes('error') || action.includes('fail')) {
+        toastType = 'error'
+    } else if (action.includes('warn') || action.includes('alert') || action.includes('budget')) {
+        toastType = 'warning'
+    } else if (action.includes('create') || action.includes('approve') || action.includes('success')) {
+        toastType = 'success'
+    }
+
+    // Use payload title/description if provided, else generate from entity+action
+    const title = (event.payload?.title as string) ?? `${capitalize(entity)}`
+    const description = (event.payload?.description as string) ??
+        (event.payload?.message as string) ??
+        `${capitalize(action)} — ${entity}${event.itemId ? ` #${event.itemId}` : ''}`
+
+    return {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title,
+        description,
+        type: toastType,
+        channel: event.channel,
+        timestamp: Date.now(),
+    }
+}
+
+function capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Hook
+// ═══════════════════════════════════════════════════════════════
+
+export function useRealtimeNotifications(options: UseRealtimeNotificationsOptions = {}) {
+    const {
+        channels = DEFAULT_CHANNELS,
+        maxVisible = MAX_VISIBLE,
+        dismissAfter = DISMISS_AFTER,
+        vibrate: enableVibrate = true,
+        enabled = true,
+    } = options
+
+    const [toasts, setToasts] = useState<ToastMessage[]>([])
+    const dismissTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+    // ── Auto-dismiss scheduler ──
+    const scheduleDismiss = useCallback((id: string) => {
         const timer = setTimeout(() => {
-            console.log('[WebSocket] Connected.');
-        }, 1000);
+            setToasts(prev => prev.filter(t => t.id !== id))
+            dismissTimers.current.delete(id)
+        }, dismissAfter)
+        dismissTimers.current.set(id, timer)
+    }, [dismissAfter])
 
-        // Simulate incoming urgent messages
-        const interval = setInterval(() => {
-            const types: ('success' | 'warning' | 'info')[] = ['success', 'warning', 'info'];
-            const messages = [
-                { title: 'Tỉnh Bình Định', description: 'Vừa trình duyệt Đăng ký CLB mới' },
-                { title: 'Cảnh báo Ngân sách', description: 'Đề xuất chi vượt mức 50,000,000đ' },
-                { title: 'Giải đấu mới', description: 'Đã nhận hồ sơ Giải Võ Cổ Truyền Miền Trung' },
-                { title: 'Tỉnh Quảng Nam', description: 'Vừa cập nhật danh sách Ban Chấp Hành' }
-            ];
-            const randType = types[Math.floor(Math.random() * types.length)] || 'info';
-            const randMsg = messages[Math.floor(Math.random() * messages.length)];
-            
-            const newToast: ToastMessage = {
-                id: Date.now().toString() + Math.random(),
-                title: randMsg?.title || 'Thông báo',
-                description: randMsg?.description || 'Có cập nhật mới',
-                type: randType
-            };
+    // ── Add toast with FIFO eviction ──
+    const addToast = useCallback((toast: ToastMessage) => {
+        // Haptic feedback for urgent notifications
+        if (enableVibrate && (toast.type === 'warning' || toast.type === 'error')) {
+            try { navigator?.vibrate?.(200) } catch { /* not supported */ }
+        }
 
-            setToasts(prev => [...prev, newToast]);
-            
-            // Auto remove after 5s
-            setTimeout(() => {
-                setToasts(prev => prev.filter(t => t.id !== newToast.id));
-            }, 5000);
+        setToasts(prev => {
+            const next = [...prev, toast]
+            // FIFO eviction: remove oldest if over limit
+            if (next.length > maxVisible) {
+                const evicted = next.slice(0, next.length - maxVisible)
+                for (const removed of evicted) {
+                    const timer = dismissTimers.current.get(removed.id)
+                    if (timer) { clearTimeout(timer); dismissTimers.current.delete(removed.id) }
+                }
+                return next.slice(-maxVisible)
+            }
+            return next
+        })
 
-        }, 12000); // Trigger every 12 seconds for testing purposes
+        scheduleDismiss(toast.id)
+    }, [maxVisible, enableVibrate, scheduleDismiss])
 
+    // ── Manual dismiss ──
+    const dismissToast = useCallback((id: string) => {
+        setToasts(prev => prev.filter(t => t.id !== id))
+        const timer = dismissTimers.current.get(id)
+        if (timer) { clearTimeout(timer); dismissTimers.current.delete(id) }
+    }, [])
+
+    // ── Programmatic push (for non-WS toasts) ──
+    const pushToast = useCallback((title: string, description: string, type: ToastType = 'info') => {
+        addToast({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            title,
+            description,
+            type,
+            timestamp: Date.now(),
+        })
+    }, [addToast])
+
+    // ── WebSocket integration ──
+    const { status } = useWebSocket({
+        channels,
+        enabled,
+        onEntityChange: useCallback((event: { type?: string; entity?: string; action?: string; itemId?: string; payload?: Record<string, unknown>; channel?: string }) => {
+            const toast = mapEventToToast(event)
+            if (toast) addToast(toast)
+        }, [addToast]),
+    })
+
+    // ── Cleanup timers on unmount ──
+    useEffect(() => {
         return () => {
-            clearTimeout(timer);
-            clearInterval(interval);
-        };
-    }, []);
+            Array.from(dismissTimers.current.values()).forEach(timer => {
+                clearTimeout(timer)
+            })
+            dismissTimers.current.clear()
+        }
+    }, [])
 
-    const ToastContainer = () => (
-        <div className="fixed bottom-6 right-6 z- flex flex-col gap-3 pointer-events-none">
-            <AnimatePresence>
+    // ── Toast Container Component ──
+    const ToastContainer = useCallback(() => (
+        <div
+            className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"
+            role="log"
+            aria-live="polite"
+            aria-label="Notifications"
+        >
+            <AnimatePresence mode="popLayout">
                 {toasts.map(t => (
                     <motion.div
                         key={t.id}
+                        layout
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                        className={`p-4 rounded-xl shadow-lg border backdrop-blur-md min-w-[300px] pointer-events-auto cursor-pointer ${
-                            t.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                            t.type === 'warning' ? 'bg-amber-500/10 border-amber-500/30' :
-                            'bg-sky-500/10 border-sky-500/30'
-                        }`}
-                        style={{ background: 'var(--vct-bg-elevated)' }}
-                        onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
+                        exit={{ opacity: 0, x: 80, scale: 0.9, transition: { duration: 0.2 } }}
+                        className={`p-4 rounded-xl shadow-lg border backdrop-blur-md min-w-[300px] max-w-[400px] pointer-events-auto cursor-pointer ${TOAST_STYLE[t.type]}`}
+                        style={{ background: 'var(--vct-bg-elevated, rgba(30,30,40,0.95))' }}
+                        onClick={() => dismissToast(t.id)}
+                        role="alert"
+                        aria-atomic="true"
                     >
                         <div className="flex items-start gap-3">
-                            <span className="text-xl">
-                                {t.type === 'success' ? '✅' : t.type === 'warning' ? '⚠️' : 'ℹ️'}
+                            <span className="text-xl shrink-0" aria-hidden="true">
+                                {TOAST_ICON[t.type]}
                             </span>
-                            <div>
-                                <h4 className="text-sm font-bold" style={{ color: 'var(--vct-text-primary)' }}>{t.title}</h4>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--vct-text-secondary)' }}>{t.description}</p>
+                            <div className="flex-1 min-w-0">
+                                <h4
+                                    className="text-sm font-bold truncate"
+                                    style={{ color: 'var(--vct-text-primary, #fff)' }}
+                                >
+                                    {t.title}
+                                </h4>
+                                <p
+                                    className="text-xs mt-0.5 line-clamp-2"
+                                    style={{ color: 'var(--vct-text-secondary, #aaa)' }}
+                                >
+                                    {t.description}
+                                </p>
                             </div>
+                            <button
+                                className="text-xs opacity-50 hover:opacity-100 transition-opacity shrink-0"
+                                style={{ color: 'var(--vct-text-secondary, #aaa)' }}
+                                onClick={(e) => { e.stopPropagation(); dismissToast(t.id) }}
+                                aria-label="Đóng thông báo"
+                            >
+                                ✕
+                            </button>
                         </div>
                     </motion.div>
                 ))}
             </AnimatePresence>
         </div>
-    );
+    ), [toasts, dismissToast])
 
-    return { ToastContainer };
+    return {
+        /** Rendered toast stack — place in your layout */
+        ToastContainer,
+        /** WebSocket connection status */
+        connectionStatus: status,
+        /** Current visible toasts */
+        toasts,
+        /** Programmatically push a toast (independent of WS) */
+        pushToast,
+        /** Dismiss a specific toast by ID */
+        dismissToast,
+    }
 }

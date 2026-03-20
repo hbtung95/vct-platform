@@ -1305,6 +1305,16 @@ func (s *Service) syncCredentialsToDB(credentials map[string]userCredential) {
 // TODO: Replace with database queries to core.user_roles + core.role_permissions
 // when the system is fully integrated with the PostgreSQL RBAC tables.
 
+func (s *Service) resolveRBACSnapshot(user AuthUser) ([]RoleAssignment, []string, []WorkspaceAccess) {
+	if s != nil && s.roleBindings != nil && strings.TrimSpace(user.ID) != "" {
+		s.roleBindings.EnsureDefaultBinding(user)
+		if bindings := s.roleBindings.GetBindings(user.ID); len(bindings) > 0 {
+			return ResolveRBACMultiRole(bindings)
+		}
+	}
+	return resolveRBACForUser(user)
+}
+
 func resolveRBACForUser(user AuthUser) ([]RoleAssignment, []string, []WorkspaceAccess) {
 	now := time.Now().UTC().Format(time.RFC3339)
 	role := user.Role

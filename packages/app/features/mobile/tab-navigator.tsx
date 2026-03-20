@@ -4,10 +4,23 @@
 // Training, Profile. Uses VCT theme colors and custom icons.
 // ═══════════════════════════════════════════════════════════════
 
-import React from 'react'
-import { StyleSheet, View, Text, Platform } from 'react-native'
+import React, { Suspense } from 'react'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { StyleSheet, View, Text, Platform, ActivityIndicator } from 'react-native'
+
 import { useVCTTheme } from './theme-provider'
+import {
+  LazyScreenHome,
+  LazyScreenProfile,
+  LazyScreenTournamentList,
+} from './screen-registry'
 import type { MainTabParamList } from './route-types'
+
+type TabScreenComponent =
+  | React.ComponentType<any>
+  | React.LazyExoticComponent<React.ComponentType<any>>
+
+const Tab = createBottomTabNavigator<MainTabParamList>()
 
 // ── Tab Bar Icon ─────────────────────────────────────────────
 
@@ -21,9 +34,22 @@ interface TabIconProps {
 function TabIcon({ focused, label, emoji, color }: TabIconProps) {
   return (
     <View style={styles.tabIconContainer}>
-      <Text style={[styles.tabEmoji, focused && styles.tabEmojiActive]}>{emoji}</Text>
+      <Text style={[styles.tabEmoji, focused && styles.tabEmojiActive]}>
+        {emoji}
+      </Text>
       <Text style={[styles.tabLabel, { color }]}>{label}</Text>
-      {focused && <View style={[styles.activeIndicator, { backgroundColor: color }]} />}
+      {focused ? (
+        <View style={[styles.activeIndicator, { backgroundColor: color }]} />
+      ) : null}
+    </View>
+  )
+}
+
+function TabFallback() {
+  const { theme } = useVCTTheme()
+  return (
+    <View style={[styles.placeholder, { backgroundColor: theme.colors.background }]}>
+      <ActivityIndicator size="large" color={theme.colors.primary} />
     </View>
   )
 }
@@ -34,8 +60,25 @@ export interface TabConfig {
   name: keyof MainTabParamList
   label: string
   emoji: string
-  /** The component to render as the stack for this tab */
-  component: React.ComponentType<any>
+  component: TabScreenComponent
+}
+
+function PlaceholderScreen() {
+  const { theme } = useVCTTheme()
+  return (
+    <View
+      style={[styles.placeholder, { backgroundColor: theme.colors.background }]}
+    >
+      <Text
+        style={[
+          styles.placeholderText,
+          { color: theme.colors.textSecondary },
+        ]}
+      >
+        Khu vực này đang được hoàn thiện cho mobile.
+      </Text>
+    </View>
+  )
 }
 
 export const TAB_CONFIGS: TabConfig[] = [
@@ -43,13 +86,13 @@ export const TAB_CONFIGS: TabConfig[] = [
     name: 'HomeTab',
     label: 'Trang chủ',
     emoji: '🏠',
-    component: PlaceholderScreen, // Will be replaced with actual HomeStack
+    component: LazyScreenHome,
   },
   {
     name: 'TournamentsTab',
     label: 'Giải đấu',
     emoji: '🏆',
-    component: PlaceholderScreen,
+    component: LazyScreenTournamentList,
   },
   {
     name: 'TrainingTab',
@@ -61,7 +104,7 @@ export const TAB_CONFIGS: TabConfig[] = [
     name: 'ProfileTab',
     label: 'Cá nhân',
     emoji: '👤',
-    component: PlaceholderScreen,
+    component: LazyScreenProfile,
   },
 ]
 
@@ -71,7 +114,9 @@ export const TAB_CONFIGS: TabConfig[] = [
  * Creates the screen options for the bottom tab navigator.
  * Call this inside your Tab.Navigator's `screenOptions` prop.
  */
-export function createTabScreenOptions(theme: ReturnType<typeof useVCTTheme>['theme']) {
+export function createTabScreenOptions(
+  theme: ReturnType<typeof useVCTTheme>['theme'],
+) {
   return {
     headerShown: false,
     tabBarActiveTintColor: theme.colors.primary,
@@ -83,7 +128,6 @@ export function createTabScreenOptions(theme: ReturnType<typeof useVCTTheme>['th
       height: Platform.OS === 'ios' ? 88 : 64,
       paddingBottom: Platform.OS === 'ios' ? 28 : 8,
       paddingTop: 8,
-      // Subtle shadow
       ...Platform.select({
         ios: {
           shadowColor: '#000',
@@ -109,30 +153,75 @@ export function createTabScreenOptions(theme: ReturnType<typeof useVCTTheme>['th
  */
 export function createTabItemOptions(
   config: TabConfig,
-  theme: ReturnType<typeof useVCTTheme>['theme']
+  theme: ReturnType<typeof useVCTTheme>['theme'],
 ) {
   return {
     tabBarLabel: config.label,
     tabBarIcon: ({ focused, color }: { focused: boolean; color: string }) => (
-      <TabIcon focused={focused} label="" emoji={config.emoji} color={color} />
+      <TabIcon
+        focused={focused}
+        label=""
+        emoji={config.emoji}
+        color={color}
+      />
     ),
   }
 }
 
-// ── Placeholder Screen ───────────────────────────────────────
-
-function PlaceholderScreen() {
+export function MainTabNavigator() {
   const { theme } = useVCTTheme()
+
   return (
-    <View style={[styles.placeholder, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.placeholderText, { color: theme.colors.textSecondary }]}>
-        Đang phát triển...
-      </Text>
-    </View>
+    <Tab.Navigator screenOptions={createTabScreenOptions(theme)}>
+      {TAB_CONFIGS.map((config) => (
+        <Tab.Screen
+          key={config.name}
+          name={config.name}
+          options={createTabItemOptions(config, theme)}
+        >
+          {({ navigation }) => {
+            const ScreenComponent = config.component
+            const parentNavigation = navigation.getParent()
+
+            return (
+              <Suspense fallback={<TabFallback />}>
+                {config.name === 'HomeTab' ? (
+                  <ScreenComponent
+                    onNavigateTournament={(id: string) =>
+                      parentNavigation?.navigate('TournamentDetail' as never, {
+                        tournamentId: id,
+                      } as never)
+                    }
+                    onNavigateProfile={() =>
+                      navigation.navigate('ProfileTab')
+                    }
+                  />
+                ) : null}
+                {config.name === 'TournamentsTab' ? (
+                  <ScreenComponent
+                    onNavigateDetail={(id: string) =>
+                      parentNavigation?.navigate('TournamentDetail' as never, {
+                        tournamentId: id,
+                      } as never)
+                    }
+                  />
+                ) : null}
+                {config.name === 'ProfileTab' ? (
+                  <ScreenComponent
+                    onNavigateSettings={() =>
+                      parentNavigation?.navigate('Settings' as never)
+                    }
+                  />
+                ) : null}
+                {config.name === 'TrainingTab' ? <ScreenComponent /> : null}
+              </Suspense>
+            )
+          }}
+        </Tab.Screen>
+      ))}
+    </Tab.Navigator>
   )
 }
-
-// ── Styles ───────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   tabIconContainer: {
@@ -164,8 +253,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   placeholderText: {
     fontSize: 16,
+    textAlign: 'center',
   },
 })

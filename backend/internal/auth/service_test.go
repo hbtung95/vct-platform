@@ -233,3 +233,54 @@ func TestBcryptPasswordVerification(t *testing.T) {
 		t.Fatalf("expected invalid credentials for wrong password, got: %v", err)
 	}
 }
+
+func TestAuthenticateAccessToken_ResolvesMultiRoleSnapshot(t *testing.T) {
+	service := newTestService()
+	ctx := testRequestContext()
+
+	loginResult, err := service.Login(LoginRequest{
+		Username:       "coach",
+		Password:       "Coach@123",
+		Role:           RoleCoach,
+		TournamentCode: "VCT-2026",
+		OperationShift: "sang",
+	}, ctx)
+	if err != nil {
+		t.Fatalf("coach login failed: %v", err)
+	}
+
+	service.roleBindings.BindRole(RoleBinding{
+		UserID:    loginResult.User.ID,
+		Role:      RoleReferee,
+		ScopeType: "tournament",
+		ScopeID:   "T-2026-01",
+		ScopeName: "Giải VCT 2026",
+	})
+
+	principal, err := service.AuthenticateAccessToken(loginResult.AccessToken, ctx)
+	if err != nil {
+		t.Fatalf("AuthenticateAccessToken failed: %v", err)
+	}
+
+	if principal.User.Role != RoleCoach {
+		t.Fatalf("expected active token role to remain coach, got %s", principal.User.Role)
+	}
+	if len(principal.Roles) < 2 {
+		t.Fatalf("expected multi-role snapshot, got %d roles", len(principal.Roles))
+	}
+
+	permSet := make(map[string]bool, len(principal.Permissions))
+	for _, perm := range principal.Permissions {
+		permSet[perm] = true
+	}
+	if !permSet["training.*"] {
+		t.Fatal("expected coach permissions in principal snapshot")
+	}
+	if !permSet["scoring.record"] {
+		t.Fatal("expected referee permissions in principal snapshot")
+	}
+
+	if len(principal.Workspaces) < 3 {
+		t.Fatalf("expected club, referee, and spectator workspaces, got %d", len(principal.Workspaces))
+	}
+}

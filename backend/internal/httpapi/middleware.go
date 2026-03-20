@@ -86,6 +86,8 @@ func (s *Server) authorizeEntityAction(
 	if principal == nil {
 		return fmt.Errorf("%w: thiếu thông tin phiên làm việc", auth.ErrUnauthorized)
 	}
+	// Entity routes honor the active role embedded in the current token so
+	// context switching remains an explicit least-privilege operation.
 	if authz.CanEntityAction(principal.User.Role, entity, action) {
 		return nil
 	}

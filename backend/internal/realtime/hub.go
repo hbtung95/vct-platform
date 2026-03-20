@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,6 +17,34 @@ type outboundMessage struct {
 	channel string
 	payload []byte
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Channel Authorization
+// ═══════════════════════════════════════════════════════════════
+
+// ChannelAuthorizer decides whether a client is allowed to subscribe to a channel.
+// Return nil to allow, or an error to deny with a reason.
+type ChannelAuthorizer interface {
+	Authorize(ctx context.Context, userID, channel string) error
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Hub Metrics
+// ═══════════════════════════════════════════════════════════════
+
+// HubMetrics holds counters for monitoring the WebSocket hub.
+type HubMetrics struct {
+	TotalConnects    int64 `json:"total_connects"`
+	TotalDisconnects int64 `json:"total_disconnects"`
+	TotalMessages    int64 `json:"total_messages"`
+	TotalDropped     int64 `json:"total_dropped"`
+	ActiveClients    int   `json:"active_clients"`
+	ActiveChannels   int   `json:"active_channels"`
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Hub
+// ═══════════════════════════════════════════════════════════════
 
 // Hub maintains the set of active clients and broadcasts messages.
 type Hub struct {
@@ -36,11 +65,18 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	allowedOrigins map[string]struct{}
-	authValidator  func(string) error
-	closeCh        chan struct{}
-	closeOnce      sync.Once
-	mu             sync.RWMutex
+	allowedOrigins    map[string]struct{}
+	authValidator     func(string) error
+	channelAuthorizer ChannelAuthorizer
+	closeCh           chan struct{}
+	closeOnce         sync.Once
+	mu                sync.RWMutex
+
+	// Atomic counters for metrics
+	totalConnects    atomic.Int64
+	totalDisconnects atomic.Int64
+	totalMessages    atomic.Int64
+	totalDropped     atomic.Int64
 }
 
 // NewHub creates a new WebSocket hub.
@@ -69,6 +105,27 @@ func NewHub(logger *slog.Logger, allowedOrigins ...string) *Hub {
 	}
 }
 
+// SetChannelAuthorizer registers a channel authorization handler.
+func (h *Hub) SetChannelAuthorizer(auth ChannelAuthorizer) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.channelAuthorizer = auth
+}
+
+// Metrics returns a snapshot of the hub's operational counters.
+func (h *Hub) Metrics() HubMetrics {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return HubMetrics{
+		TotalConnects:    h.totalConnects.Load(),
+		TotalDisconnects: h.totalDisconnects.Load(),
+		TotalMessages:    h.totalMessages.Load(),
+		TotalDropped:     h.totalDropped.Load(),
+		ActiveClients:    len(h.clients),
+		ActiveChannels:   len(h.channels),
+	}
+}
+
 // Run starts the hub's main event loop.
 func (h *Hub) Run(ctx context.Context) {
 	h.logger.Info("websocket hub started")
@@ -84,6 +141,7 @@ func (h *Hub) Run(ctx context.Context) {
 			h.mu.Lock()
 			h.clients[client] = true
 			h.mu.Unlock()
+			h.totalConnects.Add(1)
 			h.logger.Debug("client connected", "user_id", client.userID)
 
 		case client := <-h.unregister:
@@ -102,6 +160,7 @@ func (h *Hub) Run(ctx context.Context) {
 				client.mu.RUnlock()
 			}
 			h.mu.Unlock()
+			h.totalDisconnects.Add(1)
 			h.logger.Debug("client disconnected", "user_id", client.userID)
 
 		case message := <-h.broadcast:
@@ -115,9 +174,14 @@ func (h *Hub) Run(ctx context.Context) {
 			for client := range clientsInChannel {
 				select {
 				case client.send <- append([]byte(nil), message.payload...):
+					h.totalMessages.Add(1)
 				default:
 					// Send buffer is full, drop the client
-					h.logger.Warn("client send buffer full, dropping connection")
+					h.totalDropped.Add(1)
+					h.logger.Warn("client send buffer full, dropping connection",
+						slog.String("user_id", client.userID),
+						slog.String("channel", message.channel),
+					)
 					go func(c *Client) { h.unregister <- c }(client)
 				}
 			}
@@ -126,8 +190,24 @@ func (h *Hub) Run(ctx context.Context) {
 	}
 }
 
-// Subscribe adds a client to a channel.
-func (h *Hub) Subscribe(client *Client, channel string) {
+// Subscribe adds a client to a channel, with optional authorization check.
+func (h *Hub) Subscribe(client *Client, channel string) error {
+	// Check channel authorization if configured
+	h.mu.RLock()
+	authorizer := h.channelAuthorizer
+	h.mu.RUnlock()
+
+	if authorizer != nil {
+		if err := authorizer.Authorize(context.Background(), client.userID, channel); err != nil {
+			h.logger.Warn("channel subscription denied",
+				slog.String("channel", channel),
+				slog.String("user_id", client.userID),
+				slog.Any("reason", err),
+			)
+			return fmt.Errorf("channel %s: %w", channel, err)
+		}
+	}
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -141,6 +221,7 @@ func (h *Hub) Subscribe(client *Client, channel string) {
 	client.mu.Unlock()
 
 	h.logger.Debug("client subscribed", "channel", channel, "user_id", client.userID)
+	return nil
 }
 
 // Unsubscribe removes a client from a channel.
@@ -197,6 +278,40 @@ func (h *Hub) BroadcastToChannel(channel string, payload any) {
 		return
 	}
 	h.enqueueBroadcast(trimmedChannel, bytes)
+}
+
+// SendToUser delivers a message directly to all connections of a specific user.
+func (h *Hub) SendToUser(userID string, message Message) {
+	payload, err := json.Marshal(message)
+	if err != nil {
+		h.logger.Error("failed to marshal user message", "user_id", userID, "error", err)
+		return
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	sent := 0
+	for client := range h.clients {
+		if client.userID == userID {
+			select {
+			case client.send <- append([]byte(nil), payload...):
+				sent++
+				h.totalMessages.Add(1)
+			default:
+				h.totalDropped.Add(1)
+				h.logger.Warn("user send buffer full", slog.String("user_id", userID))
+			}
+		}
+	}
+
+	if sent > 0 {
+		h.logger.Debug("message sent to user",
+			slog.String("user_id", userID),
+			slog.Int("connections", sent),
+			slog.String("event", message.Event),
+		)
+	}
 }
 
 func (h *Hub) enqueueBroadcast(channel string, payload []byte) {

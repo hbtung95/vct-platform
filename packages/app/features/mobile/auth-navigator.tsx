@@ -4,10 +4,26 @@
 // Onboarding → Login → Register → ForgotPassword → ResetPassword
 // ═══════════════════════════════════════════════════════════════
 
-import React from 'react'
-import { Platform } from 'react-native'
+import React, { Suspense } from 'react'
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native'
+import {
+  createNativeStackNavigator,
+  type NativeStackNavigationOptions,
+} from '@react-navigation/native-stack'
+
 import { useVCTTheme } from './theme-provider'
+import {
+  LazyScreenLogin,
+  LazyScreenOnboarding,
+  LazyScreenRegister,
+} from './screen-registry'
 import type { AuthStackParamList } from './route-types'
+
+type AuthScreenComponent =
+  | React.ComponentType<any>
+  | React.LazyExoticComponent<React.ComponentType<any>>
+
+const Stack = createNativeStackNavigator<AuthStackParamList>()
 
 // ── Screen Options Factory ───────────────────────────────────
 
@@ -15,13 +31,15 @@ import type { AuthStackParamList } from './route-types'
  * Shared screen options for all auth-flow screens.
  * Apply as `screenOptions` on your Stack.Navigator.
  */
-export function createAuthScreenOptions(theme: ReturnType<typeof useVCTTheme>['theme']) {
+export function createAuthScreenOptions(
+  theme: ReturnType<typeof useVCTTheme>['theme'],
+): NativeStackNavigationOptions {
   return {
     headerShown: false,
     contentStyle: { backgroundColor: theme.colors.background },
     animation: Platform.OS === 'ios' ? 'slide_from_right' : 'fade_from_bottom',
     gestureEnabled: true,
-    gestureDirection: 'horizontal' as const,
+    gestureDirection: 'horizontal',
   }
 }
 
@@ -29,37 +47,88 @@ export function createAuthScreenOptions(theme: ReturnType<typeof useVCTTheme>['t
 
 export interface AuthScreenConfig {
   name: keyof AuthStackParamList
-  /** Component imported lazily when building the navigator */
-  component: React.ComponentType<any>
-  options?: Record<string, any>
+  component: AuthScreenComponent
+  options?: NativeStackNavigationOptions
 }
+
+function AuthFallback() {
+  const { theme } = useVCTTheme()
+  return (
+    <View style={[styles.fallback, { backgroundColor: theme.colors.background }]}>
+      <ActivityIndicator size="large" color={theme.colors.primary} />
+    </View>
+  )
+}
+
+function buildAuthPlaceholder(title: string, description: string) {
+  function AuthPlaceholderScreen() {
+    const { theme } = useVCTTheme()
+    return (
+      <View
+        style={[
+          styles.placeholder,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <Text style={[styles.placeholderTitle, { color: theme.colors.text }]}>
+          {title}
+        </Text>
+        <Text
+          style={[
+            styles.placeholderDescription,
+            { color: theme.colors.textSecondary },
+          ]}
+        >
+          {description}
+        </Text>
+      </View>
+    )
+  }
+
+  return AuthPlaceholderScreen
+}
+
+const ForgotPasswordScreen = buildAuthPlaceholder(
+  'Quên mật khẩu',
+  'Luồng khôi phục mật khẩu sẽ được hoàn thiện ở đợt mobile tiếp theo.',
+)
+
+const ResetPasswordScreen = buildAuthPlaceholder(
+  'Đặt lại mật khẩu',
+  'Màn hình đặt lại mật khẩu đang được kết nối với backend xác thực.',
+)
+
+const VerifyOTPScreen = buildAuthPlaceholder(
+  'Xác thực OTP',
+  'Bước xác thực OTP sẽ sớm thay placeholder bằng flow xác thực thật.',
+)
 
 /**
  * Ordered list of auth screens.
- * The navigator should iterate this to register screens.
+ * The navigator iterates this to register screens.
  */
 export const AUTH_SCREENS: AuthScreenConfig[] = [
   {
     name: 'Onboarding',
-    component: LazyPlaceholder,
+    component: LazyScreenOnboarding,
     options: {
-      gestureEnabled: false, // Can't swipe back from onboarding
+      gestureEnabled: false,
     },
   },
   {
     name: 'Login',
-    component: LazyPlaceholder,
+    component: LazyScreenLogin,
     options: {
-      animationTypeForReplace: 'pop', // When replacing Register → Login, use pop anim
+      animationTypeForReplace: 'pop',
     },
   },
   {
     name: 'Register',
-    component: LazyPlaceholder,
+    component: LazyScreenRegister,
   },
   {
     name: 'ForgotPassword',
-    component: LazyPlaceholder,
+    component: ForgotPasswordScreen,
     options: {
       presentation: 'modal',
       headerShown: true,
@@ -68,7 +137,7 @@ export const AUTH_SCREENS: AuthScreenConfig[] = [
   },
   {
     name: 'ResetPassword',
-    component: LazyPlaceholder,
+    component: ResetPasswordScreen,
     options: {
       presentation: 'modal',
       headerShown: true,
@@ -77,7 +146,7 @@ export const AUTH_SCREENS: AuthScreenConfig[] = [
   },
   {
     name: 'VerifyOTP',
-    component: LazyPlaceholder,
+    component: VerifyOTPScreen,
     options: {
       presentation: 'modal',
       headerShown: true,
@@ -92,9 +161,10 @@ export const AUTH_SCREENS: AuthScreenConfig[] = [
  * Determines the initial auth route based on stored state.
  * Call this during app bootstrap to decide where to start.
  */
-export async function getInitialAuthRoute(): Promise<keyof AuthStackParamList> {
+export async function getInitialAuthRoute(): Promise<
+  keyof AuthStackParamList
+> {
   try {
-    // Check if user has completed onboarding
     const { secureStorage } = await import('./secure-storage')
     const hasOnboarded = await secureStorage.getItem('has_onboarded')
 
@@ -108,15 +178,82 @@ export async function getInitialAuthRoute(): Promise<keyof AuthStackParamList> {
   }
 }
 
-// ── Placeholder ──────────────────────────────────────────────
-
-function LazyPlaceholder() {
+export function AuthNavigator({
+  initialRouteName = 'Login',
+}: {
+  initialRouteName?: keyof AuthStackParamList
+}) {
   const { theme } = useVCTTheme()
-  const React = require('react')
-  const { View, Text } = require('react-native')
+
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background }}>
-      <Text style={{ color: theme.colors.textSecondary }}>Loading...</Text>
-    </View>
+    <Stack.Navigator
+      initialRouteName={initialRouteName}
+      screenOptions={createAuthScreenOptions(theme)}
+    >
+      {AUTH_SCREENS.map((config) => (
+        <Stack.Screen
+          key={config.name}
+          name={config.name}
+          options={config.options}
+        >
+          {({ navigation }) => {
+            const ScreenComponent = config.component
+
+            return (
+              <Suspense fallback={<AuthFallback />}>
+                {config.name === 'Onboarding' ? (
+                  <ScreenComponent
+                    onComplete={() => navigation.replace('Login')}
+                    onSkip={() => navigation.replace('Login')}
+                  />
+                ) : null}
+                {config.name === 'Login' ? (
+                  <ScreenComponent
+                    onNavigateRegister={() => navigation.navigate('Register')}
+                    onNavigateForgotPassword={() =>
+                      navigation.navigate('ForgotPassword')
+                    }
+                  />
+                ) : null}
+                {config.name === 'Register' ? (
+                  <ScreenComponent
+                    onNavigateLogin={() => navigation.replace('Login')}
+                    onRegisterSuccess={() => navigation.replace('Login')}
+                  />
+                ) : null}
+                {!['Onboarding', 'Login', 'Register'].includes(config.name) ? (
+                  <ScreenComponent />
+                ) : null}
+              </Suspense>
+            )
+          }}
+        </Stack.Screen>
+      ))}
+    </Stack.Navigator>
   )
 }
+
+const styles = StyleSheet.create({
+  fallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  placeholderTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  placeholderDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+})

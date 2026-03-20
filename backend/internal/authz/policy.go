@@ -142,3 +142,37 @@ func CanEntityAction(role auth.UserRole, entity string, action EntityAction) boo
 	_, allowed := actions[action]
 	return allowed
 }
+
+func CanEntityActionForRoles(roles []auth.UserRole, entity string, action EntityAction) bool {
+	for _, role := range roles {
+		if CanEntityAction(role, entity, action) {
+			return true
+		}
+	}
+	return false
+}
+
+func CanPrincipalEntityAction(principal auth.Principal, entity string, action EntityAction) bool {
+	roles := make([]auth.UserRole, 0, len(principal.Roles)+1)
+	seen := make(map[auth.UserRole]struct{}, len(principal.Roles)+1)
+
+	for _, role := range principal.Roles {
+		code := auth.UserRole(strings.TrimSpace(role.RoleCode))
+		if code == "" {
+			continue
+		}
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		roles = append(roles, code)
+	}
+
+	if principal.User.Role != "" {
+		if _, ok := seen[principal.User.Role]; !ok {
+			roles = append(roles, principal.User.Role)
+		}
+	}
+
+	return CanEntityActionForRoles(roles, entity, action)
+}
