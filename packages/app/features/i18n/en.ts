@@ -376,6 +376,7 @@ export const en: Record<string, string> = {
     'ws.fed.curriculum': 'Curriculum & Forms',
     'ws.fed.techLib': 'Technique Library',
     'ws.fed.beltExams': 'Belt Examinations',
+    'ws.fed.elearning': 'E-Learning',
     'ws.fed.finance': 'Finance',
     'ws.fed.financeOverview': 'Financial Overview',
     'ws.fed.invoices': 'Receipts & Payments',

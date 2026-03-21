@@ -61,11 +61,21 @@ const ROUTE_PERMISSION_MAP: Record<string, string[]> = {
     '/finance/budget': ['payment.read'],
 
     // Federation Admin (Org-level)
+    '/federation/approvals': ['system.manage_config'],
+    '/federation/provinces': ['system.manage_config'],
+    '/federation/org-chart': ['system.manage_config'],
+    '/federation/regulations': ['system.manage_config'],
     '/federation/master-data': ['system.manage_config'],
     '/federation/documents': ['system.manage_config'],
     '/federation/certifications': ['system.manage_config'],
     '/federation/notifications': ['system.manage_config'],
     '/federation/workflow-config': ['system.manage_config'],
+
+    // Heritage
+    '/heritage/dashboard': ['heritage.read'],
+
+    // Training dashboard
+    '/training/dashboard': ['training.read'],
 
     // Community
     '/community': ['community.create_post'],

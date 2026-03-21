@@ -240,6 +240,8 @@ function getIconForWorkspace(icon: string) {
         'Users': 'Users',
         'Monitor': 'MonitorPlay',
         'Settings': 'Settings',
+        'Network': 'Network',
+        'BookOpen': 'Book',
     }
     const IconComp = VCT_Icons[iconMap[icon] || 'Dashboard']
     return IconComp ? <IconComp size={26} /> : <span>📋</span>
