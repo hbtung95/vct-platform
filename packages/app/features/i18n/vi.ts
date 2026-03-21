@@ -343,6 +343,14 @@ export const vi: Record<string, string> = {
     'route.user-detail.label': 'Chi tiết người dùng',
 
     // ── Workspace Sidebar ──
+    // Heritage
+    'ws.heritage.overview': 'Tổng quan',
+    'ws.heritage.dashboard': 'Dashboard Di sản',
+
+    // Training
+    'ws.training.overview': 'Tổng quan',
+    'ws.training.dashboard': 'Dashboard Đào tạo',
+
     // Federation
     'ws.fed.overview': 'Tổng quan',
     'ws.fed.dashboard': 'Dashboard Liên đoàn',
@@ -368,6 +376,7 @@ export const vi: Record<string, string> = {
     'ws.fed.curriculum': 'Giáo trình & Bài quyền',
     'ws.fed.techLib': 'Kho kỹ thuật',
     'ws.fed.beltExams': 'Thi thăng cấp',
+    'ws.fed.elearning': 'E-Learning',
     'ws.fed.finance': 'Tài chính',
     'ws.fed.financeOverview': 'Tổng quan tài chính',
     'ws.fed.invoices': 'Phiếu thu chi',
@@ -576,7 +585,11 @@ export const vi: Record<string, string> = {
 
     // ── Workspace Meta (i18n) ──
     'ws.meta.federation.label': 'Liên đoàn',
-    'ws.meta.federation.desc': 'Quản trị tổ chức, CLB, BXH quốc gia, Di sản',
+    'ws.meta.federation.desc': 'Quản trị tổ chức, CLB, phê duyệt giải đấu',
+    'ws.meta.heritage.label': 'Di sản & Gia phả',
+    'ws.meta.heritage.desc': 'Quản lý bảng xếp hạng, môn phái, và kỹ thuật',
+    'ws.meta.training.label': 'Đào tạo & Học tập',
+    'ws.meta.training.desc': 'Quản lý giáo trình, kỹ thuật và thi thăng cấp',
     'ws.meta.provincial.label': 'LĐ Tỉnh/TP',
     'ws.meta.provincial.desc': 'Quản trị CLB, VĐV, giải đấu cấp tỉnh',
     'ws.meta.discipline.label': 'Kỷ luật & Thanh tra',
@@ -599,6 +612,8 @@ export const vi: Record<string, string> = {
     // ── Workspace Scopes ──
     'ws.scope.sysadmin': 'Quản trị hệ thống',
     'ws.scope.federation': 'Liên đoàn VCT',
+    'ws.scope.heritage': 'Di sản & Bảng xếp hạng',
+    'ws.scope.training': 'Đào tạo & Học thuật',
     'ws.scope.provincial': 'Liên đoàn tỉnh',
     'ws.scope.discipline': 'Kỷ luật & Thanh tra',
     'ws.scope.tournament': 'Giải đấu',

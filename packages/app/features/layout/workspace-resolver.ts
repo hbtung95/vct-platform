@@ -61,11 +61,11 @@ const ROUTE_PERMISSION_MAP: Record<string, string[]> = {
     '/finance/budget': ['payment.read'],
 
     // Federation Admin (Org-level)
-    '/fed/master-data': ['system.manage_config'],
-    '/fed/documents': ['system.manage_config'],
-    '/fed/certifications': ['system.manage_config'],
-    '/fed/notifications': ['system.manage_config'],
-    '/fed/workflow-config': ['system.manage_config'],
+    '/federation/master-data': ['system.manage_config'],
+    '/federation/documents': ['system.manage_config'],
+    '/federation/certifications': ['system.manage_config'],
+    '/federation/notifications': ['system.manage_config'],
+    '/federation/workflow-config': ['system.manage_config'],
 
     // Community
     '/community': ['community.create_post'],
@@ -241,6 +241,8 @@ function mapRoleToWorkspace(
     if (code === 'OWNER' || code === 'SYSTEM_ADMIN' || code === 'ADMIN') {
         add('system_admin', 'SYS', 'ws.scope.sysadmin', 'admin')
         add('federation_admin', 'FED', 'ws.scope.federation', 'admin')
+        add('federation_heritage', 'FED', 'ws.scope.heritage', 'admin')
+        add('training_management', 'FED', 'ws.scope.training', 'admin')
         add('tournament_ops', 'TOURN', 'ws.scope.tournament', 'admin')
         add('club_management', 'CLUB', 'ws.scope.club', 'admin')
     } else if (PROVINCIAL_ROLE_CODES.has(code)) {
@@ -249,9 +251,12 @@ function mapRoleToWorkspace(
         add('federation_discipline', scopeId, scopeName, ra.roleCode)
     } else if (FEDERATION_ROLE_CODES.has(code)) {
         add('federation_admin', scopeId, scopeName, ra.roleCode)
+        add('federation_heritage', scopeId, scopeName, ra.roleCode)
+        add('training_management', scopeId, scopeName, ra.roleCode)
     } else if (code === 'TECHNICAL_DIRECTOR') {
         add('tournament_ops', scopeId, scopeName, 'technical_director')
         add('federation_admin', scopeId, scopeName, 'technical_director')
+        add('training_management', scopeId, scopeName, 'technical_director')
     } else if (CLUB_ROLE_CODES.has(code)) {
         add('club_management', scopeId, scopeName, ra.roleCode)
     } else if (REFEREE_ROLE_CODES.has(code)) {
@@ -274,6 +279,8 @@ function mapSingleRoleToWorkspace(
         case 'admin':
             add('system_admin', 'SYS', 'ws.scope.sysadmin', 'admin')
             add('federation_admin', 'FED', 'ws.scope.federation', 'admin')
+            add('federation_heritage', 'FED', 'ws.scope.heritage', 'admin')
+            add('training_management', 'FED', 'ws.scope.training', 'admin')
             add('tournament_ops', 'TOURN', 'ws.scope.tournament', 'admin')
             add('club_management', 'CLUB', 'ws.scope.club', 'admin')
             break
@@ -281,10 +288,14 @@ function mapSingleRoleToWorkspace(
         case 'vice_president':
         case 'federation_secretary':
             add('federation_admin', 'FED', 'ws.scope.federation', role)
+            add('federation_heritage', 'FED', 'ws.scope.heritage', role)
+            add('training_management', 'FED', 'ws.scope.training', role)
             break
         case 'pr_manager':
         case 'international_liaison':
             add('federation_admin', 'FED', 'ws.scope.federation', role)
+            add('federation_heritage', 'FED', 'ws.scope.heritage', role)
+            add('training_management', 'FED', 'ws.scope.training', role)
             break
         case 'provincial_admin':
         case 'provincial_president':
@@ -299,6 +310,7 @@ function mapSingleRoleToWorkspace(
         case 'technical_director':
             add('federation_admin', 'FED', 'ws.scope.federation', role)
             add('tournament_ops', 'TOURN', 'ws.scope.tournament', role)
+            add('training_management', 'FED', 'ws.scope.training', role)
             break
         case 'discipline_board':
         case 'inspector':

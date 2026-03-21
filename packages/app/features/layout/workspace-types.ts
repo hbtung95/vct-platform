@@ -8,6 +8,8 @@ export const WORKSPACE_TYPES = [
     'federation_admin',
     'federation_provincial',
     'federation_discipline',
+    'federation_heritage',
+    'training_management',
     'tournament_ops',
     'club_management',
     'referee_console',
@@ -114,6 +116,20 @@ export const WORKSPACE_META: Record<WorkspaceType, {
         gradient: 'from-[#dc2626] to-[#991b1b]',
         description: 'ws.meta.discipline.desc',
     },
+    federation_heritage: {
+        label: 'ws.meta.heritage.label',
+        icon: 'Network',
+        color: '#e879f9',
+        gradient: 'from-[#e879f9] to-[#c026d3]',
+        description: 'ws.meta.heritage.desc',
+    },
+    training_management: {
+        label: 'ws.meta.training.label',
+        icon: 'BookOpen',
+        color: '#14b8a6',
+        gradient: 'from-[#14b8a6] to-[#0f766e]',
+        description: 'ws.meta.training.desc',
+    },
     tournament_ops: {
         label: 'ws.meta.tournament.label',
         icon: 'Trophy',
@@ -145,8 +161,8 @@ export const WORKSPACE_META: Record<WorkspaceType, {
     parent_portal: {
         label: 'ws.meta.parent.label',
         icon: 'Users',
-        color: '#14b8a6',
-        gradient: 'from-[#14b8a6] to-[#0f766e]',
+        color: '#0d9488',
+        gradient: 'from-[#0d9488] to-[#115e59]',
         description: 'ws.meta.parent.desc',
     },
     public_spectator: {

@@ -12,7 +12,7 @@ const FEDERATION_SIDEBAR: WorkspaceSidebarConfig = {
             id: 'overview', label: 'ws.fed.overview', items: [
                 { id: 'fed-dashboard', path: '/dashboard', label: 'ws.fed.dashboard', icon: 'Dashboard' },
                 { id: 'fed-calendar', path: '/calendar', label: 'ws.fed.calendar', icon: 'Calendar' },
-                { id: 'fed-approvals', path: '/fed/approvals', label: 'ws.fed.approvals', icon: 'CheckSquare' },
+                { id: 'fed-approvals', path: '/federation/approvals', label: 'ws.fed.approvals', icon: 'CheckSquare' },
             ],
         },
         {
@@ -20,40 +20,14 @@ const FEDERATION_SIDEBAR: WorkspaceSidebarConfig = {
                 { id: 'fed-orgs', path: '/organizations', label: 'ws.fed.orgs', icon: 'Building' },
                 { id: 'fed-clubs', path: '/clubs', label: 'ws.fed.clubs', icon: 'Home' },
                 { id: 'fed-people', path: '/people', label: 'ws.fed.people', icon: 'Users' },
-                { id: 'fed-provinces', path: '/fed/provinces', label: 'ws.fed.provinces', icon: 'MapPin' },
-                { id: 'fed-orgchart', path: '/fed/org-chart', label: 'ws.fed.orgChart', icon: 'GitMerge' },
-            ],
-        },
-        {
-            id: 'tournaments', label: 'ws.fed.tournaments', items: [
-                { id: 'fed-tournaments', path: '/giai-dau', label: 'ws.fed.tournamentList', icon: 'Trophy' },
-                { id: 'fed-tourn-mgmt', path: '/giai-dau/quan-ly', label: 'ws.fed.tournMgmt', icon: 'Settings' },
-                { id: 'fed-tourn-cats', path: '/giai-dau/noi-dung', label: 'ws.fed.tournCategories', icon: 'List' },
-                { id: 'fed-tourn-reg', path: '/giai-dau/dang-ky', label: 'ws.fed.tournRegistration', icon: 'ClipboardCheck' },
-                { id: 'fed-tourn-schedule', path: '/giai-dau/lich-thi', label: 'ws.fed.tournSchedule', icon: 'Calendar' },
-                { id: 'fed-tourn-results', path: '/giai-dau/ket-qua', label: 'ws.fed.tournResults', icon: 'Award' },
-                { id: 'fed-reports', path: '/reports', label: 'ws.fed.reports', icon: 'Printer' },
+                { id: 'fed-provinces', path: '/federation/provinces', label: 'ws.fed.provinces', icon: 'MapPin' },
+                { id: 'fed-orgchart', path: '/federation/org-chart', label: 'ws.fed.orgChart', icon: 'GitMerge' },
             ],
         },
         {
             id: 'regulations', label: 'ws.fed.regulations', items: [
-                { id: 'fed-regulations', path: '/fed/regulations', label: 'ws.fed.regulationsOverview', icon: 'ScrollText' },
-                { id: 'fed-masterdata', path: '/fed/master-data', label: 'ws.fed.masterData', icon: 'Database' },
-            ],
-        },
-        {
-            id: 'ranking', label: 'ws.fed.ranking', items: [
-                { id: 'fed-rankings', path: '/rankings', label: 'ws.fed.rankings', icon: 'BarChart2' },
-                { id: 'fed-heritage', path: '/heritage', label: 'ws.fed.heritage', icon: 'Network' },
-                { id: 'fed-lineage', path: '/heritage/lineage', label: 'ws.fed.lineage', icon: 'GitMerge' },
-                { id: 'fed-techniques', path: '/heritage/techniques', label: 'ws.fed.techniques', icon: 'Video' },
-            ],
-        },
-        {
-            id: 'training', label: 'ws.fed.training', items: [
-                { id: 'fed-curriculum', path: '/training/curriculum', label: 'ws.fed.curriculum', icon: 'Book' },
-                { id: 'fed-techniques', path: '/training/techniques', label: 'ws.fed.techLib', icon: 'Video' },
-                { id: 'fed-beltexams', path: '/training/belt-exams', label: 'ws.fed.beltExams', icon: 'Award' },
+                { id: 'fed-regulations', path: '/federation/regulations', label: 'ws.fed.regulationsOverview', icon: 'ScrollText' },
+                { id: 'fed-masterdata', path: '/federation/master-data', label: 'ws.fed.masterData', icon: 'Database' },
             ],
         },
         {
@@ -74,11 +48,49 @@ const FEDERATION_SIDEBAR: WorkspaceSidebarConfig = {
         },
         {
             id: 'admin', label: 'ws.fed.admin', items: [
-                { id: 'fed-refdata', path: '/fed/master-data', label: 'ws.fed.masterData', icon: 'Database' },
-                { id: 'fed-docs', path: '/fed/documents', label: 'ws.fed.documents', icon: 'FileText' },
-                { id: 'fed-certifications-mgmt', path: '/fed/certifications', label: 'ws.fed.certifications', icon: 'Award' },
-                { id: 'fed-notif', path: '/fed/notifications', label: 'ws.fed.notifications', icon: 'Bell' },
-                { id: 'fed-workflow', path: '/fed/workflow-config', label: 'ws.fed.workflow', icon: 'GitMerge' },
+                { id: 'fed-refdata', path: '/federation/master-data', label: 'ws.fed.masterData', icon: 'Database' },
+                { id: 'fed-docs', path: '/federation/documents', label: 'ws.fed.documents', icon: 'FileText' },
+                { id: 'fed-certifications-mgmt', path: '/federation/certifications', label: 'ws.fed.certifications', icon: 'Award' },
+                { id: 'fed-notif', path: '/federation/notifications', label: 'ws.fed.notifications', icon: 'Bell' },
+                { id: 'fed-workflow', path: '/federation/workflow-config', label: 'ws.fed.workflow', icon: 'GitMerge' },
+            ],
+        },
+    ],
+}
+
+const HERITAGE_SIDEBAR: WorkspaceSidebarConfig = {
+    type: 'federation_heritage',
+    groups: [
+        {
+            id: 'overview', label: 'ws.heritage.overview', items: [
+                { id: 'herit-dashboard', path: '/heritage/dashboard', label: 'ws.heritage.dashboard', icon: 'Dashboard' },
+            ],
+        },
+        {
+            id: 'ranking', label: 'ws.fed.ranking', items: [
+                { id: 'herit-rankings', path: '/rankings', label: 'ws.fed.rankings', icon: 'BarChart2' },
+                { id: 'herit-heritage', path: '/heritage', label: 'ws.fed.heritage', icon: 'Network' },
+                { id: 'herit-lineage', path: '/heritage/lineage', label: 'ws.fed.lineage', icon: 'GitMerge' },
+                { id: 'herit-techniques', path: '/heritage/techniques', label: 'ws.fed.techniques', icon: 'Video' },
+            ],
+        },
+    ],
+}
+
+const TRAINING_SIDEBAR: WorkspaceSidebarConfig = {
+    type: 'training_management',
+    groups: [
+        {
+            id: 'overview', label: 'ws.training.overview', items: [
+                { id: 'train-dashboard', path: '/training/dashboard', label: 'ws.training.dashboard', icon: 'Dashboard' },
+            ],
+        },
+        {
+            id: 'training', label: 'ws.fed.training', items: [
+                { id: 'train-curriculum', path: '/training/curriculum', label: 'ws.fed.curriculum', icon: 'Book' },
+                { id: 'train-techniques', path: '/training/techniques', label: 'ws.fed.techLib', icon: 'Video' },
+                { id: 'train-beltexams', path: '/training/belt-exams', label: 'ws.fed.beltExams', icon: 'Award' },
+                { id: 'train-elearning', path: '/training/elearning', label: 'ws.fed.elearning', icon: 'Laptop' },
             ],
         },
     ],
@@ -399,6 +411,8 @@ export const WORKSPACE_SIDEBARS: Record<WorkspaceType, WorkspaceSidebarConfig> =
     federation_admin: FEDERATION_SIDEBAR,
     federation_provincial: PROVINCIAL_SIDEBAR,
     federation_discipline: DISCIPLINE_SIDEBAR,
+    federation_heritage: HERITAGE_SIDEBAR,
+    training_management: TRAINING_SIDEBAR,
     tournament_ops: TOURNAMENT_SIDEBAR,
     club_management: CLUB_SIDEBAR,
     referee_console: REFEREE_SIDEBAR,

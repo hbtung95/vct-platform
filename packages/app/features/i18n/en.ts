@@ -343,6 +343,14 @@ export const en: Record<string, string> = {
     'route.user-detail.label': 'User Details',
 
     // ── Workspace Sidebar ──
+    // Heritage
+    'ws.heritage.overview': 'Overview',
+    'ws.heritage.dashboard': 'Heritage Dashboard',
+
+    // Training
+    'ws.training.overview': 'Overview',
+    'ws.training.dashboard': 'Training Dashboard',
+
     // Federation
     'ws.fed.overview': 'Overview',
     'ws.fed.dashboard': 'Federation Dashboard',
@@ -576,7 +584,11 @@ export const en: Record<string, string> = {
 
     // ── Workspace Meta (i18n) ──
     'ws.meta.federation.label': 'Federation',
-    'ws.meta.federation.desc': 'Manage organizations, clubs, national rankings, heritage',
+    'ws.meta.federation.desc': 'Manage organizations, clubs, workflow approvals',
+    'ws.meta.heritage.label': 'Heritage & Lineage',
+    'ws.meta.heritage.desc': 'Manage rankings, martial arts schools, and techniques',
+    'ws.meta.training.label': 'Training & Learning',
+    'ws.meta.training.desc': 'Manage curriculum, techniques and belt exams',
     'ws.meta.provincial.label': 'Provincial Fed.',
     'ws.meta.provincial.desc': 'Manage clubs, athletes, provincial tournaments',
     'ws.meta.discipline.label': 'Discipline & Inspection',
@@ -599,6 +611,8 @@ export const en: Record<string, string> = {
     // ── Workspace Scopes ──
     'ws.scope.sysadmin': 'System Administration',
     'ws.scope.federation': 'VCT Federation',
+    'ws.scope.heritage': 'Heritage & Rankings',
+    'ws.scope.training': 'Training & Education',
     'ws.scope.provincial': 'Provincial Federation',
     'ws.scope.discipline': 'Discipline & Inspection',
     'ws.scope.tournament': 'Tournament',
