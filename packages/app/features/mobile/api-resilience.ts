@@ -75,7 +75,7 @@ interface WindowEntry {
   failed: boolean
 }
 
-class ClientCircuitBreaker {
+export class CircuitBreaker {
   private state: CircuitState = 'closed'
   private successes = 0
   private lastFailTime = 0
@@ -259,7 +259,7 @@ export function createResilientFetch(
     },
   }
 
-  const breaker = new ClientCircuitBreaker(
+  const breaker = new CircuitBreaker(
     cfg.circuitBreaker,
     cfg.onStateChange,
   )
@@ -381,3 +381,27 @@ export const resilientFetch = createResilientFetch({
     )
   },
 })
+
+export async function RetryWithBackoff<T>(
+  operation: () => Promise<T>,
+  config: Partial<RetryConfig> = {},
+): Promise<T> {
+  const retryConfig = { ...DEFAULT_RETRY, ...config }
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      if (attempt === retryConfig.maxRetries) {
+        throw lastError
+      }
+
+      const delay = calculateDelay(attempt, retryConfig)
+      await sleep(delay)
+    }
+  }
+
+  throw lastError ?? new Error('Retry operation failed')
+}

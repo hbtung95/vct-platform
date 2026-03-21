@@ -7,6 +7,14 @@
 import { Platform, Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 
+async function loadOptionalModule<T>(moduleName: string): Promise<T | null> {
+  try {
+    return (await import(/* @vite-ignore */ moduleName)) as T
+  } catch {
+    return null
+  }
+}
+
 // ── Input Sanitization ───────────────────────────────────────
 
 /**
@@ -16,7 +24,7 @@ import * as SecureStore from 'expo-secure-store'
 export function sanitizeInput(input: string): string {
   return input
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove script tags
-    .replace(/<[^>]+>/g, '')                             // Remove HTML tags
+    .replace(/<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/gi, '')    // Remove HTML tags
     .replace(/[<>"'&]/g, (char) => {                    // Escape special chars
       const map: Record<string, string> = {
         '<': '&lt;',
@@ -292,13 +300,10 @@ export function showCompromisedDeviceAlert(): void {
  */
 export async function preventScreenCapture(): Promise<void> {
   if (Platform.OS === 'web') return
-  try {
-    // @ts-ignore — expo-screen-capture may not be installed
-    const ScreenCapture = await import('expo-screen-capture')
-    await ScreenCapture.preventScreenCaptureAsync()
-  } catch {
-    // expo-screen-capture not installed
-  }
+  const ScreenCapture = await loadOptionalModule<{
+    preventScreenCaptureAsync?: () => Promise<void>
+  }>('expo-screen-capture')
+  await ScreenCapture?.preventScreenCaptureAsync?.()
 }
 
 /**
@@ -306,13 +311,10 @@ export async function preventScreenCapture(): Promise<void> {
  */
 export async function allowScreenCapture(): Promise<void> {
   if (Platform.OS === 'web') return
-  try {
-    // @ts-ignore — expo-screen-capture may not be installed
-    const ScreenCapture = await import('expo-screen-capture')
-    await ScreenCapture.allowScreenCaptureAsync()
-  } catch {
-    // expo-screen-capture not installed
-  }
+  const ScreenCapture = await loadOptionalModule<{
+    allowScreenCaptureAsync?: () => Promise<void>
+  }>('expo-screen-capture')
+  await ScreenCapture?.allowScreenCaptureAsync?.()
 }
 
 // ── Secure Clipboard ─────────────────────────────────────────
@@ -323,13 +325,10 @@ export async function allowScreenCapture(): Promise<void> {
  */
 export function clearClipboardAfterDelay(delayMs: number = 30_000): void {
   setTimeout(async () => {
-    try {
-      // @ts-ignore — expo-clipboard may not be installed
-      const Clipboard = await import('expo-clipboard')
-      await Clipboard.setStringAsync('')
-    } catch {
-      // expo-clipboard not installed or not available
-    }
+    const Clipboard = await loadOptionalModule<{
+      setStringAsync?: (value: string) => Promise<void>
+    }>('expo-clipboard')
+    await Clipboard?.setStringAsync?.('')
   }, delayMs)
 }
 
@@ -341,21 +340,22 @@ export function clearClipboardAfterDelay(delayMs: number = 30_000): void {
  */
 export async function generateSecureToken(length = 32): Promise<string> {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  try {
-    // @ts-ignore — expo-crypto may not be installed
-    const Crypto = await import('expo-crypto')
+  const Crypto = await loadOptionalModule<{
+    getRandomBytesAsync?: (size: number) => Promise<Uint8Array | number[]>
+  }>('expo-crypto')
+
+  if (Crypto?.getRandomBytesAsync) {
     const bytes = await Crypto.getRandomBytesAsync(length)
-    return Array.from(bytes as Uint8Array)
+    return Array.from(bytes as Uint8Array | number[])
       .map((b: number) => chars[b % chars.length])
       .join('')
-  } catch {
-    // Fallback
-    let token = ''
-    for (let i = 0; i < length; i++) {
-      token += chars[Math.floor(Math.random() * chars.length)]
-    }
-    return token
   }
+
+  let token = ''
+  for (let i = 0; i < length; i++) {
+    token += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return token
 }
 
 // ── Content Security ─────────────────────────────────────────
@@ -412,3 +412,23 @@ export function isTrustedUrl(url: string): boolean {
   }
 }
 
+export const securityUtils = {
+  sanitizeInput,
+  sanitizeEmail,
+  sanitizePhoneVN,
+  sanitizeForQuery,
+  maskEmail,
+  maskPhone,
+  maskId,
+  maskSensitiveData,
+  checkBiometricAvailability,
+  authenticateWithBiometric,
+  detectCompromisedDevice,
+  showCompromisedDeviceAlert,
+  preventScreenCapture,
+  allowScreenCapture,
+  clearClipboardAfterDelay,
+  generateSecureToken,
+  isUrlSafe,
+  isTrustedUrl,
+} as const

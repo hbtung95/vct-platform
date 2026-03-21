@@ -104,3 +104,7 @@ class ApiVersionInterceptor {
 
 // Singleton
 export const apiVersionInterceptor = new ApiVersionInterceptor()
+
+export function createApiVersionInterceptor() {
+  return apiVersionInterceptor
+}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strconv"
@@ -49,7 +49,7 @@ func main() {
 	}
 
 	cfgJSON, _ := json.Marshal(config)
-	log.Printf("[worker] config: %s", cfgJSON)
+	slog.Info("worker config", slog.String("config", string(cfgJSON)))
 
 	// Create dispatcher and register all task handlers
 	dispatcher := worker.NewDispatcher(config)
@@ -57,7 +57,7 @@ func main() {
 
 	// Start the worker pool
 	dispatcher.Start()
-	log.Printf("[worker] VCT background worker started")
+	slog.Info("VCT background worker started")
 
 	// Schedule periodic cleanup task
 	go func() {
@@ -78,8 +78,9 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
-	log.Printf("[worker] received signal %v, shutting down...", sig)
+	slog.Info("received shutdown signal", slog.String("signal", sig.String()))
 
 	dispatcher.Stop()
-	log.Printf("[worker] shutdown complete")
+	slog.Info("worker shutdown complete")
 }
+

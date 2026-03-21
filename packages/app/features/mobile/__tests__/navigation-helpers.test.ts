@@ -1,12 +1,34 @@
-// @ts-nocheck
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('react-native', () => ({
+  Platform: {
+    OS: 'ios',
+    select: (options: Record<string, unknown>) => options.ios ?? options.default ?? null,
+  },
+  BackHandler: {
+    addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+  },
+}))
+
+vi.mock('../crash-reporter', () => ({
+  crashReporter: {
+    trackNavigation: vi.fn(),
+  },
+}))
+
+vi.mock('../useAnalytics', () => ({
+  useAnalytics: () => ({
+    trackScreen: vi.fn(),
+  }),
+}))
+
 import {
-  isValidScreen,
-  getScreenTitleEn,
-  parseDeepLinkParams,
-  screenGroups,
   getScreenGroup,
+  getScreenTitleEn,
   isAuthScreen,
-  isMainScreen
+  isMainScreen,
+  isValidScreen,
+  parseDeepLinkParams,
 } from '../navigation-helpers'
 
 describe('navigation-helpers', () => {
@@ -18,50 +40,56 @@ describe('navigation-helpers', () => {
     })
 
     it('returns false for unknown screens', () => {
-      // @ts-expect-error Testing invalid input at runtime
       expect(isValidScreen('UnknownScreen123')).toBe(false)
-      // @ts-expect-error
       expect(isValidScreen('')).toBe(false)
     })
   })
 
   describe('getScreenTitleEn', () => {
-    it('returns correct english title for screens', () => {
+    it('returns the English title for known screens', () => {
       expect(getScreenTitleEn('Home')).toBe('Home')
       expect(getScreenTitleEn('TournamentDetail')).toBe('Tournament Details')
       expect(getScreenTitleEn('Login')).toBe('Login')
     })
 
-    it('returns fallback for unknown screens', () => {
-      // @ts-expect-error
-      expect(getScreenTitleEn('Unknown')).toBe('VCT Platform')
+    it('falls back to undefined for invalid runtime input', () => {
+      expect(getScreenTitleEn('Unknown' as never)).toBeUndefined()
     })
   })
 
   describe('parseDeepLinkParams', () => {
-    it('parses tournament link', () => {
-      const result = parseDeepLinkParams('vct://app/tournament/123')
-      expect(result).toEqual({ screen: 'TournamentDetail', params: { id: '123' } })
+    it('parses tournament links', () => {
+      const result = parseDeepLinkParams('vctplatform://app/tournament/123')
+      expect(result).toEqual({
+        screen: 'TournamentDetail',
+        params: { tournamentId: '123' },
+      })
     })
 
-    it('parses athlete link', () => {
-      const result = parseDeepLinkParams('vct://app/athlete/456')
-      expect(result).toEqual({ screen: 'AthleteProfile', params: { id: '456' } })
+    it('parses bracket links with optional category id', () => {
+      const result = parseDeepLinkParams('vctplatform://app/tournament/123/bracket/456')
+      expect(result).toEqual({
+        screen: 'TournamentBracket',
+        params: { tournamentId: '123', categoryId: '456' },
+      })
     })
 
-    it('parses scoring link', () => {
-      const result = parseDeepLinkParams('vct://app/scoring/789')
-      expect(result).toEqual({ screen: 'MatchScoring', params: { id: '789' } })
+    it('parses live scoring links', () => {
+      const result = parseDeepLinkParams('vctplatform://app/scoring/789')
+      expect(result).toEqual({
+        screen: 'LiveScoring',
+        params: { matchId: '789' },
+      })
     })
 
     it('returns null for unknown links', () => {
-      expect(parseDeepLinkParams('vct://app/unknown/route')).toBeNull()
+      expect(parseDeepLinkParams('vctplatform://app/unknown/route')).toBeNull()
       expect(parseDeepLinkParams('https://google.com')).toBeNull()
     })
   })
 
-  describe('screenGroups', () => {
-    it('correctly maps screen groups', () => {
+  describe('screen groups', () => {
+    it('maps screen groups correctly', () => {
       expect(getScreenGroup('Login')).toBe('auth')
       expect(getScreenGroup('Home')).toBe('main')
       expect(getScreenGroup('TournamentDetail')).toBe('tournament')

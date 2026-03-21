@@ -11,6 +11,7 @@ export * from './ranking';
 export * from './training';
 export * from './heritage';
 export * from './community';
+export * from './marketplace';
 export * from './finance';
 export * from './federation/common';
 

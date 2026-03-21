@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -294,7 +294,7 @@ func NewService(config ServiceConfig) *Service {
 	// Wire PostgreSQL user store if DB connection is provided
 	if config.DB != nil {
 		svc.userStore = NewPgUserStore(config.DB)
-		log.Println("[auth] PostgreSQL user store enabled — users will be persisted to core.users")
+		slog.Info("PostgreSQL user store enabled", slog.String("table", "core.users"))
 		// Sync bootstrap/demo credentials to database
 		svc.syncCredentialsToDB(credentials)
 	}
@@ -544,7 +544,7 @@ func (s *Service) Login(input LoginRequest, requestCtx RequestContext) (LoginRes
 		defer cancel()
 		stored, err := s.userStore.FindByUsername(ctx, username)
 		if err != nil {
-			log.Printf("[auth] DB lookup error for %s: %v — falling back to in-memory", username, err)
+			slog.Warn("DB lookup error, falling back to in-memory", slog.String("user", username), slog.String("error", err.Error()))
 		}
 		if stored != nil && stored.IsActive {
 			cred = userCredential{
@@ -1144,7 +1144,7 @@ func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (Lo
 		defer cancel()
 		existing, err := s.userStore.FindByUsername(ctx, username)
 		if err != nil {
-			log.Printf("[auth] DB duplicate check error for %s: %v", username, err)
+			slog.Warn("DB duplicate check error", slog.String("user", username), slog.String("error", err.Error()))
 		}
 		if existing != nil {
 			s.mu.Lock()
@@ -1195,9 +1195,9 @@ func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (Lo
 			Locale:       "vi",
 			Timezone:     "Asia/Ho_Chi_Minh",
 		}); dbErr != nil {
-			log.Printf("[auth] DB persist failed for %s: %v — user saved in-memory only", username, dbErr)
+			slog.Warn("DB persist failed, user saved in-memory only", slog.String("user", username), slog.String("error", dbErr.Error()))
 		} else {
-			log.Printf("[auth] User %s persisted to database (id=%s)", username, userID)
+			slog.Info("user persisted to database", slog.String("user", username), slog.String("id", userID))
 		}
 	}
 
@@ -1265,7 +1265,7 @@ func (s *Service) syncCredentialsToDB(credentials map[string]userCredential) {
 		// Check if already exists
 		existing, err := s.userStore.FindByUsername(ctx, username)
 		if err != nil {
-			log.Printf("[auth] sync check failed for %s: %v", username, err)
+			slog.Warn("sync check failed", slog.String("user", username), slog.String("error", err.Error()))
 			continue
 		}
 		if existing != nil {
@@ -1290,13 +1290,13 @@ func (s *Service) syncCredentialsToDB(credentials map[string]userCredential) {
 			Locale:       "vi",
 			Timezone:     "Asia/Ho_Chi_Minh",
 		}); err != nil {
-			log.Printf("[auth] sync failed for %s: %v", username, err)
+			slog.Warn("sync failed", slog.String("user", username), slog.String("error", err.Error()))
 		} else {
 			synced++
 		}
 	}
 	if synced > 0 {
-		log.Printf("[auth] synced %d bootstrap users to database", synced)
+		slog.Info("synced bootstrap users to database", slog.Int("count", synced))
 	}
 }
 

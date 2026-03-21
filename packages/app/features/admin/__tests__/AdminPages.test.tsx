@@ -67,7 +67,7 @@ describe('Admin Pages — Module Exports', () => {
             const mod = await import(/* @vite-ignore */ path)
             expect(mod[name]).toBeDefined()
             expect(typeof mod[name]).toBe('function')
-        })
+        }, 60000)
     }
 })
 

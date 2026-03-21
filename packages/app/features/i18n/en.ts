@@ -333,6 +333,8 @@ export const en: Record<string, string> = {
     'route.reports.label': 'Reports & Printing',
     'route.community.title': 'COMMUNITY',
     'route.community.label': 'News & Community',
+    'route.marketplace.title': 'VCT MARKETPLACE',
+    'route.marketplace.label': 'VCT Marketplace',
     'route.admin-dashboard.title': 'SYSTEM DASHBOARD',
     'route.admin-dashboard.label': 'System Dashboard',
     'route.audit-logs.title': 'SYSTEM LOGS',

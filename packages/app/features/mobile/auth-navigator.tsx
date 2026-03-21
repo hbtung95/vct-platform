@@ -12,11 +12,7 @@ import {
 } from '@react-navigation/native-stack'
 
 import { useVCTTheme } from './theme-provider'
-import {
-  LazyScreenLogin,
-  LazyScreenOnboarding,
-  LazyScreenRegister,
-} from './screen-registry'
+import { AUTH_SCREEN_COMPONENTS } from './screen-registry'
 import type { AuthStackParamList } from './route-types'
 
 type AuthScreenComponent =
@@ -110,21 +106,21 @@ const VerifyOTPScreen = buildAuthPlaceholder(
 export const AUTH_SCREENS: AuthScreenConfig[] = [
   {
     name: 'Onboarding',
-    component: LazyScreenOnboarding,
+    component: AUTH_SCREEN_COMPONENTS.Onboarding,
     options: {
       gestureEnabled: false,
     },
   },
   {
     name: 'Login',
-    component: LazyScreenLogin,
+    component: AUTH_SCREEN_COMPONENTS.Login,
     options: {
       animationTypeForReplace: 'pop',
     },
   },
   {
     name: 'Register',
-    component: LazyScreenRegister,
+    component: AUTH_SCREEN_COMPONENTS.Register,
   },
   {
     name: 'ForgotPassword',

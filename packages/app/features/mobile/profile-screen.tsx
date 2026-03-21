@@ -1,3 +1,7 @@
+/**
+ * @deprecated This file has zero imports and is superseded by newer screen modules.
+ * Can be safely deleted during next cleanup pass.
+ */
 import * as React from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useRouter } from 'solito/navigation'

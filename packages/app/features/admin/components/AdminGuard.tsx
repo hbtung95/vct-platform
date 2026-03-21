@@ -72,17 +72,25 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({
     }
 
     // ── RBAC check ──
-    const allowedRoles = requiredRoles.length > 0
+    const allowedRoles = (requiredRoles.length > 0
         ? requiredRoles
         : ADMIN_ROLES as unknown as string[]
+    ).map(role => String(role).toLowerCase())
 
-    if (!allowedRoles.includes(currentUser.role)) {
+    const currentRoles = Array.from(new Set([
+        currentUser.role,
+        ...(((currentUser as { roles?: unknown[] }).roles) ?? []),
+    ]
+        .filter(Boolean)
+        .map(role => String(role).toLowerCase())))
+
+    if (!allowedRoles.some(role => currentRoles.includes(role))) {
         return fallback ?? (
             <PermissionDenied
                 title={t('shell.accessDeniedTitle')}
                 description={t('shell.accessDeniedDesc')}
                 icon={<VCT_Icons.Shield size={48} />}
-                currentRole={currentUser.role}
+                currentRole={currentRoles.join(', ')}
             />
         )
     }

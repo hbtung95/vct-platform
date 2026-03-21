@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -129,7 +129,7 @@ func (s *Server) isAllowedOrigin(origin string) bool {
 	if _, ok := s.allowedOrigins["*"]; ok {
 		env := strings.ToLower(s.cfg.Environment)
 		if env == "production" || env == "staging" {
-			log.Printf(`{"level":"warn","msg":"wildcard CORS origin rejected in %s"}`, env)
+			s.logger.Warn("wildcard CORS origin rejected", slog.String("env", env))
 			return false
 		}
 		return true
@@ -261,10 +261,15 @@ func (s *Server) withLogging(next http.Handler) http.Handler {
 
 		logJSON, err := json.Marshal(entry)
 		if err != nil {
-			log.Printf("%s %s %d %s", r.Method, r.URL.Path, rw.statusCode, latency)
+			s.logger.Info("request",
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
+				slog.Int("status", rw.statusCode),
+				slog.Duration("latency", latency),
+			)
 			return
 		}
-		log.Println(string(logJSON))
+		s.logger.Info(string(logJSON))
 	})
 }
 
@@ -275,8 +280,12 @@ func withRecover(next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				stack := string(debug.Stack())
-				log.Printf(`{"level":"error","msg":"panic recovered","error":"%v","stack":"%s","path":"%s","method":"%s"}`,
-					rec, strings.ReplaceAll(stack, "\n", "\\n"), r.URL.Path, r.Method)
+				slog.Default().Error("panic recovered",
+					slog.Any("error", rec),
+					slog.String("stack", strings.ReplaceAll(stack, "\n", "\\n")),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+				)
 
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
 				w.WriteHeader(http.StatusInternalServerError)

@@ -1,6 +1,7 @@
 /**
  * Setup file for mobile Jest tests.
  * Mocks native modules that don't exist in the test environment.
+ * Uses { virtual: true } so Jest doesn't try to resolve uninstalled packages.
  */
 
 // Mock AsyncStorage
@@ -27,11 +28,10 @@ jest.mock('@react-native-async-storage/async-storage', () => {
         store.clear()
         return Promise.resolve()
       }),
-      // Expose for test assertions
       _store: store,
     },
   }
-})
+}, { virtual: true })
 
 // Mock NetInfo
 jest.mock('@react-native-community/netinfo', () => ({
@@ -46,7 +46,7 @@ jest.mock('@react-native-community/netinfo', () => ({
       }),
     ),
   },
-}))
+}), { virtual: true })
 
 // Mock expo-haptics
 jest.mock('expo-haptics', () => ({
@@ -55,14 +55,15 @@ jest.mock('expo-haptics', () => ({
   selectionAsync: jest.fn(),
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
   NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
-}))
+}), { virtual: true })
 
 // Mock expo-secure-store
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(() => Promise.resolve(null)),
   setItemAsync: jest.fn(() => Promise.resolve()),
   deleteItemAsync: jest.fn(() => Promise.resolve()),
-}))
+}), { virtual: true })
 
 // Suppress noisy warnings in tests
 jest.spyOn(console, 'warn').mockImplementation(() => {})
+

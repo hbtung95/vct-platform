@@ -106,6 +106,8 @@ export function Skeleton({
   )
 }
 
+export const SkeletonLoader = Skeleton
+
 // ── Pre-built Skeleton Patterns ──────────────────────────────
 
 /**

@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,20 +14,29 @@ import (
 	"github.com/joho/godotenv"
 	"vct-platform/backend/internal/config"
 	"vct-platform/backend/internal/httpapi"
+	"vct-platform/backend/internal/logging"
 )
 
 func main() {
 	// Load .env file (ignore error if file does not exist)
 	if err := godotenv.Load(); err != nil {
-		log.Printf("No .env file found, using environment variables")
+		slog.Info("No .env file found, using environment variables")
 	}
 
 	cfg := config.Load()
 	if err := cfg.Validate(); err != nil {
-		log.Fatalf("invalid config: %v", err)
+		fmt.Fprintf(os.Stderr, "invalid config: %v\n", err)
+		os.Exit(1)
 	}
 
-	api := httpapi.New(cfg)
+	logger := logging.New(cfg.Environment)
+	slog.SetDefault(logger)
+
+	api, err := httpapi.New(cfg, logger)
+	if err != nil {
+		logger.Error("server initialization failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 
 	server := &http.Server{
 		Addr:              cfg.Address,
@@ -38,9 +48,10 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("VCT backend listening on %s", cfg.Address)
+		logger.Info("VCT backend listening", slog.String("address", cfg.Address))
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("backend startup failed: %v", err)
+			logger.Error("backend startup failed", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
 	}()
 
@@ -48,12 +59,15 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
+	logger.Info("shutting down server")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("graceful shutdown failed: %v", err)
+		logger.Error("graceful shutdown failed", slog.String("error", err.Error()))
 	}
 	if err := api.Close(); err != nil {
-		log.Printf("backend storage close failed: %v", err)
+		logger.Error("backend storage close failed", slog.String("error", err.Error()))
 	}
+	logger.Info("server stopped")
 }
+

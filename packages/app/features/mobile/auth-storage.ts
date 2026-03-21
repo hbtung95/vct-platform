@@ -59,16 +59,12 @@ export interface StoredUser {
   role: string
 }
 
-type StoredUserInput =
-  | StoredUser
-  | {
-      id?: string
-      userId?: string
-      user_id?: string
-      sub?: string
-      role?: string
-      roles?: string[]
-    }
+type StoredUserInput = Partial<StoredUser> & {
+  id?: string
+  user_id?: string
+  sub?: string
+  roles?: string[]
+}
 
 export interface SessionMetadata {
   loginAt: number
@@ -289,7 +285,7 @@ export async function getAuthHealth(): Promise<AuthHealth> {
   }
 }
 
-function normalizeStoredUser(user: StoredUserInput): StoredUser {
+function normalizeStoredUser(user: StoredUserInput): StoredUser | null {
   const userId = String(
     user.userId ??
       user.user_id ??
@@ -301,7 +297,7 @@ function normalizeStoredUser(user: StoredUserInput): StoredUser {
   const role = String(primaryRole ?? 'member').trim() || 'member'
 
   if (!userId) {
-    throw new Error('Cannot persist auth user without an id')
+    return null
   }
 
   return { userId, role }
@@ -325,7 +321,12 @@ export const authStorage = {
   getTokenExpiresIn,
   getTokenAge,
   saveUser,
-  setUser: async (user: StoredUserInput) => saveUser(normalizeStoredUser(user)),
+  setUser: async (user: StoredUserInput) => {
+    const normalizedUser = normalizeStoredUser(user)
+    if (normalizedUser) {
+      await saveUser(normalizedUser)
+    }
+  },
   getStoredUser,
   getUser: getStoredUser,
   saveSessionMeta,

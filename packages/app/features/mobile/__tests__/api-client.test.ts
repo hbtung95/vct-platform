@@ -1,111 +1,107 @@
-import { ApiError } from '../api-client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-// ── getApiBaseUrl Tests ──────────────────────────────────────
+const originalEnv = { ...process.env }
+const originalFetch = globalThis.fetch
+
+async function loadApiClientModule() {
+  vi.resetModules()
+  return import('../api-client')
+}
 
 describe('api-client', () => {
-  const originalEnv = process.env
-
   beforeEach(() => {
-    jest.resetModules()
     process.env = { ...originalEnv }
   })
 
-  afterAll(() => {
-    process.env = originalEnv
+  afterEach(() => {
+    process.env = { ...originalEnv }
+    globalThis.fetch = originalFetch
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
   describe('getApiBaseUrl', () => {
-    it('should prefer EXPO_PUBLIC_API_BASE_URL', () => {
-      process.env.EXPO_PUBLIC_API_BASE_URL = 'https://expo-api.example.com'
-      process.env.NEXT_PUBLIC_API_BASE_URL = 'https://next-api.example.com'
+    it('prefers EXPO_PUBLIC_API_BASE_URL', async () => {
+      vi.stubEnv('EXPO_PUBLIC_API_BASE_URL', 'https://expo-api.example.com')
+      vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://next-api.example.com')
 
-      // Re-import to pick up new env
-      jest.isolateModules(() => {
-        const mod = require('../api-client')
-        expect(mod.isApiAvailable()).toBe(true)
-      })
+      const mod = await loadApiClientModule()
+      expect(mod.isApiAvailable()).toBe(true)
     })
 
-    it('should fall back to NEXT_PUBLIC_API_BASE_URL', () => {
+    it('falls back to NEXT_PUBLIC_API_BASE_URL', async () => {
       delete process.env.EXPO_PUBLIC_API_BASE_URL
-      process.env.NEXT_PUBLIC_API_BASE_URL = 'https://next-api.example.com'
+      vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://next-api.example.com')
 
-      jest.isolateModules(() => {
-        const mod = require('../api-client')
-        expect(mod.isApiAvailable()).toBe(true)
-      })
+      const mod = await loadApiClientModule()
+      expect(mod.isApiAvailable()).toBe(true)
     })
 
-    it('should return empty when no env var set', () => {
+    it('returns unavailable when no env vars are set', async () => {
       delete process.env.EXPO_PUBLIC_API_BASE_URL
       delete process.env.NEXT_PUBLIC_API_BASE_URL
 
-      jest.isolateModules(() => {
-        const mod = require('../api-client')
-        expect(mod.isApiAvailable()).toBe(false)
-      })
+      const mod = await loadApiClientModule()
+      expect(mod.isApiAvailable()).toBe(false)
     })
   })
 
-  // ── ApiError ───────────────────────────────────────────────
-
   describe('ApiError', () => {
-    it('should create with message and status', () => {
+    it('creates an error with message and status', async () => {
+      const { ApiError } = await loadApiClientModule()
       const error = new ApiError('Not Found', 404)
+
       expect(error.message).toBe('Not Found')
       expect(error.status).toBe(404)
       expect(error.name).toBe('ApiError')
       expect(error).toBeInstanceOf(Error)
     })
 
-    it('should have correct stack trace', () => {
+    it('captures a stack trace', async () => {
+      const { ApiError } = await loadApiClientModule()
       const error = new ApiError('Server Error', 500)
+
       expect(error.stack).toBeDefined()
     })
   })
 
-  // ── requestJson ────────────────────────────────────────────
-
   describe('requestJson (via fetchMyProfile)', () => {
     beforeEach(() => {
-      process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test.com'
-      global.fetch = jest.fn()
+      vi.stubEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.test.com')
+      globalThis.fetch = vi.fn()
     })
 
-    it('should throw ApiError on non-ok response', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+    it('throws ApiError on non-ok response', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
         ok: false,
         status: 401,
         headers: { get: () => 'application/json' },
         json: () => Promise.resolve({ message: 'Unauthorized' }),
-      })
+      } as unknown as Response)
 
-      jest.isolateModules(async () => {
-        const { fetchMyProfile } = require('../api-client')
-        await expect(fetchMyProfile('bad-token')).rejects.toThrow()
-      })
+      const { ApiError, fetchMyProfile } = await loadApiClientModule()
+      await expect(fetchMyProfile('bad-token')).rejects.toBeInstanceOf(ApiError)
     })
 
-    it('should pass Authorization header when token provided', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+    it('passes the Authorization header when token is provided', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
         ok: true,
         status: 200,
+        headers: { get: () => null },
         json: () => Promise.resolve({ id: '1', fullName: 'Test' }),
-      })
+      } as unknown as Response)
 
-      jest.isolateModules(async () => {
-        const { fetchMyProfile } = require('../api-client')
-        await fetchMyProfile('valid-token')
+      const { fetchMyProfile } = await loadApiClientModule()
+      await fetchMyProfile('valid-token')
 
-        expect(global.fetch).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.objectContaining({
-            headers: expect.objectContaining({
-              Authorization: 'Bearer valid-token',
-            }),
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://api.test.com/api/v1/athlete-profiles/me',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer valid-token',
           }),
-        )
-      })
+        }),
+      )
     })
   })
 })

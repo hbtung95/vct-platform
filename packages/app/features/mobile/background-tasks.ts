@@ -511,6 +511,7 @@ export const prebuiltTasks = {
 // ── Singleton ────────────────────────────────────────────────
 
 export const backgroundTasks = new BackgroundTaskScheduler()
+export const backgroundTaskManager = backgroundTasks
 
 // Re-export class for testing
 export { BackgroundTaskScheduler }

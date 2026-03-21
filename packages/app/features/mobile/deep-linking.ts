@@ -7,6 +7,12 @@
 import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 import * as ExpoLinking from 'expo-linking'
+import {
+  DEEP_LINK_CONFIG,
+  MOBILE_DEEP_LINK_PREFIXES,
+  MOBILE_DEEP_LINK_ROUTES,
+  type MobileDeepLinkRoute,
+} from './route-types'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -36,73 +42,9 @@ export type DeepLinkAnalyticsCallback = (result: DeepLinkResult) => void
 
 // ── Route Registry ───────────────────────────────────────────
 
-const DEEP_LINK_ROUTES: DeepLinkRoute[] = [
-  // Tournaments
-  {
-    pattern: 'tournaments/:id',
-    screen: 'TournamentDetail',
-    tab: 'tournaments',
-    paramExtractor: (p) => ({ tournamentId: p.id }),
-  },
-  {
-    pattern: 'tournaments',
-    screen: 'Tournaments',
-    tab: 'tournaments',
-  },
-
-  // Athletes
-  {
-    pattern: 'athletes/:id',
-    screen: 'AthleteProfile',
-    paramExtractor: (p) => ({ athleteId: p.id }),
-  },
-
-  // Rankings
-  {
-    pattern: 'rankings',
-    screen: 'Rankings',
-    tab: 'rankings',
-  },
-
-  // Notifications
-  {
-    pattern: 'notifications',
-    screen: 'Notifications',
-    tab: 'notifications',
-  },
-
-  // Profile
-  {
-    pattern: 'profile',
-    screen: 'Profile',
-    tab: 'profile',
-  },
-  {
-    pattern: 'profile/edit',
-    screen: 'EditProfile',
-  },
-
-  // Scoring
-  {
-    pattern: 'scoring/:matchId',
-    screen: 'LiveScoring',
-    paramExtractor: (p) => ({ matchId: p.matchId }),
-  },
-
-  // Results
-  {
-    pattern: 'results/:tournamentId',
-    screen: 'TournamentResults',
-    paramExtractor: (p) => ({ tournamentId: p.tournamentId }),
-  },
-
-  // Clubs
-  {
-    pattern: 'clubs/:id',
-    screen: 'ClubDetail',
-    paramExtractor: (p) => ({ clubId: p.id }),
-  },
-]
+const DEEP_LINK_ROUTES: DeepLinkRoute[] = MOBILE_DEEP_LINK_ROUTES.map(
+  (route: MobileDeepLinkRoute) => ({ ...route }),
+)
 
 // ── Analytics ────────────────────────────────────────────────
 
@@ -127,6 +69,11 @@ export function registerRoute(route: DeepLinkRoute): void {
   }
 }
 
+export function registerDeepLinks(routes: DeepLinkRoute[] = []): typeof deepLinkConfig {
+  routes.forEach(registerRoute)
+  return deepLinkConfig
+}
+
 /** Remove a deep link route by pattern. */
 export function removeRoute(pattern: string): void {
   const idx = DEEP_LINK_ROUTES.findIndex((r) => r.pattern === pattern)
@@ -141,37 +88,27 @@ export function listRoutes(): ReadonlyArray<DeepLinkRoute> {
 // ── Deep Link Config ─────────────────────────────────────────
 
 /**
- * Full deep link configuration for React Navigation.
- *
- * Supports:
- * - Custom scheme: `vctplatform://tournaments/123`
- * - Universal links: `https://vct-platform.com/tournaments/123`
- * - Expo links: `exp://localhost:8081/--/tournaments/123`
+ * Shared deep link configuration used by React Navigation.
+ * Route patterns and prefixes live in `route-types.ts`.
  */
-export const deepLinkConfig = {
-  prefixes: [
-    ExpoLinking.createURL('/'),
-    'vctplatform://',
-    'https://vct-platform.com',
-    'https://www.vct-platform.com',
-  ],
+export const deepLinkConfig = DEEP_LINK_CONFIG
 
-  config: {
-    screens: buildScreenConfig(),
-  },
-}
+const ALLOWED_PROTOCOLS = Array.from(
+  new Set(
+    MOBILE_DEEP_LINK_PREFIXES.map((prefix) => {
+      const match = prefix.match(/^([a-zA-Z][a-zA-Z\d+\-.]*):/)
+      return match?.[1]?.toLowerCase()
+    }).filter((value): value is string => Boolean(value)),
+  ),
+).map((protocol) => `${protocol}:`)
 
-function buildScreenConfig(): Record<string, string | { path: string }> {
-  const screens: Record<string, string | { path: string }> = {
-    home: '',
-  }
+const PRIMARY_APP_PREFIX =
+  MOBILE_DEEP_LINK_PREFIXES.find((prefix) => prefix.startsWith('vctplatform://')) ??
+  'vctplatform://'
 
-  for (const route of DEEP_LINK_ROUTES) {
-    screens[route.screen] = route.pattern
-  }
-
-  return screens
-}
+const PRIMARY_WEB_PREFIX =
+  MOBILE_DEEP_LINK_PREFIXES.find((prefix) => prefix.startsWith('https://')) ??
+  'https://vct-platform.vn'
 
 // ── Deep Link Handler ────────────────────────────────────────
 
@@ -180,10 +117,13 @@ function buildScreenConfig(): Record<string, string | { path: string }> {
  * Prevents malicious URLs from being handled.
  */
 export function validateDeepLink(url: string): boolean {
+  if (/(^|\/)\.\.(\/|$)|%2e%2e/i.test(url)) {
+    return false
+  }
+
   try {
     const parsed = new URL(url)
-    const allowedProtocols = ['https:', 'vctplatform:', 'exp:']
-    if (!allowedProtocols.includes(parsed.protocol)) return false
+    if (!ALLOWED_PROTOCOLS.includes(parsed.protocol.toLowerCase())) return false
 
     // Block suspicious patterns
     if (parsed.hostname.includes('..') || parsed.pathname.includes('..')) return false
@@ -288,14 +228,14 @@ export function buildDeepLink(
   params: Record<string, string> = {},
 ): string {
   const route = DEEP_LINK_ROUTES.find((r) => r.screen === screen)
-  if (!route) return `vctplatform://`
+  if (!route) return PRIMARY_APP_PREFIX
 
   let path = route.pattern
   for (const [key, value] of Object.entries(params)) {
     path = path.replace(`:${key}`, value)
   }
 
-  return `vctplatform://${path}`
+  return `${PRIMARY_APP_PREFIX}${path}`
 }
 
 /**
@@ -308,14 +248,14 @@ export function buildUniversalLink(
   queryParams: Record<string, string> = {},
 ): string {
   const route = DEEP_LINK_ROUTES.find((r) => r.screen === screen)
-  if (!route) return 'https://vct-platform.com'
+  if (!route) return PRIMARY_WEB_PREFIX
 
   let path = route.pattern
   for (const [key, value] of Object.entries(params)) {
     path = path.replace(`:${key}`, encodeURIComponent(value))
   }
 
-  const url = new URL(`https://vct-platform.com/${path}`)
+  const url = new URL(path, `${PRIMARY_WEB_PREFIX}/`)
   for (const [key, value] of Object.entries(queryParams)) {
     url.searchParams.set(key, value)
   }
@@ -363,4 +303,3 @@ export function useDeepLinkHandler(
     return () => sub.remove()
   }, [])
 }
-

@@ -6,6 +6,12 @@ on:
       - 'packages/app/**'
       - 'packages/ui/**'
       - 'packages/shared-types/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vitest.config.mjs'
+      - 'vitest.mobile.config.mjs'
+      - 'vitest.setup.ts'
+      - '.github/workflows/mobile-ci.yml'
 
 concurrency:
   group: mobile-ci-${{ github.ref }}
@@ -25,7 +31,7 @@ jobs:
       - run: cd apps/expo && npx tsc --noEmit
 
   test:
-    name: Mobile Unit Tests
+    name: Mobile Logic Tests (Vitest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,12 +40,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - run: npm ci
-      - run: npx jest --config jest.config.mobile.js --coverage --passWithNoTests
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mobile-coverage
-          path: coverage/
+      - run: npm run test:mobile:logic
 
   lint:
     name: ESLint

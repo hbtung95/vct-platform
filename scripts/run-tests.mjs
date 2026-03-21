@@ -1,8 +1,8 @@
 import { readFileSync, existsSync } from 'node:fs'
-import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { Worker } from 'node:worker_threads'
 import assert from 'node:assert/strict'
 
 const root = process.cwd()
@@ -49,17 +49,81 @@ requiredFiles.forEach((file) => {
   assert.ok(existsSync(resolve(root, file)), `Missing file: ${file}`)
 })
 
-function emitCapturedOutput(result) {
-  if (result.stdout) {
-    process.stdout.write(result.stdout)
-  }
-  if (result.stderr) {
-    process.stderr.write(result.stderr)
+function isRecoverableLocalVitestIssue(output) {
+  return /spawn EPERM|whatwg-url\/webidl2js-wrapper/.test(output)
+}
+
+const VITEST_WORKER_SOURCE = `
+const { workerData } = require('node:worker_threads')
+
+async function main() {
+  process.argv = ['node', workerData.entry, ...workerData.args]
+
+  try {
+    await import(workerData.entry)
+  } catch (error) {
+    const message = error instanceof Error ? error.stack ?? error.message : String(error)
+    process.stderr.write(\`\${message}\\n\`)
+    process.exitCode = process.exitCode ?? 1
   }
 }
 
-function isRecoverableLocalVitestIssue(output) {
-  return /spawn EPERM|whatwg-url\/webidl2js-wrapper/.test(output)
+main().catch((error) => {
+  const message = error instanceof Error ? error.stack ?? error.message : String(error)
+  process.stderr.write(\`\${message}\\n\`)
+  process.exitCode = process.exitCode ?? 1
+})
+`
+
+function runVitestCliInWorker(vitestEntrypoint, args) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const stdoutChunks = []
+    const stderrChunks = []
+    const worker = new Worker(VITEST_WORKER_SOURCE, {
+      eval: true,
+      workerData: {
+        entry: pathToFileURL(vitestEntrypoint).href,
+        args,
+      },
+      stdout: true,
+      stderr: true,
+    })
+
+    worker.stdout?.on('data', (chunk) => {
+      const text = chunk.toString()
+      stdoutChunks.push(text)
+      process.stdout.write(text)
+    })
+
+    worker.stderr?.on('data', (chunk) => {
+      const text = chunk.toString()
+      stderrChunks.push(text)
+      process.stderr.write(text)
+    })
+
+    worker.once('error', rejectPromise)
+    worker.once('exit', (code) => {
+      resolvePromise({
+        status: code ?? 0,
+        stdout: stdoutChunks.join(''),
+        stderr: stderrChunks.join(''),
+      })
+    })
+  })
+}
+
+async function runVitestSuite(label, vitestEntrypoint, args) {
+  const vitestResult = await runVitestCliInWorker(vitestEntrypoint, args)
+  const vitestOutput = `${vitestResult.stdout}${vitestResult.stderr}`
+
+  if (vitestResult.status !== 0 && !isCI && isRecoverableLocalVitestIssue(vitestOutput)) {
+    console.warn(
+      `${label} could not start in this local environment. Run \`npm ci\` to restore the full suite; CI will fail on real unit-test regressions.`
+    )
+    return
+  }
+
+  assert.equal(vitestResult.status, 0, `${label} failed`)
 }
 
 const hadCheckArg = process.argv.includes('--check')
@@ -312,32 +376,19 @@ if (!smokeOnly) {
       throw jsdomPreflightError
     }
   } else {
-    const vitestArgs = [
-      vitestEntrypoint,
+    await runVitestSuite('Vitest admin suite', vitestEntrypoint, [
       'run',
-      '--environment',
-      'jsdom',
-      '--globals',
-      '--pool',
-      process.platform === 'win32' ? 'threads' : 'forks',
+      '--configLoader',
+      'native',
       'packages/app/features/admin/__tests__',
-    ]
+    ])
 
-    const vitestResult = spawnSync(process.execPath, vitestArgs, {
-      cwd: root,
-      env: process.env,
-      encoding: 'utf8',
-    })
-    const vitestOutput = `${vitestResult.stdout ?? ''}${vitestResult.stderr ?? ''}`
-
-    emitCapturedOutput(vitestResult)
-
-    if (vitestResult.status !== 0 && !isCI && isRecoverableLocalVitestIssue(vitestOutput)) {
-      console.warn(
-        'Vitest could not start in this local environment. Run `npm ci` to restore the full suite; CI will fail on real unit-test regressions.'
-      )
-    } else {
-      assert.equal(vitestResult.status, 0, 'Vitest suite failed')
-    }
+    await runVitestSuite('Vitest mobile logic suite', vitestEntrypoint, [
+      'run',
+      '--configLoader',
+      'native',
+      '--config',
+      'vitest.mobile.config.mjs',
+    ])
   }
 }

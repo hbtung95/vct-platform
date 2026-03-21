@@ -58,30 +58,33 @@ export function useAdminMutation<TData = unknown, TPayload = unknown>(
 
         let lastError: Error | null = null
 
-        for (let attempt = 0; attempt <= retryCount; attempt++) {
-            try {
-                if (attempt > 0) {
-                    await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
-                }
+        try {
+            for (let attempt = 0; attempt <= retryCount; attempt++) {
+                try {
+                    if (attempt > 0) {
+                        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
+                    }
 
-                const result = await apiFetch<TData>(endpoint, {
-                    method,
-                    ...(payload !== undefined && { body: JSON.stringify(payload) }),
-                })
-                onSuccess?.(result)
-                return result
-            } catch (err) {
-                lastError = err instanceof Error ? err : new Error(String(err))
-                if (attempt === retryCount) {
-                    // All retries exhausted — rollback optimistic update
-                    rollback?.()
-                    setError(lastError)
-                    onError?.(lastError)
+                    const result = await apiFetch<TData>(endpoint, {
+                        method,
+                        ...(payload !== undefined && { body: JSON.stringify(payload) }),
+                    })
+                    onSuccess?.(result)
+                    return result
+                } catch (err) {
+                    lastError = err instanceof Error ? err : new Error(String(err))
+                    if (attempt === retryCount) {
+                        // All retries exhausted — rollback optimistic update
+                        rollback?.()
+                        setError(lastError)
+                        onError?.(lastError)
+                    }
                 }
             }
+        } finally {
+            setIsSubmitting(false)
         }
 
-        setIsSubmitting(false)
         return null
     }, [endpoint, method, onSuccess, onError, onMutate, retryCount, retryDelay])
 
@@ -89,4 +92,3 @@ export function useAdminMutation<TData = unknown, TPayload = unknown>(
 
     return { mutate, isSubmitting, error, reset, mutationCount }
 }
-

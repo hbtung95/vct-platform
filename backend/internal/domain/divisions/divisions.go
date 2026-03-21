@@ -3,7 +3,7 @@ package divisions
 import (
 	"embed"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"unicode"
@@ -63,18 +63,18 @@ func Default() *Store {
 func (s *Store) load() {
 	data, err := dataFS.ReadFile("data/vietnam_divisions.json")
 	if err != nil {
-		log.Printf("divisions: failed to read embedded data: %v", err)
+		slog.Error("divisions: failed to read embedded data", slog.String("error", err.Error()))
 		return
 	}
 	if err := json.Unmarshal(data, &s.provinces); err != nil {
-		log.Printf("divisions: failed to parse data: %v", err)
+		slog.Error("divisions: failed to parse data", slog.String("error", err.Error()))
 		return
 	}
 	s.provinceMap = make(map[int]*Province, len(s.provinces))
 	for i := range s.provinces {
 		s.provinceMap[s.provinces[i].Code] = &s.provinces[i]
 	}
-	log.Printf("divisions: loaded %d provinces, %d total wards", len(s.provinces), s.TotalWards())
+	slog.Info("divisions loaded", slog.Int("provinces", len(s.provinces)), slog.Int("wards", s.TotalWards()))
 }
 
 // Provinces returns all provinces as lightweight ProvinceInfo (without wards).

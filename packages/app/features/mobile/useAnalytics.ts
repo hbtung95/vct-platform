@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { devLog } from './dev-log'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -41,17 +42,17 @@ const QUEUE_STORAGE_KEY = 'vct_analytics_offline_queue'
 const consoleProvider: AnalyticsProvider = {
   trackEvent: (event) => {
     if (__DEV__) {
-      console.log('[Analytics]', event.name, event.params ?? '', `[Session: ${event.sessionId}]`)
+      devLog('[Analytics]', event.name, event.params ?? '', `[Session: ${event.sessionId}]`)
     }
   },
   trackScreen: (name, params) => {
     if (__DEV__) {
-      console.log('[Analytics] Screen:', name, params ?? '')
+      devLog('[Analytics] Screen:', name, params ?? '')
     }
   },
   setUser: (userId, traits) => {
     if (__DEV__) {
-      console.log('[Analytics] User:', userId, traits ?? '')
+      devLog('[Analytics] User:', userId, traits ?? '')
     }
   },
 }

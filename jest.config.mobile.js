@@ -38,7 +38,7 @@ module.exports = {
     '!packages/app/features/mobile/**/mock-data.ts',
   ],
 
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 60,
       functions: 70,

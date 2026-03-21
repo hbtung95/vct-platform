@@ -16,7 +16,9 @@
     "@typescript-eslint/eslint-plugin": "^8.33.0",
     "@typescript-eslint/parser": "^8.33.0",
     "eslint": "^10.0.3",
-    "jsdom": "^29.0.0",
+    "husky": "^9.1.7",
+    "jsdom": "^29.0.1",
+    "lint-staged": "^16.4.0",
     "turbo": "^2.8.17",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
@@ -35,6 +37,8 @@
     "authz:check": "node scripts/generate-authz-contract.mjs --check",
     "test": "node scripts/run-tests.mjs",
     "test:smoke": "node scripts/run-tests.mjs --smoke-only",
+    "test:admin": "npx vitest run --configLoader native packages/app/features/admin/__tests__",
+    "test:mobile:logic": "npx vitest run --configLoader native --config vitest.mobile.config.mjs",
     "test:ui": "playwright test tests/e2e/appshell.breakpoints.spec.mjs --config=playwright.config.mjs",
     "test:e2e": "playwright test tests/e2e/core-workflow.spec.mjs --config=playwright.config.mjs",
     "smoke:backend:db": "node scripts/run-backend-db-smoke.mjs",
@@ -42,7 +46,16 @@
     "ci": "npm run authz:check && npm run typecheck && npm run lint && npm run test && npm run build",
     "native": "npm run dev:native",
     "web": "npm run dev:web",
-    "backend": "go -C backend run ./cmd/server"
+    "backend": "go -C backend run ./cmd/server",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --max-warnings=0"
+    ],
+    "*.go": [
+      "echo Go files changed — run 'go vet ./...' before push"
+    ]
   },
   "prettier": {
     "semi": false,

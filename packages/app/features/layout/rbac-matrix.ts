@@ -15,6 +15,11 @@ const capability = (
     note,
 })
 
+const MARKETPLACE_VIEW_CAP = capability(
+    [],
+    'Khám phá catalog VCT Marketplace và tra cứu thiết bị, dụng cụ, binh khí'
+)
+
 // Full admin has all capabilities on all routes
 const ADMIN_CAPS: RoleRouteCapabilities = {
     'command-center': capability(['monitor', 'export'], 'Toàn quyền điều hành, KPI và cảnh báo'),
@@ -30,6 +35,7 @@ const ADMIN_CAPS: RoleRouteCapabilities = {
     heritage: capability(['create', 'update', 'delete', 'approve', 'publish'], 'Quản trị di sản và gia phả'),
     finance: capability(['create', 'update', 'delete', 'approve', 'publish', 'export'], 'Quản trị tài chính'),
     community: capability(['create', 'update', 'delete', 'approve', 'publish'], 'Quản trị cộng đồng'),
+    marketplace: MARKETPLACE_VIEW_CAP,
     'admin-dashboard': capability(['monitor', 'manage'], 'Giám sát hệ thống'),
     'audit-logs': capability(['monitor', 'export'], 'Xem nhật ký hoạt động'),
     people: capability(['create', 'update', 'delete', 'approve', 'export'], 'Quản lý nhân sự'),
@@ -83,6 +89,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         medals: capability(['approve', 'publish'], 'Phê duyệt huy chương'),
         reports: capability(['export'], 'Xem báo cáo tổng hợp'),
         community: capability(['approve', 'publish'], 'Phê duyệt tin tức chính thức'),
+        marketplace: MARKETPLACE_VIEW_CAP,
         // Federation module routes
         'federation-dashboard': capability(['monitor', 'export'], 'Tổng quan hoạt động liên đoàn'),
         'federation-provinces': capability(['create', 'update', 'approve'], 'Phê duyệt tỉnh thành'),
@@ -117,6 +124,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         medals: capability(['export'], 'Xuất bảng huy chương'),
         reports: capability(['export', 'publish'], 'Phát hành văn bản, báo cáo'),
         community: capability(['create', 'update', 'publish'], 'Quản trị tin tức'),
+        marketplace: MARKETPLACE_VIEW_CAP,
         // Federation module routes
         'federation-dashboard': capability(['monitor', 'export'], 'Theo dõi vận hành liên đoàn'),
         'federation-provinces': capability(['create', 'update', 'import', 'export'], 'Quản lý tỉnh thành'),
@@ -150,6 +158,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         medals: capability([], 'Xem huy chương'),
         reports: capability(['export'], 'Xuất báo cáo cho tỉnh'),
         finance: capability(['create', 'update'], 'Quản lý tài chính tỉnh'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     technical_director: {
@@ -165,6 +174,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         results: capability([], 'Xem kết quả'),
         forms: capability(['monitor'], 'Theo dõi chấm quyền'),
         combat: capability(['monitor'], 'Theo dõi đối kháng'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     btc: {
@@ -188,6 +198,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         medals: capability(['update', 'approve', 'publish', 'export'], 'Cập nhật huy chương'),
         appeals: capability(['create', 'update', 'approve', 'publish', 'export'], 'Xử lý khiếu nại'),
         reports: capability(['export', 'publish'], 'Xuất báo cáo tổng hợp'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     referee_manager: {
@@ -205,6 +216,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         medals: capability([], 'Xem huy chương'),
         appeals: capability(['update', 'approve'], 'Phối hợp xử lý khiếu nại'),
         reports: capability(['export'], 'Trích xuất báo cáo TT'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     referee: {
@@ -217,6 +229,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         forms: capability(['update', 'monitor'], 'Nhập điểm quyền'),
         bracket: capability([], 'Xem sơ đồ nhánh'),
         results: capability([], 'Xem kết quả'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     coach: {
@@ -245,6 +258,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         'club-facilities': capability([], 'Xem cơ sở vật chất CLB'),
         'club-certifications': capability(['create', 'update'], 'Cập nhật hồ sơ thăng đẳng CLB'),
         'club-settings': capability([], 'Xem cấu hình CLB'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     club_leader: {
@@ -259,6 +273,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         'club-facilities': capability(['create', 'update', 'delete', 'manage'], 'Toàn quyền cơ sở vật chất CLB'),
         'club-certifications': capability(['create', 'update', 'approve', 'export'], 'Quản trị hồ sơ thăng đẳng CLB'),
         'club-settings': capability(['update', 'manage'], 'Quản trị cấu hình vận hành CLB'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     club_vice_leader: {
@@ -273,6 +288,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         'club-facilities': capability(['create', 'update'], 'Quản lý cơ sở vật chất CLB'),
         'club-certifications': capability(['create', 'update'], 'Cập nhật hồ sơ thăng đẳng CLB'),
         'club-settings': capability(['update'], 'Cập nhật thông tin CLB'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     club_secretary: {
@@ -287,6 +303,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         'club-facilities': capability([], 'Xem cơ sở vật chất CLB'),
         'club-certifications': capability(['create', 'update', 'export'], 'Cập nhật hồ sơ chứng nhận CLB'),
         'club-settings': capability(['update'], 'Cập nhật thông tin hành chính CLB'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     club_accountant: {
@@ -295,6 +312,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         'club-finance': capability(['create', 'update', 'approve', 'export'], 'Quản lý sổ quỹ và giao dịch CLB'),
         'club-equipment': capability([], 'Xem giá trị trang thiết bị phục vụ sổ sách'),
         'club-settings': capability([], 'Xem cấu hình CLB liên quan tài chính'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     delegate: {
@@ -307,6 +325,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         medals: capability([], 'Xem huy chương'),
         appeals: capability(['create'], 'Nộp khiếu nại/kháng nghị'),
         reports: capability(['export'], 'Tải về báo cáo cho đoàn'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     athlete: {
@@ -317,6 +336,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         medals: capability([], 'Xem huy chương'),
         rankings: capability([], 'Xem BXH cá nhân'),
         community: capability([], 'Xem tin tức'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     medical_staff: {
@@ -325,6 +345,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         'weigh-in': capability(['update', 'monitor'], 'Hỗ trợ cân ký, kiểm tra y tế'),
         schedule: capability([], 'Xem lịch để bố trí y tế'),
         results: capability([], 'Xem kết quả phục vụ báo cáo'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     vice_president: {
@@ -339,6 +360,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         results: capability(['approve'], 'Phê duyệt kết quả'),
         reports: capability(['export'], 'Xem báo cáo'),
         community: capability(['approve'], 'Phê duyệt tin tức'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     discipline_board: {
@@ -348,6 +370,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         people: capability([], 'Xem nhân sự liên quan'),
         results: capability([], 'Tra cứu kết quả phục vụ xét xử'),
         appeals: capability(['create', 'update', 'approve'], 'Xét xử, quyết định kỷ luật'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     inspector: {
@@ -356,6 +379,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         clubs: capability([], 'Xem CLB điều tra'),
         people: capability([], 'Xem nhân sự điều tra'),
         results: capability([], 'Tra cứu kết quả'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     pr_manager: {
@@ -365,6 +389,7 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         rankings: capability(['export'], 'Xuất BXH cho truyền thông'),
         results: capability(['export'], 'Xuất kết quả cho truyền thông'),
         reports: capability(['export'], 'Tải báo cáo phục vụ PR'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 
     international_liaison: {
@@ -375,5 +400,6 @@ export const ROUTE_ROLE_CAPABILITIES: Record<string, RoleRouteCapabilities> = {
         results: capability(['export'], 'Xuất kết quả cho đối tác'),
         'tournament-config': capability([], 'Xem giải quốc tế'),
         reports: capability(['export'], 'Xuất báo cáo đối ngoại'),
+        marketplace: MARKETPLACE_VIEW_CAP,
     },
 }

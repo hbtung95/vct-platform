@@ -5,6 +5,9 @@
 // place so navigation is fully type-checked at compile time.
 // ═══════════════════════════════════════════════════════════════
 
+import * as ExpoLinking from 'expo-linking'
+import type { LinkingOptions, NavigatorScreenParams } from '@react-navigation/native'
+
 // ── Auth Stack ───────────────────────────────────────────────
 
 export type AuthStackParamList = {
@@ -23,6 +26,14 @@ export type MainTabParamList = {
   TournamentsTab: undefined
   TrainingTab: undefined
   ProfileTab: undefined
+}
+
+// ── Main Stack ───────────────────────────────────────────────
+
+export type MainStackParamList = {
+  Tabs: NavigatorScreenParams<MainTabParamList> | undefined
+  TournamentDetail: { tournamentId: string }
+  Settings: undefined
 }
 
 // ── Home Stack ───────────────────────────────────────────────
@@ -77,53 +88,6 @@ export type ProfileStackParamList = {
   Achievement: { achievementId: string }
 }
 
-// ── Deep Link Map ────────────────────────────────────────────
-
-export const DEEP_LINK_CONFIG = {
-  prefixes: ['vctplatform://', 'https://vct-platform.vn'],
-  config: {
-    screens: {
-      Auth: {
-        screens: {
-          Login: 'login',
-          Register: 'register',
-          ResetPassword: 'reset-password/:token',
-        },
-      },
-      Main: {
-        screens: {
-          HomeTab: {
-            screens: {
-              HomeScreen: '',
-              AnnouncementDetail: 'announcements/:id',
-            },
-          },
-          TournamentsTab: {
-            screens: {
-              TournamentList: 'tournaments',
-              TournamentDetail: 'tournaments/:id',
-              MatchDetail: 'matches/:matchId',
-              AthleteProfile: 'athletes/:athleteId',
-            },
-          },
-          TrainingTab: {
-            screens: {
-              TrainingHome: 'training',
-              TechniqueDetail: 'techniques/:techniqueId',
-            },
-          },
-          ProfileTab: {
-            screens: {
-              ProfileHome: 'profile',
-              MyClub: 'clubs/:clubId',
-            },
-          },
-        },
-      },
-    },
-  },
-} as const
-
 // ── Screen Name Registry ─────────────────────────────────────
 
 export const SCREEN_NAMES = {
@@ -152,3 +116,111 @@ export const SCREEN_NAMES = {
   EDIT_PROFILE: 'EditProfile' as const,
   SETTINGS: 'Settings' as const,
 } as const
+
+// ── Deep Link Map ────────────────────────────────────────────
+
+export interface MobileDeepLinkRoute {
+  pattern: string
+  screen: string
+  tab?: keyof MainTabParamList
+  paramExtractor?: (params: Record<string, string>) => Record<string, unknown>
+}
+
+export const MOBILE_DEEP_LINK_PREFIXES = [
+  ExpoLinking.createURL('/'),
+  'vctplatform://',
+  'https://vct-platform.vn',
+  'https://vct-platform.com',
+  'https://www.vct-platform.com',
+] as const
+
+export const MOBILE_DEEP_LINK_ROUTES: ReadonlyArray<MobileDeepLinkRoute> = [
+  {
+    pattern: 'onboarding',
+    screen: SCREEN_NAMES.ONBOARDING,
+  },
+  {
+    pattern: 'login',
+    screen: SCREEN_NAMES.LOGIN,
+  },
+  {
+    pattern: 'register',
+    screen: SCREEN_NAMES.REGISTER,
+  },
+  {
+    pattern: 'forgot-password',
+    screen: SCREEN_NAMES.FORGOT_PASSWORD,
+  },
+  {
+    pattern: 'reset-password/:token',
+    screen: SCREEN_NAMES.RESET_PASSWORD,
+  },
+  {
+    pattern: 'verify-otp/:phone/:purpose',
+    screen: SCREEN_NAMES.VERIFY_OTP,
+  },
+  {
+    pattern: '',
+    screen: SCREEN_NAMES.HOME_TAB,
+    tab: SCREEN_NAMES.HOME_TAB,
+  },
+  {
+    pattern: 'tournaments',
+    screen: SCREEN_NAMES.TOURNAMENTS_TAB,
+    tab: SCREEN_NAMES.TOURNAMENTS_TAB,
+  },
+  {
+    pattern: 'training',
+    screen: SCREEN_NAMES.TRAINING_TAB,
+    tab: SCREEN_NAMES.TRAINING_TAB,
+  },
+  {
+    pattern: 'profile',
+    screen: SCREEN_NAMES.PROFILE_TAB,
+    tab: SCREEN_NAMES.PROFILE_TAB,
+  },
+  {
+    pattern: 'tournaments/:tournamentId',
+    screen: SCREEN_NAMES.TOURNAMENT_DETAIL,
+    tab: SCREEN_NAMES.TOURNAMENTS_TAB,
+  },
+  {
+    pattern: 'settings',
+    screen: SCREEN_NAMES.SETTINGS,
+    tab: SCREEN_NAMES.PROFILE_TAB,
+  },
+] as const
+
+export type MobileLinkingParamList = AuthStackParamList & MainStackParamList
+
+export const DEEP_LINK_CONFIG: LinkingOptions<MobileLinkingParamList> = {
+  prefixes: [...MOBILE_DEEP_LINK_PREFIXES],
+  config: {
+    screens: {
+      Onboarding: 'onboarding',
+      Login: 'login',
+      Register: 'register',
+      ForgotPassword: 'forgot-password',
+      ResetPassword: 'reset-password/:token',
+      VerifyOTP: 'verify-otp/:phone/:purpose',
+      Tabs: {
+        screens: {
+          HomeTab: {
+            path: '',
+          },
+          TournamentsTab: {
+            path: 'tournaments',
+          },
+          TrainingTab: {
+            path: 'training',
+          },
+          ProfileTab: {
+            path: 'profile',
+          },
+        },
+      },
+      TournamentDetail: 'tournaments/:tournamentId',
+      Settings: 'settings',
+    },
+  },
+}

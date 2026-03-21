@@ -3,6 +3,8 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,7 +19,12 @@ func testServer(t *testing.T) *Server {
 		AllowedOrigins: []string{"*"},
 		JWTSecret:      "test-secret-for-handler-tests-2026!!",
 	}
-	return New(cfg)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	server, err := New(cfg, logger)
+	if err != nil {
+		t.Fatalf("failed to create test server: %v", err)
+	}
+	return server
 }
 
 // ═══════════════════════════════════════════════════════════════

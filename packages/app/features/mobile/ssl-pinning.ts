@@ -241,3 +241,12 @@ export function generateIOSATSConfig(
   }
 }
 
+export const sslPinning = {
+  getConfig: getSSLPinningConfig,
+  isActive: isPinningActive,
+  getHealth: getPinningHealth,
+  validatePinFormat,
+  getPinConfigForHost,
+  generateAndroidNetworkSecurityConfig,
+  generateIOSATSConfig,
+} as const

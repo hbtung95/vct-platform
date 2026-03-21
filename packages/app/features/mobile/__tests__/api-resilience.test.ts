@@ -1,41 +1,29 @@
-/**
- * @jest-environment node
- */
-
-// ═══════════════════════════════════════════════════════════════
-// VCT PLATFORM — API Resilience Tests
-// Tests for circuit breaker, retry with backoff, and timeout.
-// ═══════════════════════════════════════════════════════════════
-
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createResilientFetch,
   ResilientFetchError,
-  resilientFetch as _resilientFetch,
 } from '../api-resilience'
-
-// ── Mock fetch ───────────────────────────────────────────────
 
 const originalFetch = globalThis.fetch
 
-beforeEach(() => {
-  jest.useFakeTimers({ advanceTimers: true })
-})
-
-afterEach(() => {
-  globalThis.fetch = originalFetch
-  jest.useRealTimers()
-})
-
-// ── Circuit Breaker Tests ────────────────────────────────────
-
 describe('createResilientFetch', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
   describe('circuit breaker', () => {
-    it('opens after failure threshold', async () => {
+    it('opens after the failure threshold', async () => {
       let callCount = 0
-      globalThis.fetch = jest.fn().mockImplementation(() => {
-        callCount++
+      globalThis.fetch = vi.fn().mockImplementation(() => {
+        callCount += 1
         return Promise.resolve(new Response('error', { status: 500 }))
-      }) as jest.Mock
+      }) as typeof fetch
 
       const fetcher = createResilientFetch({
         retry: { maxRetries: 0, baseDelay: 10, maxDelay: 100, jitter: 0, retryableStatuses: [500] },
@@ -43,28 +31,23 @@ describe('createResilientFetch', () => {
         requestTimeout: 5000,
       })
 
-      // Trip the circuit with failures
       for (let i = 0; i < 3; i++) {
-        await expect(fetcher('https://api.example.com/test')).rejects.toThrow()
+        await expect(fetcher('https://api.example.com/test')).rejects.toThrow(ResilientFetchError)
       }
 
-      // Next call should be rejected immediately (circuit open)
-      await expect(fetcher('https://api.example.com/test')).rejects.toThrow(
-        /circuit breaker is open/i,
-      )
-
-      expect(callCount).toBe(3) // The 4th call never reached fetch
+      await expect(fetcher('https://api.example.com/test')).rejects.toThrow(/circuit breaker is open/i)
+      expect(callCount).toBe(3)
     })
 
-    it('recovers after timeout (half-open → closed)', async () => {
+    it('recovers after the open timeout expires', async () => {
       let callCount = 0
-      globalThis.fetch = jest.fn().mockImplementation(() => {
-        callCount++
+      globalThis.fetch = vi.fn().mockImplementation(() => {
+        callCount += 1
         if (callCount <= 3) {
           return Promise.resolve(new Response('error', { status: 500 }))
         }
         return Promise.resolve(new Response('ok', { status: 200 }))
-      }) as jest.Mock
+      }) as typeof fetch
 
       const fetcher = createResilientFetch({
         retry: { maxRetries: 0, baseDelay: 10, maxDelay: 100, jitter: 0, retryableStatuses: [500] },
@@ -72,31 +55,28 @@ describe('createResilientFetch', () => {
         requestTimeout: 5000,
       })
 
-      // Trip
       for (let i = 0; i < 3; i++) {
         await expect(fetcher('https://api.example.com/test')).rejects.toThrow()
       }
 
-      // Wait for timeout to expire
-      await new Promise((r) => setTimeout(r, 150))
-      jest.advanceTimersByTime(150)
+      vi.advanceTimersByTime(150)
 
-      // Should succeed (half-open allows one try, which succeeds → closed)
       const response = await fetcher('https://api.example.com/test')
       expect(response.ok).toBe(true)
+      expect(callCount).toBe(4)
     })
   })
 
   describe('retry', () => {
     it('retries on 500 errors', async () => {
       let attempt = 0
-      globalThis.fetch = jest.fn().mockImplementation(() => {
-        attempt++
+      globalThis.fetch = vi.fn().mockImplementation(() => {
+        attempt += 1
         if (attempt < 3) {
           return Promise.resolve(new Response('fail', { status: 500 }))
         }
         return Promise.resolve(new Response('ok', { status: 200 }))
-      }) as jest.Mock
+      }) as typeof fetch
 
       const fetcher = createResilientFetch({
         retry: { maxRetries: 3, baseDelay: 10, maxDelay: 100, jitter: 0, retryableStatuses: [500] },
@@ -104,15 +84,18 @@ describe('createResilientFetch', () => {
         requestTimeout: 5000,
       })
 
-      const response = await fetcher('https://api.example.com/test')
+      const responsePromise = fetcher('https://api.example.com/test')
+      await vi.runAllTimersAsync()
+      const response = await responsePromise
+
       expect(response.ok).toBe(true)
       expect(attempt).toBe(3)
     })
 
     it('does not retry non-retryable status codes', async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue(
+      globalThis.fetch = vi.fn().mockResolvedValue(
         new Response('not found', { status: 404 }),
-      ) as jest.Mock
+      ) as typeof fetch
 
       const fetcher = createResilientFetch({
         retry: { maxRetries: 3, baseDelay: 10, maxDelay: 100, jitter: 0, retryableStatuses: [500] },
@@ -120,18 +103,16 @@ describe('createResilientFetch', () => {
         requestTimeout: 5000,
       })
 
-      await expect(fetcher('https://api.example.com/test')).rejects.toThrow(
-        ResilientFetchError,
-      )
+      await expect(fetcher('https://api.example.com/test')).rejects.toThrow(ResilientFetchError)
       expect(globalThis.fetch).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('success path', () => {
-    it('returns response on success', async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue(
+    it('returns the response on success', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue(
         new Response(JSON.stringify({ data: 'test' }), { status: 200 }),
-      ) as jest.Mock
+      ) as typeof fetch
 
       const fetcher = createResilientFetch({
         requestTimeout: 5000,
@@ -141,8 +122,7 @@ describe('createResilientFetch', () => {
 
       const response = await fetcher('https://api.example.com/test')
       expect(response.ok).toBe(true)
-      const json = await response.json()
-      expect(json.data).toBe('test')
+      await expect(response.json()).resolves.toEqual({ data: 'test' })
     })
   })
 })

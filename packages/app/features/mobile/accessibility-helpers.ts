@@ -314,3 +314,15 @@ export const RECOMMENDED_TOUCH_TARGET: ViewStyle = {
   minWidth: 48,
   minHeight: 48,
 }
+
+export const accessibilityHelpers = {
+  a11y,
+  announce,
+  getAccessibleFontSize,
+  useAccessibilityFocus,
+  useDynamicFont,
+  useReduceMotion,
+  useScreenReader,
+  MIN_TOUCH_TARGET,
+  RECOMMENDED_TOUCH_TARGET,
+} as const

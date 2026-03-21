@@ -71,6 +71,25 @@ func NewLogger(cfg Config) *slog.Logger {
 	)
 }
 
+// New creates a logger using environment-based defaults.
+// Production/staging: JSON format, Info level.
+// Development: text format, Debug level.
+// This is a convenience wrapper around NewLogger for simple setups.
+func New(env string) *slog.Logger {
+	cfg := DefaultConfig()
+	cfg.Environment = env
+	switch env {
+	case "production", "staging":
+		cfg.Format = "json"
+		cfg.Level = slog.LevelInfo
+	default:
+		cfg.Format = "text"
+		cfg.Level = slog.LevelDebug
+		cfg.AddSource = false
+	}
+	return NewLogger(cfg)
+}
+
 // WithContext stores a logger in the context.
 func WithContext(ctx context.Context, logger *slog.Logger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)

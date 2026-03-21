@@ -3,6 +3,8 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -42,7 +44,8 @@ func loginAccessToken(
 }
 
 func newTestServer() *Server {
-	return New(config.Config{
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	server, err := New(config.Config{
 		Address:            ":0",
 		AllowedOrigins:     []string{"*"},
 		DisableAuthForData: false,
@@ -52,7 +55,11 @@ func newTestServer() *Server {
 		AccessTokenTTL:     10 * time.Minute,
 		RefreshTokenTTL:    2 * time.Hour,
 		AuditLimit:         500,
-	})
+	}, logger)
+	if err != nil {
+		panic(err)
+	}
+	return server
 }
 
 func requestJSON(

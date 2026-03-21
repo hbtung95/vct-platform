@@ -109,4 +109,5 @@ export {
   deepLinkConfig,
   handleDeepLink,
   buildDeepLink,
+  buildUniversalLink,
 } from '../deep-linking'

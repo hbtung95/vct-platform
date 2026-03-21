@@ -9,11 +9,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { StyleSheet, View, Text, Platform, ActivityIndicator } from 'react-native'
 
 import { useVCTTheme } from './theme-provider'
-import {
-  LazyScreenHome,
-  LazyScreenProfile,
-  LazyScreenTournamentList,
-} from './screen-registry'
+import { MAIN_SCREEN_COMPONENTS } from './screen-registry'
 import type { MainTabParamList } from './route-types'
 
 type TabScreenComponent =
@@ -86,13 +82,13 @@ export const TAB_CONFIGS: TabConfig[] = [
     name: 'HomeTab',
     label: 'Trang chủ',
     emoji: '🏠',
-    component: LazyScreenHome,
+    component: MAIN_SCREEN_COMPONENTS.HomeScreen,
   },
   {
     name: 'TournamentsTab',
     label: 'Giải đấu',
     emoji: '🏆',
-    component: LazyScreenTournamentList,
+    component: MAIN_SCREEN_COMPONENTS.TournamentList,
   },
   {
     name: 'TrainingTab',
@@ -104,7 +100,7 @@ export const TAB_CONFIGS: TabConfig[] = [
     name: 'ProfileTab',
     label: 'Cá nhân',
     emoji: '👤',
-    component: LazyScreenProfile,
+    component: MAIN_SCREEN_COMPONENTS.ProfileHome,
   },
 ]
 

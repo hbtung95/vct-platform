@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"runtime"
@@ -30,6 +29,7 @@ import (
 	"vct-platform/backend/internal/domain/finance"
 	"vct-platform/backend/internal/domain/heritage"
 	"vct-platform/backend/internal/domain/international"
+	"vct-platform/backend/internal/domain/marketplace"
 	"vct-platform/backend/internal/domain/organization"
 	"vct-platform/backend/internal/domain/parent"
 	"vct-platform/backend/internal/domain/provincial"
@@ -51,6 +51,7 @@ import (
 //   - helpers.go           — JSON decode, response helpers, entity registry
 type Server struct {
 	cfg              config.Config
+	logger           *slog.Logger
 	authService      *auth.Service
 	store            store.DataStore
 	cachedStore      *store.CachedStore
@@ -110,6 +111,9 @@ type Server struct {
 	// ── Tournament Management Service ─────────────────────────
 	tournamentMgmtSvc *tournament.MgmtService
 
+	// ── VCT Marketplace Service ───────────────────────────────
+	marketplaceSvc *marketplace.Service
+
 	// ── Customer Support & Technical Assistance ─────────────
 	supportSvc *support.Service
 
@@ -123,19 +127,27 @@ type Server struct {
 	emailService *email.ResendProvider
 }
 
-func New(cfg config.Config) *Server {
+func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	originSet := make(map[string]struct{}, len(cfg.AllowedOrigins))
 	for _, origin := range cfg.AllowedOrigins {
 		originSet[origin] = struct{}{}
 	}
 
-	baseStore, storageDriver, storageProvider := resolveStore(cfg)
+	baseStore, storageDriver, storageProvider, err := resolveStore(cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("resolve store: %w", err)
+	}
 	cachedStore := store.NewCachedStore(baseStore, cfg.CacheTTL, cfg.CacheMaxEntries)
 
 	wfRepo := adapter.NewMemWorkflowRepo()
 
 	s := &Server{
-		cfg: cfg,
+		cfg:    cfg,
+		logger: logger,
 		authService: auth.NewService(auth.ServiceConfig{
 			Secret:          cfg.JWTSecret,
 			Issuer:          cfg.JWTIssuer,
@@ -150,7 +162,7 @@ func New(cfg config.Config) *Server {
 		cachedStore:      cachedStore,
 		storageDriver:    storageDriver,
 		storageProvider:  storageProvider,
-		realtimeHub:      realtime.NewHub(slog.Default(), cfg.AllowedOrigins...),
+		realtimeHub:      realtime.NewHub(logger, cfg.AllowedOrigins...),
 		allowedEntities:  defaultEntitySet(),
 		allowedOrigins:   originSet,
 		rateLimiter:      newRateLimiter(10, time.Second, 100), // 100 burst, 10/s refill
@@ -169,6 +181,11 @@ func New(cfg config.Config) *Server {
 		heritageService:     heritage.NewService(adapter.NewBeltRankRepository(cachedStore), adapter.NewTechniqueRepository(cachedStore)),
 		financeService:      finance.NewService(adapter.NewTransactionRepository(cachedStore), adapter.NewBudgetRepository(cachedStore)),
 		communityService:    community.NewService(adapter.NewClubRepository(cachedStore), adapter.NewMemberRepository(cachedStore), adapter.NewEventRepository(cachedStore)),
+		marketplaceSvc: marketplace.NewService(
+			adapter.NewMarketplaceProductRepository(cachedStore),
+			adapter.NewMarketplaceOrderRepository(cachedStore),
+			newUUID,
+		),
 
 		// ── Wire National Federation Services ────────────
 		federationSvc: federation.NewService(
@@ -312,84 +329,92 @@ func New(cfg config.Config) *Server {
 	// ── Upgrade to PG adapters when storage driver is postgres ──
 	if storageDriver == "postgres" && cfg.PostgresURL != "" {
 		db, err := sql.Open("pgx", cfg.PostgresURL)
+		if err != nil {
+			return nil, fmt.Errorf("PG adapters: sql.Open failed: %w", err)
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		if err != nil {
-			log.Fatalf("PG adapters: sql.Open failed (%v)", err)
-		} else if err := db.PingContext(ctx); err != nil {
+		if err := db.PingContext(ctx); err != nil {
 			_ = db.Close()
-			log.Fatalf("PG adapters: db.PingContext failed (%v)", err)
-		} else {
-			s.sqlDB = db
-			log.Println("PG adapters: connected — wiring PostgreSQL stores")
-
-			// Re-create auth service with DB for persistent user storage
-			s.authService.Stop() // stop existing cleanup goroutine
-			s.authService = auth.NewService(auth.ServiceConfig{
-				Secret:          cfg.JWTSecret,
-				Issuer:          cfg.JWTIssuer,
-				AccessTTL:       cfg.AccessTokenTTL,
-				RefreshTTL:      cfg.RefreshTokenTTL,
-				AuditLimit:      cfg.AuditLimit,
-				CleanupInterval: 5 * time.Minute,
-				AllowDemoUsers:  cfg.AllowDemoUsers,
-				CredentialsJSON: cfg.BootstrapUsersJSON,
-				DB:              db, // enable persistent user storage
-			})
-			log.Println("PG adapters: auth service re-created with database user store")
-
-			// Club module
-			s.clubSvc = clubdomain.NewService(
-				adapter.NewPgAttendanceStore(db),
-				adapter.NewPgEquipmentStore(db),
-				adapter.NewPgFacilityStore(db),
-				newUUID,
-			)
-
-			// Athlete profile module
-			s.athleteProfileSvc = athlete.NewProfileService(
-				adapter.NewPgAthleteProfileRepo(db),
-				adapter.NewPgClubMembershipRepo(db),
-				adapter.NewPgTournamentEntryRepo(db),
-				newUUID,
-			)
-
-			// Scoring module
-			s.scoringService = scoring.NewService(
-				adapter.NewPgScoringRepository(db),
-				scoring.DefaultScoringConfig(),
-			)
-
-			// Tournament management
-			s.tournamentMgmtSvc = tournament.NewMgmtService(
-				adapter.NewPgTournamentMgmtStore(db),
-				newUUID,
-			)
-
-			// BTC module (Ban Tổ Chức)
-			s.btcSvc = btc.NewService(adapter.NewPgBTCStore(db), newUUID)
-
-			// Parent/Guardian module
-			s.parentSvc = parent.NewService(
-				adapter.NewPgParentLinkStore(db),
-				adapter.NewPgConsentStore(db),
-				adapter.NewPgParentAttendanceStore(db),
-				adapter.NewPgParentResultStore(db),
-				newUUID,
-			)
-
-			// Subscription & Billing
-			s.subscriptionSvc = finance.NewSubscriptionService(
-				finance.NewPgPlanRepo(db),
-				finance.NewPgSubRepo(db),
-				finance.NewPgBillingRepo(db),
-				finance.NewPgRenewalRepo(db),
-				nil, // invoice repo will be provided later
-				newUUID,
-			)
+			return nil, fmt.Errorf("PG adapters: db.PingContext failed: %w", err)
 		}
+
+		s.sqlDB = db
+		logger.Info("PG adapters connected — wiring PostgreSQL stores")
+
+		// Re-create auth service with DB for persistent user storage
+		s.authService.Stop()
+		s.authService = auth.NewService(auth.ServiceConfig{
+			Secret:          cfg.JWTSecret,
+			Issuer:          cfg.JWTIssuer,
+			AccessTTL:       cfg.AccessTokenTTL,
+			RefreshTTL:      cfg.RefreshTokenTTL,
+			AuditLimit:      cfg.AuditLimit,
+			CleanupInterval: 5 * time.Minute,
+			AllowDemoUsers:  cfg.AllowDemoUsers,
+			CredentialsJSON: cfg.BootstrapUsersJSON,
+			DB:              db,
+		})
+		logger.Info("auth service re-created with database user store")
+
+		// Club module
+		s.clubSvc = clubdomain.NewService(
+			adapter.NewPgAttendanceStore(db),
+			adapter.NewPgEquipmentStore(db),
+			adapter.NewPgFacilityStore(db),
+			newUUID,
+		)
+
+		// Athlete profile module
+		s.athleteProfileSvc = athlete.NewProfileService(
+			adapter.NewPgAthleteProfileRepo(db),
+			adapter.NewPgClubMembershipRepo(db),
+			adapter.NewPgTournamentEntryRepo(db),
+			newUUID,
+		)
+
+		// Scoring module
+		s.scoringService = scoring.NewService(
+			adapter.NewPgScoringRepository(db),
+			scoring.DefaultScoringConfig(),
+		)
+
+		// Tournament management
+		s.tournamentMgmtSvc = tournament.NewMgmtService(
+			adapter.NewPgTournamentMgmtStore(db),
+			newUUID,
+		)
+
+		// VCT Marketplace
+		s.marketplaceSvc = marketplace.NewService(
+			adapter.NewPgMarketplaceProductRepo(db),
+			adapter.NewPgMarketplaceOrderRepo(db),
+			newUUID,
+		)
+
+		// BTC module (Ban Tổ Chức)
+		s.btcSvc = btc.NewService(adapter.NewPgBTCStore(db), newUUID)
+
+		// Parent/Guardian module
+		s.parentSvc = parent.NewService(
+			adapter.NewPgParentLinkStore(db),
+			adapter.NewPgConsentStore(db),
+			adapter.NewPgParentAttendanceStore(db),
+			adapter.NewPgParentResultStore(db),
+			newUUID,
+		)
+
+		// Subscription & Billing
+		s.subscriptionSvc = finance.NewSubscriptionService(
+			finance.NewPgPlanRepo(db),
+			finance.NewPgSubRepo(db),
+			finance.NewPgBillingRepo(db),
+			finance.NewPgRenewalRepo(db),
+			nil, // invoice repo will be provided later
+			newUUID,
+		)
 	}
 
 	// Wire provincial in-memory repos into federation service
@@ -407,7 +432,9 @@ func New(cfg config.Config) *Server {
 		federation.NewMemWorkflowStore(),
 	)
 
-	return s
+	s.seedDefaultMarketplaceData()
+
+	return s, nil
 }
 
 // Handler returns the fully wired HTTP handler with CORS and logging.
@@ -456,6 +483,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/clubs/", s.handleClubRoutes)
 	mux.HandleFunc("/api/v1/members/", s.handleMemberRoutes)
 	mux.HandleFunc("/api/v1/community-events/", s.handleCommunityEventRoutes)
+	// VCT Marketplace
+	mux.HandleFunc("/api/v1/marketplace/products/", s.handleMarketplaceProductDetail)
+	mux.HandleFunc("/api/v1/marketplace/products", s.handleMarketplaceProducts)
+	mux.HandleFunc("/api/v1/marketplace/orders", s.handleMarketplaceOrders)
+	mux.HandleFunc("/api/v1/marketplace/stats", s.handleMarketplaceStats)
+	mux.HandleFunc("/api/v1/marketplace/seller/dashboard", s.withAuth(s.handleMarketplaceSellerDashboard))
+	mux.HandleFunc("/api/v1/marketplace/seller/products/", s.withAuth(s.handleMarketplaceSellerProductDetail))
+	mux.HandleFunc("/api/v1/marketplace/seller/products", s.withAuth(s.handleMarketplaceSellerProducts))
+	mux.HandleFunc("/api/v1/marketplace/seller/orders/", s.withAuth(s.handleMarketplaceSellerOrderDetail))
+	mux.HandleFunc("/api/v1/marketplace/seller/orders", s.withAuth(s.handleMarketplaceSellerOrders))
 	// ── Approval Engine ─────────────────────────────────────
 	s.handleApprovalRoutes(mux)
 	// ── Finance V2 ──────────────────────────────────────────
@@ -678,27 +715,29 @@ func (s *Server) broadcastEntityChange(
 	}
 }
 
-func resolveStore(cfg config.Config) (store.DataStore, string, string) {
+func resolveStore(cfg config.Config, logger *slog.Logger) (store.DataStore, string, string, error) {
 	driver := strings.ToLower(strings.TrimSpace(cfg.StorageDriver))
 	if driver == "postgres" {
 		postgresURL := strings.TrimSpace(cfg.PostgresURL)
 		if postgresURL == "" {
-			log.Fatalf("VCT_STORAGE_DRIVER=postgres nhưng VCT_POSTGRES_URL trống")
+			return nil, "", "", fmt.Errorf("VCT_STORAGE_DRIVER=postgres but VCT_POSTGRES_URL is empty")
 		}
 
 		postgresStore, err := store.NewPostgresStore(postgresURL, cfg.DBAutoMigrate)
 		if err != nil {
-			log.Fatalf("postgres init failed (%v)", err)
+			return nil, "", "", fmt.Errorf("postgres init failed: %w", err)
 		}
 
 		provider := strings.ToLower(strings.TrimSpace(cfg.PostgresProvider))
 		if provider == "" {
 			provider = "selfhost"
 		}
-		return postgresStore, "postgres", provider
+		logger.Info("storage initialized", slog.String("driver", "postgres"), slog.String("provider", provider))
+		return postgresStore, "postgres", provider, nil
 	}
 
-	return store.NewStore(), "memory", "memory"
+	logger.Info("storage initialized", slog.String("driver", "memory"))
+	return store.NewStore(), "memory", "memory", nil
 }
 
 func (s *Server) Close() error {

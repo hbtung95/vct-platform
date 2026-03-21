@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/big"
 	"sync"
 	"time"
@@ -141,7 +141,7 @@ func (svc *Service) SendOTP(input SendOTPRequest, emailService OTPSender) (SendO
 		defer cancel()
 		existing, err := svc.userStore.FindByUsername(ctx, emailAddr)
 		if err != nil {
-			log.Printf("[otp] DB lookup error for %s: %v", emailAddr, err)
+			slog.Warn("DB lookup error during OTP", slog.String("email", emailAddr), slog.String("error", err.Error()))
 		}
 		if existing != nil {
 			return SendOTPResponse{}, wrapCodedError(ErrConflict, CodeConflict, "email đã được đăng ký")
@@ -168,7 +168,7 @@ func (svc *Service) SendOTP(input SendOTPRequest, emailService OTPSender) (SendO
 	})
 
 	if err := emailService.SendOTP(emailAddr, code, input.DisplayName); err != nil {
-		log.Printf("[otp] email send failed for %s: %v", emailAddr, err)
+		slog.Warn("OTP email send failed", slog.String("email", emailAddr), slog.String("error", err.Error()))
 		return SendOTPResponse{}, wrapCodedError(ErrBadRequest, CodeBadRequest, "gửi email thất bại, vui lòng thử lại")
 	}
 

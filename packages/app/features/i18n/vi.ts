@@ -333,6 +333,8 @@ export const vi: Record<string, string> = {
     'route.reports.label': 'Báo cáo & In ấn',
     'route.community.title': 'CỘNG ĐỒNG',
     'route.community.label': 'Tin tức & Cộng đồng',
+    'route.marketplace.title': 'VCT MARKETPLACE',
+    'route.marketplace.label': 'VCT Marketplace',
     'route.admin-dashboard.title': 'BẢNG ĐIỀU KHIỂN HỆ THỐNG',
     'route.admin-dashboard.label': 'Bảng điều khiển',
     'route.audit-logs.title': 'NHẬT KÝ HỆ THỐNG',

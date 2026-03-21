@@ -328,6 +328,24 @@ const DEEP_LINK_PATTERNS: Array<{ pattern: RegExp; screen: ScreenName; paramName
  * ```
  */
 export function parseDeepLinkParams(url: string): DeepLinkResult | null {
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url)
+      const trustedHosts = new Set([
+        'vct-platform.com',
+        'www.vct-platform.com',
+        'vct-platform.vn',
+        'www.vct-platform.vn',
+      ])
+
+      if (!trustedHosts.has(parsed.hostname.toLowerCase())) {
+        return null
+      }
+    } catch {
+      return null
+    }
+  }
+
   // Strip scheme + host: "vctplatform://host/path" → "/path"
   let path = url
   const schemeEnd = url.indexOf('://')
@@ -553,3 +571,36 @@ export function getScreenTitleEn(screen: ScreenName): string {
   }
   return titles[screen]
 }
+
+export function navigateToLogin(navigation?: {
+  reset?: (state: { routes: Array<{ name: ScreenName }> }) => void
+  navigate?: (screen: ScreenName) => void
+}): void {
+  if (!navigation) return
+
+  if (typeof navigation.reset === 'function') {
+    navigation.reset({ routes: [{ name: 'Login' }] })
+    return
+  }
+
+  navigation.navigate?.('Login')
+}
+
+export const navigationHelpers = {
+  screenGroups,
+  transitions,
+  getScreenGroup,
+  isAuthScreen,
+  isMainScreen,
+  isPortalScreen,
+  saveNavigationState,
+  loadNavigationState,
+  clearNavigationState,
+  parseDeepLinkParams,
+  useProtectedRoute,
+  useAndroidBackHandler,
+  isValidScreen,
+  getScreenTitle,
+  getScreenTitleEn,
+  navigateToLogin,
+} as const

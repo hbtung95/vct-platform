@@ -1,17 +1,26 @@
-/**
- * @jest-environment node
- */
+import { describe, expect, it, vi } from 'vitest'
 
-// ═══════════════════════════════════════════════════════════════
-// VCT PLATFORM — Security Utils Tests
-// Tests for input sanitization, URL safety, and device detection.
-// ═══════════════════════════════════════════════════════════════
+vi.mock('react-native', () => ({
+  Platform: {
+    OS: 'web',
+    constants: {},
+  },
+  Alert: {
+    alert: vi.fn(),
+  },
+}))
+
+vi.mock('expo-secure-store', () => ({
+  setItemAsync: vi.fn(),
+  getItemAsync: vi.fn(),
+  deleteItemAsync: vi.fn(),
+}))
 
 import {
-  sanitizeInput,
+  isUrlSafe,
   sanitizeEmail,
   sanitizeForQuery,
-  isUrlSafe,
+  sanitizeInput,
 } from '../security-utils'
 
 describe('sanitizeInput', () => {
@@ -20,9 +29,7 @@ describe('sanitizeInput', () => {
   })
 
   it('removes script tags and content', () => {
-    expect(sanitizeInput('hello <script>alert("xss")</script> world')).toBe(
-      'hello  world',
-    )
+    expect(sanitizeInput('hello <script>alert("xss")</script> world')).toBe('hello  world')
   })
 
   it('escapes special characters', () => {
@@ -36,17 +43,17 @@ describe('sanitizeInput', () => {
     expect(sanitizeInput('  hello  ')).toBe('hello')
   })
 
-  it('handles empty string', () => {
+  it('handles an empty string', () => {
     expect(sanitizeInput('')).toBe('')
   })
 })
 
 describe('sanitizeEmail', () => {
-  it('lowercases email', () => {
+  it('lowercases email values', () => {
     expect(sanitizeEmail('User@Example.COM')).toBe('user@example.com')
   })
 
-  it('trims whitespace', () => {
+  it('trims surrounding whitespace', () => {
     expect(sanitizeEmail('  user@test.com  ')).toBe('user@test.com')
   })
 
@@ -78,7 +85,7 @@ describe('isUrlSafe', () => {
     expect(isUrlSafe('https://api.vct-platform.com/v1/test')).toBe(true)
   })
 
-  it('allows custom scheme', () => {
+  it('allows the custom app scheme', () => {
     expect(isUrlSafe('vctplatform://tournaments/123')).toBe(true)
   })
 
@@ -86,7 +93,7 @@ describe('isUrlSafe', () => {
     expect(isUrlSafe('http://evil.com/phishing')).toBe(false)
   })
 
-  it('blocks javascript: URLs', () => {
+  it('blocks javascript URLs', () => {
     expect(isUrlSafe('javascript:alert(1)')).toBe(false)
   })
 
@@ -94,7 +101,7 @@ describe('isUrlSafe', () => {
     expect(isUrlSafe('https://192.168.1.1/admin')).toBe(false)
   })
 
-  it('blocks localhost', () => {
+  it('blocks localhost hosts', () => {
     expect(isUrlSafe('https://localhost:3000/api')).toBe(false)
   })
 

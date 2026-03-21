@@ -1,9 +1,0 @@
-./amendment_2024.go
-./model.go
-./model_extended.go
-./regulation_config.go
-./service.go
-./service_extended.go
-./store.go
-./store_extended.go
-./validation.go

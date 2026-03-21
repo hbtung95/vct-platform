@@ -2,7 +2,7 @@ package email
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/resend/resend-go/v3"
 )
@@ -46,7 +46,7 @@ func (r *ResendProvider) SendOTP(to, code, displayName string) error {
 	`, displayName, code)
 
 	if r.client == nil {
-		log.Printf("[email] (dry-run) OTP %s → %s", code, to)
+		slog.Info("OTP email dry-run", slog.String("code", code), slog.String("to", to))
 		return nil
 	}
 
@@ -57,9 +57,9 @@ func (r *ResendProvider) SendOTP(to, code, displayName string) error {
 		Html:    html,
 	})
 	if err != nil {
-		log.Printf("[email] send failed to %s: %v", to, err)
+		slog.Error("email send failed", slog.String("to", to), slog.String("error", err.Error()))
 		return fmt.Errorf("gửi email thất bại: %w", err)
 	}
-	log.Printf("[email] OTP sent to %s", to)
+	slog.Info("OTP email sent", slog.String("to", to))
 	return nil
 }

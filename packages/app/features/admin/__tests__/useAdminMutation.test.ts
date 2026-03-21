@@ -114,7 +114,7 @@ describe('useAdminMutation', () => {
             await result.current.mutate({ name: 'Updated' })
         })
 
-        expect(fetchSpy).toHaveBeenCalledWith('/admin/test', expect.objectContaining({
+        expect(fetchSpy).toHaveBeenCalledWith('/api/v1/admin/test', expect.objectContaining({
             method: 'PUT',
             body: JSON.stringify({ name: 'Updated' }),
             credentials: 'include',

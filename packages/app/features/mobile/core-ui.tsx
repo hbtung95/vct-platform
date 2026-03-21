@@ -23,10 +23,12 @@ import { haptic } from './haptic-feedback'
 // ── VctButton ────────────────────────────────────────────────
 
 export interface VctButtonProps extends TouchableOpacityProps {
-  label: string
+  label?: string
+  title?: string
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'small' | 'medium' | 'large'
   isLoading?: boolean
+  loading?: boolean
   iconLeft?: React.ReactNode
   iconRight?: React.ReactNode
   fullWidth?: boolean
@@ -36,9 +38,11 @@ export const VctButton = forwardRef<View, VctButtonProps>(
   (
     {
       label,
+      title,
       variant = 'primary',
       size = 'md',
       isLoading,
+      loading,
       iconLeft,
       iconRight,
       fullWidth = false,
@@ -50,6 +54,10 @@ export const VctButton = forwardRef<View, VctButtonProps>(
     ref,
   ) => {
     const { theme } = useVCTTheme()
+    const resolvedLabel = label ?? title ?? ''
+    const resolvedSize =
+      size === 'small' ? 'sm' : size === 'medium' ? 'md' : size === 'large' ? 'lg' : size
+    const resolvedLoading = isLoading ?? loading ?? false
 
     const handlePress = (e: any) => {
       // Light haptic for buttons
@@ -93,14 +101,24 @@ export const VctButton = forwardRef<View, VctButtonProps>(
     }
 
     // Sizing
-    const paddingV = size === 'sm' ? theme.spacing.sm : size === 'lg' ? theme.spacing.lg : theme.spacing.md
-    const paddingH = size === 'sm' ? theme.spacing.md : size === 'lg' ? theme.spacing.xl : theme.spacing.lg
-    const fontSize = size === 'sm' ? 14 : size === 'lg' ? 18 : 16
+    const paddingV =
+      resolvedSize === 'sm'
+        ? theme.spacing.sm
+        : resolvedSize === 'lg'
+          ? theme.spacing.lg
+          : theme.spacing.md
+    const paddingH =
+      resolvedSize === 'sm'
+        ? theme.spacing.md
+        : resolvedSize === 'lg'
+          ? theme.spacing.xl
+          : theme.spacing.lg
+    const fontSize = resolvedSize === 'sm' ? 14 : resolvedSize === 'lg' ? 18 : 16
 
     return (
       <TouchableOpacity
         ref={ref}
-        disabled={disabled || isLoading}
+        disabled={disabled || resolvedLoading}
         onPress={handlePress}
         activeOpacity={0.7}
         style={[
@@ -118,7 +136,7 @@ export const VctButton = forwardRef<View, VctButtonProps>(
         ]}
         {...props}
       >
-        {isLoading ? (
+        {resolvedLoading ? (
           <ActivityIndicator color={labelColor} size="small" />
         ) : (
           <>
@@ -130,7 +148,7 @@ export const VctButton = forwardRef<View, VctButtonProps>(
                 (theme.typography as Record<string, any>)['button'] || (theme.typography as Record<string, any>)['body'],
               ]}
             >
-              {label}
+              {resolvedLabel}
             </Text>
             {iconRight && <View style={styles.iconRight}>{iconRight}</View>}
           </>
@@ -278,7 +296,14 @@ export function VctCard({ children, style, onPress, elevated = true }: VctCardPr
 
 export interface VctBadgeProps {
   label: string
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'neutral'
+  variant?:
+    | 'primary'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'neutral'
+    | 'info'
+    | 'default'
   style?: ViewStyle
   textStyle?: TextStyle
 }
@@ -290,20 +315,24 @@ export function VctBadge({
   textStyle,
 }: VctBadgeProps) {
   const { theme, isDark } = useVCTTheme()
+  const resolvedVariant = variant === 'default' ? 'neutral' : variant
 
   let bgColor = theme.colors.surfaceElevated
   let textColor = theme.colors.text
 
-  if (variant === 'primary') {
+  if (resolvedVariant === 'primary') {
     bgColor = isDark ? 'rgba(0, 229, 204, 0.2)' : 'rgba(0, 179, 160, 0.1)'
     textColor = theme.colors.primaryDark
-  } else if (variant === 'success') {
+  } else if (resolvedVariant === 'info') {
+    bgColor = isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.1)'
+    textColor = theme.colors.info
+  } else if (resolvedVariant === 'success') {
     bgColor = isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(22, 163, 74, 0.1)'
     textColor = theme.colors.success
-  } else if (variant === 'warning') {
+  } else if (resolvedVariant === 'warning') {
     bgColor = isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(217, 119, 6, 0.1)'
     textColor = theme.colors.warning
-  } else if (variant === 'error') {
+  } else if (resolvedVariant === 'error') {
     bgColor = isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(220, 38, 38, 0.1)'
     textColor = theme.colors.error
   }

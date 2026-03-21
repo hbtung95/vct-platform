@@ -88,6 +88,8 @@ export async function haptic(style: HapticStyle = 'medium'): Promise<void> {
   }
 }
 
+export const triggerHaptic = haptic
+
 // ── Scoring-Specific Patterns ────────────────────────────────
 
 /**

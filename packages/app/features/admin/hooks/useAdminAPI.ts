@@ -64,14 +64,53 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
             })
 
             if (!res.ok) {
-                const text = await res.text().catch(() => res.statusText)
-                throw new Error(`${res.status}: ${text}`)
+                const contentType = res.headers.get('content-type') ?? ''
+                let message = ''
+
+                if (contentType.includes('application/json')) {
+                    const data = await res.json().catch(() => null) as
+                        | { message?: string; error?: string }
+                        | null
+                    message = data?.message ?? data?.error ?? ''
+                } else {
+                    message = await res.text().catch(() => '')
+                    if (message.trim().startsWith('{')) {
+                        try {
+                            const parsed = JSON.parse(message) as
+                                | { message?: string; error?: string }
+                                | null
+                            message = parsed?.message ?? parsed?.error ?? message
+                        } catch {
+                            // Keep original text payload when it is not valid JSON.
+                        }
+                    }
+                }
+
+                const fallbackMessage = res.statusText
+                    ? `${res.status}: ${res.statusText}`
+                    : `${res.status}: Request failed`
+                const error = new Error(message || fallbackMessage) as Error & {
+                    nonRetryable?: boolean
+                }
+                error.nonRetryable = res.status < 500
+                throw error
             }
 
             const json = await res.json()
             return json.data ?? json
         } catch (err) {
             lastError = err instanceof Error ? err : new Error(String(err))
+            const nonRetryable = Boolean(
+                err &&
+                typeof err === 'object' &&
+                'nonRetryable' in err &&
+                err.nonRetryable
+            )
+
+            if (nonRetryable) {
+                break
+            }
+
             if (attempt < MAX_RETRIES) {
                 await new Promise(r => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)))
             }

@@ -451,3 +451,50 @@ export async function uploadDocument(
 export async function fetchAthleteStats(token: string | null): Promise<ProfileStatsAPI> {
   return requestJson<ProfileStatsAPI>('/api/v1/athlete-profiles/stats', token)
 }
+
+export const apiClient = {
+  get<T>(path: string, token: string | null = null): Promise<T> {
+    return requestJson<T>(path, token, { method: 'GET' })
+  },
+  post<TRequest = unknown, TResponse = unknown>(
+    path: string,
+    body?: TRequest,
+    token: string | null = null,
+  ): Promise<TResponse> {
+    return requestJson<TResponse>(path, token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  },
+  put<TRequest = unknown, TResponse = unknown>(
+    path: string,
+    body?: TRequest,
+    token: string | null = null,
+  ): Promise<TResponse> {
+    return requestJson<TResponse>(path, token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  },
+  patch<TRequest = unknown, TResponse = unknown>(
+    path: string,
+    body?: TRequest,
+    token: string | null = null,
+  ): Promise<TResponse> {
+    return requestJson<TResponse>(path, token, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  },
+  delete<TResponse = unknown>(
+    path: string,
+    token: string | null = null,
+  ): Promise<TResponse> {
+    return requestJson<TResponse>(path, token, {
+      method: 'DELETE',
+    })
+  },
+} as const

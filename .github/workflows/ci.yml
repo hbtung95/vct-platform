@@ -41,6 +41,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Frontend tests
+        run: npm run test
+
       - name: Build frontend
         run: npm run build
 
@@ -195,4 +198,3 @@ jobs:
                 -summary \
                 -ignore-missing-schemas \
                 -kubernetes-version 1.31.0
-

@@ -356,6 +356,15 @@ export const ROUTES: Omit<RouteItem, 'roles'>[] = [
         group: 'cong_dong',
         showInSidebar: true,
     },
+    {
+        id: 'marketplace',
+        path: '/marketplace',
+        title: 'route.marketplace.title',
+        label: 'route.marketplace.label',
+        icon: 'ShoppingBag',
+        group: 'cong_dong',
+        showInSidebar: true,
+    },
     // ── Provincial Module ────────────────────────────────────
     {
         id: 'provincial-dashboard',

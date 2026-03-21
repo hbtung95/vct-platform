@@ -55,6 +55,7 @@ export type RouteId =
     | 'pending-approvals'
     | 'reports'
     | 'community'
+    | 'marketplace'
     | 'admin-dashboard'
     | 'admin-tenants'
     | 'audit-logs'

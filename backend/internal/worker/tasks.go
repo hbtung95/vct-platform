@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 )
 
@@ -31,7 +31,7 @@ func (h *NotificationHandler) Handle(ctx context.Context, payload map[string]any
 		return fmt.Errorf("missing recipient_id or template")
 	}
 
-	log.Printf("[notify] sending %s notification to %s (template: %s)", channel, recipientID, template)
+	slog.Info("sending notification", slog.String("channel", channel), slog.String("recipient", recipientID), slog.String("template", template))
 
 	// TODO: Wire real notification service
 	// - Email: SMTP / SendGrid / AWS SES
@@ -39,7 +39,7 @@ func (h *NotificationHandler) Handle(ctx context.Context, payload map[string]any
 	// - SMS: Twilio / VN SMS gateway
 	_ = ctx
 
-	log.Printf("[notify] ✓ notification sent to %s", recipientID)
+	slog.Info("notification sent", slog.String("recipient", recipientID))
 	return nil
 }
 
@@ -62,8 +62,8 @@ func (h *ExportReportHandler) Handle(ctx context.Context, payload map[string]any
 		format = "csv"
 	}
 
-	log.Printf("[export] generating %s report for tournament %s (requested by: %s)",
-		format, tournamentID, requestedBy)
+	slog.Info("generating report",
+		slog.String("format", format), slog.String("tournament", tournamentID), slog.String("requestedBy", requestedBy))
 
 	// TODO: Wire real export service
 	// 1. Fetch tournament data (brackets, results, medals)
@@ -71,7 +71,7 @@ func (h *ExportReportHandler) Handle(ctx context.Context, payload map[string]any
 	// 3. Upload to storage / send to user
 	_ = ctx
 
-	log.Printf("[export] ✓ report generated for tournament %s (%s)", tournamentID, format)
+	slog.Info("report generated", slog.String("tournament", tournamentID), slog.String("format", format))
 	return nil
 }
 
@@ -89,7 +89,7 @@ func (h *SyncEloHandler) Handle(ctx context.Context, payload map[string]any) err
 		batchSize = int(bs)
 	}
 
-	log.Printf("[elo] syncing Elo ratings (tournament: %s, batch: %d)", tournamentID, batchSize)
+	slog.Info("syncing Elo ratings", slog.String("tournament", tournamentID), slog.Int("batchSize", batchSize))
 
 	// TODO: Wire real Elo calculation service
 	// 1. Fetch all completed matches from tournament
@@ -98,7 +98,7 @@ func (h *SyncEloHandler) Handle(ctx context.Context, payload map[string]any) err
 	// 4. Publish updated rankings
 	_ = ctx
 
-	log.Printf("[elo] ✓ Elo ratings synced")
+	slog.Info("Elo ratings synced")
 	return nil
 }
 
@@ -116,7 +116,7 @@ func (h *CleanupTokensHandler) Handle(ctx context.Context, payload map[string]an
 	}
 
 	cutoff := time.Now().Add(-olderThan)
-	log.Printf("[cleanup] removing tokens expired before %s", cutoff.Format(time.RFC3339))
+	slog.Info("cleaning up expired tokens", slog.String("cutoff", cutoff.Format(time.RFC3339)))
 
 	// TODO: Wire real token store
 	// 1. Query tokens where expires_at < cutoff
@@ -124,7 +124,7 @@ func (h *CleanupTokensHandler) Handle(ctx context.Context, payload map[string]an
 	// 3. Log count removed
 	_ = ctx
 
-	log.Printf("[cleanup] ✓ expired tokens cleaned up")
+	slog.Info("expired tokens cleaned up")
 	return nil
 }
 

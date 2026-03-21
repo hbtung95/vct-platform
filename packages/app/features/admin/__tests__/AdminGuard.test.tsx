@@ -38,6 +38,19 @@ vi.mock('../../components/vct-ui', () => ({
     VCT_Button: ({ children, ...props }: any) => React.createElement('button', props, children),
 }))
 
+// Mock auth state
+vi.mock('../../auth/AuthProvider', () => ({
+    useAuth: () => ({
+        isAuthenticated: true,
+        isHydrating: false,
+        currentUser: {
+            id: '1',
+            role: 'admin',
+            roles: ['SYSTEM_ADMIN', 'admin'],
+        },
+    }),
+}))
+
 describe('AdminGuard', () => {
     it('renders children when user is authenticated admin', () => {
         render(

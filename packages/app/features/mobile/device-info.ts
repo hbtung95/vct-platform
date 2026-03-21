@@ -184,3 +184,9 @@ function getLocale(): string {
     return 'vi-VN'
   }
 }
+
+export const deviceInfo = {
+  getDeviceContext,
+  getDeviceSummary,
+  getDeviceHeaders,
+} as const

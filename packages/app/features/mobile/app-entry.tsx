@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React, { Suspense } from 'react'
-import { NavigationContainer } from '@react-navigation/native'
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native'
 import {
   createNativeStackNavigator,
   type NativeStackNavigationOptions,
@@ -21,17 +21,9 @@ import {
   createNavigationTheme,
 } from './root-navigator'
 import { MainTabNavigator } from './tab-navigator'
+import type { MainStackParamList } from './route-types'
 import { useVCTTheme } from './theme-provider'
-import {
-  LazyScreenSettings,
-  LazyScreenTournamentDetail,
-} from './screen-registry'
-
-type MainStackParamList = {
-  Tabs: undefined
-  TournamentDetail: { tournamentId: string }
-  Settings: undefined
-}
+import { MAIN_SCREEN_COMPONENTS } from './screen-registry'
 
 const MainStack = createNativeStackNavigator<MainStackParamList>()
 
@@ -65,7 +57,7 @@ export function MainStackNavigator() {
       <MainStack.Screen name="TournamentDetail">
         {({ navigation, route }) => (
           <Suspense fallback={<ScreenFallback />}>
-            <LazyScreenTournamentDetail
+            <MAIN_SCREEN_COMPONENTS.TournamentDetail
               tournamentId={route.params.tournamentId}
               onGoBack={() => navigation.goBack()}
             />
@@ -75,7 +67,7 @@ export function MainStackNavigator() {
       <MainStack.Screen name="Settings">
         {({ navigation }) => (
           <Suspense fallback={<ScreenFallback />}>
-            <LazyScreenSettings onGoBack={() => navigation.goBack()} />
+            <MAIN_SCREEN_COMPONENTS.Settings onGoBack={() => navigation.goBack()} />
           </Suspense>
         )}
       </MainStack.Screen>
@@ -89,7 +81,11 @@ function AppContent() {
   const { state, initialAuthRoute, theme, isDark, deepLinkConfig } =
     useRootNavigator()
 
-  const navTheme = createNavigationTheme(theme, isDark)
+  const navTheme = {
+    ...DefaultTheme,
+    ...createNavigationTheme(theme, isDark),
+    fonts: DefaultTheme.fonts,
+  }
 
   if (state === 'loading') {
     return <RootLoadingScreen />

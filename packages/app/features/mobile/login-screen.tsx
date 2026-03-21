@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file is superseded by `screens/auth/screen-login.tsx`.
+ * It has zero imports and can be safely deleted.
+ * Kept temporarily for reference during migration.
+ */
 import * as React from 'react'
 import { useState, useCallback } from 'react'
 import {

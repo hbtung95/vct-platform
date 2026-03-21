@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  type StyleProp,
   type ViewStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -28,9 +29,9 @@ export interface BaseScreenProps {
   /** Hide the offline overlay when disconnected? (default: false) */
   hideOfflineState?: boolean
   /** Root container style override */
-  style?: ViewStyle
+  style?: StyleProp<ViewStyle>
   /** Content container style override (applied to ScrollView contentContainer or View) */
-  contentContainerStyle?: ViewStyle
+  contentContainerStyle?: StyleProp<ViewStyle>
   /** Disable standard screen padding (default: false) */
   noPadding?: boolean
   /** Background color override (defaults to theme.colors.background) */

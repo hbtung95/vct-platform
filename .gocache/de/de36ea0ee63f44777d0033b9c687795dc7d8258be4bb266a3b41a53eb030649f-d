@@ -1,7 +1,0 @@
-./auxiliary_services.go
-./club_service.go
-./club_store.go
-./phase2_interfaces.go
-./service.go
-./store.go
-./tournament_service.go

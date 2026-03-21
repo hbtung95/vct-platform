@@ -4,13 +4,23 @@
 // and React hook for mobile forms.
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 
 // ── Types ────────────────────────────────────────────────────
 
 export type ValidationResult = string | null // null = valid, string = error message
 
 export type Validator<T = string> = (value: T) => ValidationResult
+
+export interface FieldRuleConfig {
+  required?: boolean
+  minLength?: number
+  maxLength?: number
+  pattern?: RegExp
+  message?: string
+}
+
+export type ValidationRule<T = string> = Validator<T>[] | FieldRuleConfig
 
 export interface FieldState {
   value: string
@@ -148,6 +158,30 @@ export function compose(...fns: Validator[]): Validator {
   }
 }
 
+function normalizeValidators(rule: ValidationRule): Validator[] {
+  if (Array.isArray(rule)) {
+    return rule
+  }
+
+  const normalized: Validator[] = []
+  const message = rule.message
+
+  if (rule.required) {
+    normalized.push(validators.required(message))
+  }
+  if (typeof rule.minLength === 'number') {
+    normalized.push(validators.minLength(rule.minLength, message))
+  }
+  if (typeof rule.maxLength === 'number') {
+    normalized.push(validators.maxLength(rule.maxLength, message))
+  }
+  if (rule.pattern) {
+    normalized.push(validators.pattern(rule.pattern, message))
+  }
+
+  return normalized
+}
+
 // ── React Hook ───────────────────────────────────────────────
 
 /**
@@ -187,7 +221,7 @@ export function compose(...fns: Validator[]): Validator {
  * ```
  */
 export function useFormValidation<T extends Record<string, string>>(
-  rules: Record<keyof T, Validator[]>,
+  rules: Record<keyof T, ValidationRule>,
   initialValues?: Partial<T>,
 ) {
   const fields = Object.keys(rules) as Array<keyof T>
@@ -207,8 +241,8 @@ export function useFormValidation<T extends Record<string, string>>(
 
   const validateField = useCallback(
     (field: keyof T, value: string): string | null => {
-      const fieldRules = rules[field]
-      if (!fieldRules) return null
+      const fieldRules = normalizeValidators(rules[field] ?? [])
+      if (fieldRules.length === 0) return null
       const composed = compose(...fieldRules)
       return composed(value)
     },
@@ -243,13 +277,20 @@ export function useFormValidation<T extends Record<string, string>>(
     [validateField],
   )
 
-  const validate = useCallback((): boolean => {
+  const validate = useCallback((values?: Partial<T>): boolean => {
     let valid = true
     setState((prev) => {
       const next = { ...prev }
       for (const field of fields) {
-        const error = validateField(field, prev[field].value)
-        next[field] = { ...prev[field], touched: true, error }
+        const nextValue = (values?.[field] as string | undefined) ?? prev[field].value
+        const error = validateField(field, nextValue)
+        next[field] = {
+          ...prev[field],
+          value: nextValue,
+          touched: true,
+          dirty: prev[field].dirty || nextValue !== prev[field].value,
+          error,
+        }
         if (error) valid = false
       }
       return next

@@ -9,6 +9,7 @@ import { Platform } from 'react-native'
 import { configManager } from './config-manager'
 import * as authStorage from './auth-storage'
 import * as deviceInfo from './device-info'
+import { devLog } from './dev-log'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -37,23 +38,23 @@ export interface AnalyticsProvider {
 
 class ConsoleProvider implements AnalyticsProvider {
   async init() {
-    if (configManager.isDev) console.log('📊 [Analytics] Init')
+    if (configManager.isDev) devLog('📊 [Analytics] Init')
   }
 
   async identify(traits: UserTraits) {
-    if (configManager.isDev) console.log('📊 [Analytics] Identify:', traits.id, traits.role)
+    if (configManager.isDev) devLog('📊 [Analytics] Identify:', traits.id, traits.role)
   }
 
   async track(event: AnalyticsEvent) {
-    if (configManager.isDev) console.log(`📊 [Analytics] Track: ${event.name}`, event.properties)
+    if (configManager.isDev) devLog(`📊 [Analytics] Track: ${event.name}`, event.properties)
   }
 
   async screen(name: string, properties?: Record<string, any>) {
-    if (configManager.isDev) console.log(`📊 [Analytics] Screen: ${name}`, properties)
+    if (configManager.isDev) devLog(`📊 [Analytics] Screen: ${name}`, properties)
   }
 
   async reset() {
-    if (configManager.isDev) console.log('📊 [Analytics] Reset')
+    if (configManager.isDev) devLog('📊 [Analytics] Reset')
   }
 }
 
@@ -176,3 +177,4 @@ class AnalyticsTracker {
 // ── Singleton ────────────────────────────────────────────────
 
 export const analytics = new AnalyticsTracker()
+export const analyticsTracker = analytics

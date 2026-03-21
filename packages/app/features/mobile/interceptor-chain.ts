@@ -273,6 +273,10 @@ export class InterceptorChain {
   }
 }
 
+export function createInterceptorChain(): InterceptorChain {
+  return new InterceptorChain()
+}
+
 // ── Pre-built Interceptors ───────────────────────────────────
 
 /** Adds auth token to requests. */
@@ -343,4 +347,3 @@ export function whenResponse(
 // ── Singleton ────────────────────────────────────────────────
 
 export const interceptorChain = new InterceptorChain()
-
