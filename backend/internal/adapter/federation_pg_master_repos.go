@@ -19,7 +19,7 @@ type pgMasterDataStore struct {
 	approvalStore *StoreAdapter[federation.ApprovalRequest]
 }
 
-func NewPgMasterDataStore(ds store.DataStore) federation.MasterDataStore {
+func NewGenericMasterDataStore(ds store.DataStore) federation.MasterDataStore {
 	return &pgMasterDataStore{
 		beltStore:     NewStoreAdapter[federation.MasterBelt](ds, "federation_master_belts"),
 		weightStore:   NewStoreAdapter[federation.MasterWeightClass](ds, "federation_master_weights"),

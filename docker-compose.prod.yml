@@ -97,7 +97,7 @@ services:
     image: postgres:17-alpine
     volumes:
       - ./infra/scripts/migrate.sh:/migrate.sh:ro
-      - ./backend/migrations:/migrations:ro
+      - ./backend/db/migrations:/migrations:ro
     environment:
       DB_HOST: postgres
       DB_PORT: "5432"

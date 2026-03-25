@@ -23,6 +23,11 @@ func (s *CachedStore) EnsureEntity(entity string) {
 	s.source.EnsureEntity(entity)
 }
 
+// Base exposes the underlying DataStore (useful for extracting raw pgxpool)
+func (s *CachedStore) Base() DataStore {
+	return s.source
+}
+
 func (s *CachedStore) List(entity string) []map[string]any {
 	cacheKey := fmt.Sprintf("list:%s", entity)
 	if value, ok := s.cache.Get(cacheKey); ok {

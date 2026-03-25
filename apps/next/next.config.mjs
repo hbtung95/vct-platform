@@ -44,12 +44,12 @@ const nextConfig = {
     const cspDirectives = [
       "default-src 'self'",
       isProd
-        ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-        : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+        ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://va.vercel-scripts.com"
+        : "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      `connect-src 'self' ws: wss:${isProd ? '' : ' http://localhost:*'}`,
+      "font-src 'self' 'unsafe-inline' data: https://fonts.gstatic.com",
+      `connect-src 'self' wss: ws: https://* http://localhost:* https://vitals.vercel-insights.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

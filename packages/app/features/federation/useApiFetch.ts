@@ -27,12 +27,6 @@ interface ApiOptions {
 
 /**
  * Generic hook for making authenticated API calls.
- *
- * Usage:
- * ```tsx
- * const { data, loading, error, execute } = useApiFetch<Partner[]>()
- * useEffect(() => { execute('/international/partners') }, [])
- * ```
  */
 export function useApiFetch<T = unknown>() {
     const [state, setState] = useState<ApiState<T>>({
@@ -60,7 +54,8 @@ export function useApiFetch<T = unknown>() {
 
             if (!res.ok) {
                 const errBody = await res.json().catch(() => ({ message: res.statusText }))
-                throw new Error(errBody.message || `HTTP ${res.status}`)
+                const errorMsg = errBody.error?.message || errBody.message || `HTTP ${res.status}`
+                throw new Error(errorMsg)
             }
 
             const json = await res.json()

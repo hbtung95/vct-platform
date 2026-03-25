@@ -44,7 +44,7 @@ go run ./cmd/migrate up
 # Show migration status
 go run ./cmd/migrate status
 
-# Apply SQL seeds from backend/sql/seeds
+# Apply SQL seeds from backend/db/seeds
 go run ./cmd/migrate seed
 
 # Rollback latest migration (requires *_down.sql file)
@@ -53,8 +53,8 @@ go run ./cmd/migrate down
 
 Seed files are executed in filename order:
 
-- `backend/sql/seeds/0001_seed_entity_records.sql`: seed demo payload for JSON entity store.
-- `backend/sql/seeds/0002_seed_relational_core.sql`: seed core relational rows (`users`, `tournaments`, `teams`, `athletes`, ...).
+- `backend/db/seeds/0001_seed_entity_records.sql`: seed demo payload for JSON entity store.
+- `backend/db/seeds/0002_seed_relational_core.sql`: seed core relational rows (`users`, `tournaments`, `teams`, `athletes`, ...).
 
 Both seed files are idempotent (`ON CONFLICT` upsert) and can be re-run safely.
 

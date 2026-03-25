@@ -14,6 +14,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib" // registers "pgx" driver for database/sql
 
 	"vct-platform/backend/internal/adapter"
+	"vct-platform/backend/internal/apiversioning"
 	"vct-platform/backend/internal/auth"
 	"vct-platform/backend/internal/config"
 	"vct-platform/backend/internal/domain/approval"
@@ -39,6 +40,7 @@ import (
 	"vct-platform/backend/internal/domain/tournament"
 	"vct-platform/backend/internal/email"
 	"vct-platform/backend/internal/events"
+	"vct-platform/backend/internal/metrics"
 	"vct-platform/backend/internal/realtime"
 	"vct-platform/backend/internal/store"
 )
@@ -62,6 +64,8 @@ type Server struct {
 	allowedOrigins   map[string]struct{}
 	rateLimiter      *rateLimiter
 	loginRateLimiter *rateLimiter // stricter limit for auth endpoints
+	metricsRegistry  *metrics.Registry
+	versionRegistry  *apiversioning.Registry
 
 	athleteService      *athlete.Service
 	orgService          *organization.Service
@@ -145,6 +149,26 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 
 	wfRepo := adapter.NewMemWorkflowRepo()
 
+	var (
+		provRepo     federation.ProvinceRepository
+		unitRepo     federation.FederationUnitRepository
+		personRepo   federation.PersonnelRepository
+		masterRepo   federation.MasterDataStore
+	)
+
+	if pgStore, ok := cachedStore.Base().(*store.PostgresStore); ok {
+		pool := pgStore.Pool()
+		provRepo = adapter.NewSqlProvinceRepo(pool)
+		unitRepo = adapter.NewSqlUnitRepo(pool)
+		personRepo = adapter.NewSqlPersonnelRepo(pool)
+		masterRepo = adapter.NewSqlMasterDataStore(pool)
+	} else {
+		provRepo = adapter.NewGenericProvinceRepo(cachedStore)
+		unitRepo = adapter.NewGenericUnitRepo(cachedStore)
+		personRepo = adapter.NewGenericPersonnelRepo(cachedStore)
+		masterRepo = adapter.NewGenericMasterDataStore(cachedStore)
+	}
+
 	s := &Server{
 		cfg:    cfg,
 		logger: logger,
@@ -167,6 +191,8 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 		allowedOrigins:   originSet,
 		rateLimiter:      newRateLimiter(10, time.Second, 100), // 100 burst, 10/s refill
 		loginRateLimiter: newRateLimiter(1, time.Second, 5),    // 5 burst, 1/s — stricter for auth
+		metricsRegistry:  metrics.NewRegistry(),
+		versionRegistry:  apiversioning.NewRegistry(),
 
 		athleteService: athlete.NewService(adapter.NewAthleteRepository(cachedStore)),
 		orgService: organization.NewService(
@@ -189,10 +215,10 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 
 		// ── Wire National Federation Services ────────────
 		federationSvc: federation.NewService(
-			adapter.NewPgProvinceRepo(cachedStore),
-			adapter.NewPgUnitRepo(cachedStore),
-			adapter.NewPgPersonnelRepo(cachedStore),
-			adapter.NewPgMasterDataStore(cachedStore),
+			provRepo,
+			unitRepo,
+			personRepo,
+			masterRepo,
 			newUUID,
 		),
 		approvalSvc: approval.NewService( // Use the extracted wfRepo
@@ -397,6 +423,8 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 		// BTC module (Ban Tổ Chức)
 		s.btcSvc = btc.NewService(adapter.NewPgBTCStore(db), newUUID)
 
+
+
 		// Parent/Guardian module
 		s.parentSvc = parent.NewService(
 			adapter.NewPgParentLinkStore(db),
@@ -434,6 +462,12 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 
 	s.seedDefaultMarketplaceData()
 
+	s.versionRegistry.Register(apiversioning.Version{
+		Name:       "v1",
+		Status:     apiversioning.StatusActive,
+		ReleasedAt: time.Now().UTC(),
+	})
+
 	return s, nil
 }
 
@@ -443,6 +477,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/", s.handleRoot)
 	mux.HandleFunc("/healthz", s.handleHealth)
 	mux.HandleFunc("/readyz", s.handleReadiness)
+	mux.Handle("/metrics", s.metricsRegistry.ExposeHandler())
+
+	// API Documentation (OpenAPI / Scalar UI)
+	mux.HandleFunc("/api/docs", s.handleAPIDocs)
+	mux.HandleFunc("/api/openapi.yaml", s.handleAPISpec)
+
 	mux.HandleFunc("/api/v1/ws", s.handleWebSocket)
 	// Auth routes — stricter rate limiting + smaller body limit for login/register
 	loginRL := withRateLimit(s.loginRateLimiter)
@@ -566,7 +606,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/events/recent", s.withAuth(s.handleRecentEvents))
 	// Generic entity CRUD (catch-all for unmigrated entities)
 	mux.HandleFunc("/api/v1/", s.handleEntityRoutes)
-	return withRecover(withRequestID(withSecurityHeaders(withRateLimit(s.rateLimiter)(withBodyLimit(s.withCSRF(s.withCORS(s.withLogging(mux))))))))
+	return apiversioning.Middleware(s.versionRegistry)(metrics.HTTPMiddleware(s.metricsRegistry)(withRecover(withRequestID(withSecurityHeaders(withRateLimit(s.rateLimiter)(withBodyLimit(s.withCSRF(s.withCORS(s.withLogging(mux))))))))).(http.Handler)).(http.Handler)
 }
 
 // handleRoot returns a JSON welcome response at the root path.

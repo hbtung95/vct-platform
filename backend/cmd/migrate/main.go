@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -14,7 +15,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"vct-platform/backend/db"
 )
+
+var activeFS fs.FS
 
 type migration struct {
 	Version string
@@ -24,13 +29,24 @@ type migration struct {
 }
 
 func main() {
-	migrationsDir := flag.String("migrations", "migrations", "path to migration SQL directory")
-	seedsDir := flag.String("seeds", filepath.Join("sql", "seeds"), "path to seed SQL directory")
+	migrationsDir := flag.String("migrations", filepath.Join("db", "migrations"), "path to migration SQL directory")
+	seedsDir := flag.String("seeds", filepath.Join("db", "seeds"), "path to seed SQL directory")
+	env := flag.String("env", "development", "environment for seeding (e.g., development, production)")
+	useEmbed := flag.Bool("embed", false, "use embedded SQL files instead of local filesystem")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
 		usage()
 		os.Exit(1)
+	}
+
+	if *useEmbed {
+		activeFS = db.FS
+		*migrationsDir = "migrations"
+		*seedsDir = "seeds"
+	} else {
+		// filepath.ToSlash ensures compatibility if activeFS receives Windows paths
+		activeFS = os.DirFS(".")
 	}
 
 	command := strings.ToLower(strings.TrimSpace(flag.Arg(0)))
@@ -66,7 +82,7 @@ func main() {
 			exitWithError("%v", err)
 		}
 	case "seed":
-		if err := runSeed(ctx, pool, *seedsDir); err != nil {
+		if err := runSeed(ctx, pool, *seedsDir, *env); err != nil {
 			exitWithError("%v", err)
 		}
 	default:
@@ -76,7 +92,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: go run ./cmd/migrate [up|down|status|seed] [--migrations migrations] [--seeds sql/seeds]")
+	fmt.Fprintln(os.Stderr, "Usage: go run ./cmd/migrate [up|down|status|seed] [--migrations db/migrations] [--seeds db/seeds] [--env development] [--embed]")
 }
 
 func resolveDatabaseURL() string {
@@ -205,17 +221,30 @@ func runStatus(ctx context.Context, pool *pgxpool.Pool, migrationsDir string) er
 	return nil
 }
 
-func runSeed(ctx context.Context, pool *pgxpool.Pool, seedsDir string) error {
-	seeds, err := listSQLFiles(seedsDir)
+func runSeed(ctx context.Context, pool *pgxpool.Pool, seedsDir string, env string) error {
+	sharedDir := path.Join(filepath.ToSlash(seedsDir), "shared")
+	if err := applySeedsInDir(ctx, pool, sharedDir); err != nil {
+		return err
+	}
+
+	if env != "production" {
+		devDir := path.Join(filepath.ToSlash(seedsDir), "dev")
+		if err := applySeedsInDir(ctx, pool, devDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applySeedsInDir(ctx context.Context, pool *pgxpool.Pool, dir string) error {
+	seeds, err := listSQLFiles(dir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			fmt.Println("seed directory not found, skip")
 			return nil
 		}
 		return err
 	}
 	if len(seeds) == 0 {
-		fmt.Println("no seed files found")
 		return nil
 	}
 
@@ -229,7 +258,8 @@ func runSeed(ctx context.Context, pool *pgxpool.Pool, seedsDir string) error {
 }
 
 func listMigrations(dir string) ([]migration, error) {
-	entries, err := os.ReadDir(dir)
+	fsDir := filepath.ToSlash(dir)
+	entries, err := fs.ReadDir(activeFS, fsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +289,7 @@ func listMigrations(dir string) ([]migration, error) {
 		result = append(result, migration{
 			Version: version,
 			Name:    name,
-			Path:    filepath.Join(dir, name),
+			Path:    path.Join(fsDir, name),
 			IsDown:  isDown,
 		})
 	}
@@ -274,7 +304,8 @@ func listMigrations(dir string) ([]migration, error) {
 }
 
 func listSQLFiles(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
+	fsDir := filepath.ToSlash(dir)
+	entries, err := fs.ReadDir(activeFS, fsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +317,7 @@ func listSQLFiles(dir string) ([]string, error) {
 		}
 		name := entry.Name()
 		if strings.HasSuffix(strings.ToLower(name), ".sql") {
-			files = append(files, filepath.Join(dir, name))
+			files = append(files, path.Join(fsDir, name))
 		}
 	}
 	sort.Strings(files)
@@ -399,7 +430,7 @@ func countUpMigrationsByPrefix(migrations []migration) map[string]int {
 }
 
 func applySQLFile(ctx context.Context, pool *pgxpool.Pool, path string) error {
-	body, err := os.ReadFile(path)
+	body, err := fs.ReadFile(activeFS, path)
 	if err != nil {
 		return err
 	}

@@ -11,10 +11,16 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"vct-platform/backend/internal/apierror"
 )
 
 type PostgresStore struct {
 	pool *pgxpool.Pool
+}
+
+func (s *PostgresStore) Pool() *pgxpool.Pool {
+	return s.pool
 }
 
 func NewPostgresStore(connectionString string, autoMigrate bool) (*PostgresStore, error) {
@@ -523,7 +529,7 @@ func (s *PostgresStore) Create(entity string, item map[string]any) (map[string]a
 	}
 
 	if _, exists := s.GetByID(entity, id); exists {
-		return nil, fmt.Errorf("id %s da ton tai", id)
+		return nil, fmt.Errorf("%w: %s", apierror.ErrDuplicateID, id)
 	}
 
 	payload, err := json.Marshal(cloneMap(item))
@@ -548,7 +554,7 @@ func (s *PostgresStore) Create(entity string, item map[string]any) (map[string]a
 func (s *PostgresStore) Update(entity, id string, patch map[string]any) (map[string]any, error) {
 	current, exists := s.GetByID(entity, id)
 	if !exists {
-		return nil, errors.New("khong tim thay ban ghi")
+		return nil, apierror.ErrNotFound
 	}
 
 	next := cloneMap(current)
@@ -642,7 +648,7 @@ func (s *PostgresStore) Import(entity string, payload []any) ImportReport {
 		if !ok {
 			report.Rejected = append(report.Rejected, RejectedItem{
 				Item:   item,
-				Reason: "dinh dang khong hop le",
+				Reason: "invalid format",
 			})
 			continue
 		}

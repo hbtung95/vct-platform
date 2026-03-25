@@ -13,7 +13,7 @@ type pgProvinceRepo struct {
 	*StoreAdapter[federation.Province]
 }
 
-func NewPgProvinceRepo(ds store.DataStore) federation.ProvinceRepository {
+func NewGenericProvinceRepo(ds store.DataStore) federation.ProvinceRepository {
 	return &pgProvinceRepo{
 		StoreAdapter: NewStoreAdapter[federation.Province](ds, "federation_provinces"),
 	}
@@ -69,7 +69,7 @@ type pgUnitRepo struct {
 	*StoreAdapter[federation.FederationUnit]
 }
 
-func NewPgUnitRepo(ds store.DataStore) federation.FederationUnitRepository {
+func NewGenericUnitRepo(ds store.DataStore) federation.FederationUnitRepository {
 	return &pgUnitRepo{
 		StoreAdapter: NewStoreAdapter[federation.FederationUnit](ds, "federation_units"),
 	}
@@ -130,7 +130,7 @@ type pgPersonnelRepo struct {
 	*StoreAdapter[federation.PersonnelAssignment]
 }
 
-func NewPgPersonnelRepo(ds store.DataStore) federation.PersonnelRepository {
+func NewGenericPersonnelRepo(ds store.DataStore) federation.PersonnelRepository {
 	return &pgPersonnelRepo{
 		StoreAdapter: NewStoreAdapter[federation.PersonnelAssignment](ds, "federation_personnel"),
 	}

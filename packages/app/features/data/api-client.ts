@@ -21,8 +21,15 @@ export class ApiClientError extends Error {
 }
 
 interface ApiErrorPayload {
+    // Legacy format
     message?: string
     code?: string
+    // Standard apierror envelope
+    error?: {
+        message: string
+        code: string
+        details?: any[]
+    }
 }
 
 const parseErrorResponse = async (
@@ -37,8 +44,8 @@ const parseErrorResponse = async (
     try {
         const payload = (await response.json()) as ApiErrorPayload
         return {
-            message: payload?.message?.trim() || fallback,
-            code: payload?.code,
+            message: payload?.error?.message?.trim() || payload?.message?.trim() || fallback,
+            code: payload?.error?.code || payload?.code,
         }
     } catch {
         return { message: fallback }

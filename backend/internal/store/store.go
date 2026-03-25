@@ -3,11 +3,12 @@ package store
 import (
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"sync"
+
+	"vct-platform/backend/internal/apierror"
 )
 
 type RejectedItem struct {
@@ -87,7 +88,7 @@ func (s *Store) Create(entity string, item map[string]any) (map[string]any, erro
 		s.entities[entity] = make(map[string]map[string]any)
 	}
 	if _, exists := s.entities[entity][id]; exists {
-		return nil, fmt.Errorf("id %s da ton tai", id)
+		return nil, fmt.Errorf("%w: %s", apierror.ErrDuplicateID, id)
 	}
 
 	s.entities[entity][id] = cloneMap(item)
@@ -100,11 +101,11 @@ func (s *Store) Update(entity, id string, patch map[string]any) (map[string]any,
 
 	bucket := s.entities[entity]
 	if bucket == nil {
-		return nil, errors.New("khong tim thay entity")
+		return nil, apierror.ErrEntityNotFound
 	}
 	current, exists := bucket[id]
 	if !exists {
-		return nil, errors.New("khong tim thay ban ghi")
+		return nil, apierror.ErrNotFound
 	}
 
 	next := cloneMap(current)
@@ -155,7 +156,7 @@ func (s *Store) Import(entity string, payload []any) ImportReport {
 	for _, item := range payload {
 		mapped, ok := item.(map[string]any)
 		if !ok {
-			report.Rejected = append(report.Rejected, RejectedItem{Item: item, Reason: "dinh dang khong hop le"})
+			report.Rejected = append(report.Rejected, RejectedItem{Item: item, Reason: "invalid format"})
 			continue
 		}
 		id, err := requireID(mapped)
@@ -220,11 +221,11 @@ func (s *Store) ExportCSV(entity string) (string, error) {
 func requireID(item map[string]any) (string, error) {
 	value, exists := item["id"]
 	if !exists {
-		return "", errors.New("thieu truong id")
+		return "", apierror.ErrMissingID
 	}
 	id, ok := value.(string)
 	if !ok || strings.TrimSpace(id) == "" {
-		return "", errors.New("id khong hop le")
+		return "", apierror.ErrInvalidID
 	}
 	return strings.TrimSpace(id), nil
 }
