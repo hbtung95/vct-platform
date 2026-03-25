@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ActiveWorkspace, WorkspaceCard, WorkspaceScope, WorkspaceType } from './workspace-types'
+import type { ActiveWorkspace, WorkspaceCard, WorkspaceCategory, WorkspaceScope, WorkspaceType } from './workspace-types'
 import { WORKSPACE_META } from './workspace-types'
 
 const RECENT_MAX = 10
@@ -22,6 +22,18 @@ interface WorkspaceState {
 
     /** Timestamp map: workspace ID → last accessed epoch ms */
     lastAccessedMap: Record<string, number>
+
+    /** Portal Search Query */
+    searchQuery: string
+    setSearchQuery: (query: string) => void
+
+    /** Portal Active Category Filter (null if show all) */
+    activeCategory: WorkspaceCategory | null
+    setActiveCategory: (cat: WorkspaceCategory | null) => void
+
+    /** Is currently impersonating another user's workspace view */
+    isImpersonating: boolean
+    setImpersonating: (is: boolean) => void
 
     /** Set the active workspace (entering a workspace) */
     enterWorkspace: (card: WorkspaceCard) => void
@@ -64,6 +76,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             availableWorkspaces: [],
             pinnedWorkspaceIds: [],
             lastAccessedMap: {},
+            searchQuery: '',
+            activeCategory: null,
+            isImpersonating: false,
+
+            setSearchQuery: (query) => set({ searchQuery: query }),
+            setActiveCategory: (cat) => set({ activeCategory: cat }),
+            setImpersonating: (is) => set({ isImpersonating: is }),
 
             enterWorkspace: (card) => {
                 const meta = WORKSPACE_META[card.type]
@@ -144,6 +163,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 activeWorkspace: state.activeWorkspace,
                 pinnedWorkspaceIds: state.pinnedWorkspaceIds,
                 lastAccessedMap: state.lastAccessedMap,
+                isImpersonating: state.isImpersonating,
             }),
         }
     )

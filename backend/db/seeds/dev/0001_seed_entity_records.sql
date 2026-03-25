@@ -15,12 +15,12 @@ BEGIN
         'TOURNAMENT-2026',
         '{
           "id":"TOURNAMENT-2026",
-          "ten_giai":"Giai Vo Co Truyen Toan Quoc 2026",
+          "ten_giai":"Giải Võ Cổ Truyền Toàn Quốc 2026",
           "ma_giai":"VCT-2026",
           "cap_do":"quoc_gia",
           "ngay_bat_dau":"2026-08-15",
           "ngay_ket_thuc":"2026-08-20",
-          "dia_diem":"Nha thi dau Quy Nhon",
+          "dia_diem":"Nhà thi đấu Quy Nhơn",
           "trang_thai":"dang_ky",
           "operation_shift":"sang"
         }'::jsonb
@@ -31,11 +31,11 @@ BEGIN
         '{
           "id":"DV01",
           "ma":"BD",
-          "ten":"Doan Binh Dinh",
+          "ten":"Đoàn Bình Định",
           "tat":"BD",
           "loai":"doan_tinh",
-          "tinh":"Binh Dinh",
-          "truong_doan":"Nguyen Van Trong",
+          "tinh":"Bình Định",
+          "truong_doan":"Nguyễn Văn Trọng",
           "sdt":"0900000001",
           "email":"bd@vct.vn",
           "trang_thai":"da_xac_nhan"
@@ -47,11 +47,11 @@ BEGIN
         '{
           "id":"DV02",
           "ma":"HN",
-          "ten":"Doan Ha Noi",
+          "ten":"Đoàn Hà Nội",
           "tat":"HN",
           "loai":"doan_tinh",
-          "tinh":"Ha Noi",
-          "truong_doan":"Tran Tuan Anh",
+          "tinh":"Hà Nội",
+          "truong_doan":"Trần Tuấn Anh",
           "sdt":"0900000002",
           "email":"hn@vct.vn",
           "trang_thai":"da_xac_nhan"
@@ -62,7 +62,7 @@ BEGIN
         'VDV01',
         '{
           "id":"VDV01",
-          "ho_ten":"Pham Hoang Nam",
+          "ho_ten":"Phạm Hoàng Nam",
           "gioi":"nam",
           "doan_id":"DV01",
           "doan_ten":"BD",
@@ -75,7 +75,7 @@ BEGIN
         'VDV02',
         '{
           "id":"VDV02",
-          "ho_ten":"Le Thu Huong",
+          "ho_ten":"Lê Thu Hương",
           "gioi":"nu",
           "doan_id":"DV02",
           "doan_ten":"HN",
@@ -89,7 +89,7 @@ BEGIN
         '{
           "id":"DK01",
           "vdv_id":"VDV01",
-          "vdv_ten":"Pham Hoang Nam",
+          "vdv_ten":"Phạm Hoàng Nam",
           "doan_id":"DV01",
           "doan_ten":"BD",
           "loai":"doi_khang",
@@ -105,9 +105,9 @@ BEGIN
           "id":"RS01",
           "loai":"doi_khang",
           "noi_dung":"Nam 55kg",
-          "vdv_ten":"Pham Hoang Nam",
+          "vdv_ten":"Phạm Hoàng Nam",
           "doan":"BD",
-          "ket_qua":"Thang diem",
+          "ket_qua":"Thắng điểm",
           "diem":"5:2",
           "huy_chuong":""
         }'::jsonb
@@ -132,8 +132,8 @@ BEGIN
         'S01',
         '{
           "id":"S01",
-          "ten":"San 1",
-          "vi_tri":"Nha thi dau A",
+          "ten":"Sân 1",
+          "vi_tri":"Nhà thi đấu A",
           "loai":"doi_khang",
           "trang_thai":"san_sang"
         }'::jsonb
@@ -143,8 +143,8 @@ BEGIN
         'S02',
         '{
           "id":"S02",
-          "ten":"San 2",
-          "vi_tri":"Nha thi dau A",
+          "ten":"Sân 2",
+          "vi_tri":"Nhà thi đấu A",
           "loai":"quyen",
           "trang_thai":"san_sang"
         }'::jsonb
@@ -154,7 +154,7 @@ BEGIN
         'TT01',
         '{
           "id":"TT01",
-          "ho_ten":"Dang Quoc Minh",
+          "ho_ten":"Đặng Quốc Minh",
           "cap_bac":"quoc_gia",
           "chuyen_mon":"ca_hai",
           "trang_thai":"xac_nhan"
@@ -165,7 +165,7 @@ BEGIN
         'TT02',
         '{
           "id":"TT02",
-          "ho_ten":"Vo Hai Yen",
+          "ho_ten":"Võ Hải Yến",
           "cap_bac":"cap_1",
           "chuyen_mon":"quyen",
           "trang_thai":"xac_nhan"
@@ -177,10 +177,10 @@ BEGIN
         '{
           "id":"KN01",
           "doan_id":"DV02",
-          "doan_ten":"Doan Ha Noi",
+          "doan_ten":"Đoàn Hà Nội",
           "loai":"khieu_nai",
           "trang_thai":"dang_xu_ly",
-          "ly_do":"De nghi xem lai diem ky thuat",
+          "ly_do":"Đề nghị xem lại điểm kỹ thuật",
           "thoi_gian_nop":"2026-08-15T10:20:00+07:00"
         }'::jsonb
       ),
@@ -190,7 +190,7 @@ BEGIN
         '{
           "id":"CAN01",
           "vdv_id":"VDV01",
-          "vdv_ten":"Pham Hoang Nam",
+          "vdv_ten":"Phạm Hoàng Nam",
           "doan_ten":"BD",
           "hang_can_dk":"Nam 55kg",
           "can_thuc_te":54.8,
@@ -205,8 +205,8 @@ BEGIN
           "san_id":"S01",
           "hang_can":"Nam 55kg",
           "trang_thai":"chua_dau",
-          "vdv_do":{"id":"VDV01","ten":"Pham Hoang Nam","doan":"BD"},
-          "vdv_xanh":{"id":"VDV02","ten":"Le Thu Huong","doan":"HN"}
+          "vdv_do":{"id":"VDV01","ten":"Phạm Hoàng Nam","doan":"BD"},
+          "vdv_xanh":{"id":"VDV02","ten":"Lê Thu Hương","doan":"HN"}
         }'::jsonb
       ),
       (
@@ -216,9 +216,9 @@ BEGIN
           "id":"Q01",
           "san_id":"S02",
           "vdv_id":"VDV02",
-          "vdv_ten":"Le Thu Huong",
+          "vdv_ten":"Lê Thu Hương",
           "doan_ten":"HN",
-          "noi_dung":"Ngoc Tran Quyen",
+          "noi_dung":"Ngọc Trản Quyền",
           "diem":[8.8,8.9,9.0,8.7,8.9],
           "diem_tb":8.86,
           "xep_hang":1,
@@ -230,10 +230,10 @@ BEGIN
         'NDQ01',
         '{
           "id":"NDQ01",
-          "ten":"Ngoc Tran Quyen",
+          "ten":"Ngọc Trản Quyền",
           "hinh_thuc":"ca_nhan",
           "gioi":"nu",
-          "lua_tuoi":"Thanh nien",
+          "lua_tuoi":"Thanh niên",
           "trang_thai":"active"
         }'::jsonb
       ),

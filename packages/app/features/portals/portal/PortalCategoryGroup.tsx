@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════
 
 import * as React from 'react'
+import { motion, Variants } from 'framer-motion'
 import { VCT_Icons } from '../../components/vct-icons'
 import { useI18n } from '../../i18n'
 import type { WorkspaceCard, WorkspaceCategory } from '../../layout/workspace-types'
@@ -47,6 +48,19 @@ export const PortalCategoryGroup = ({
         : cards
     const hiddenCount = cards.length - COLLAPSED_SHOW_COUNT
 
+    const containerVariants: Variants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.08 }
+        }
+    }
+
+    const itemVariants: Variants = {
+        hidden: { opacity: 0, y: 15, scale: 0.95 },
+        show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+    }
+
     return (
         <section aria-label={t(label)}>
             {/* Header */}
@@ -55,7 +69,7 @@ export const PortalCategoryGroup = ({
                 onClick={needsCollapse ? onToggle : undefined}
                 className={`mb-3 flex w-full items-center gap-2 text-left ${needsCollapse ? 'cursor-pointer' : 'cursor-default'}`}
                 tabIndex={needsCollapse ? 0 : -1}
-                aria-expanded={needsCollapse ? isExpanded : undefined}
+                {...(needsCollapse ? { 'aria-expanded': isExpanded } : {})}
             >
                 <div
                     className="flex h-6 w-6 items-center justify-center rounded-md"
@@ -70,7 +84,10 @@ export const PortalCategoryGroup = ({
                     {cards.length}
                 </span>
                 {needsCollapse && (
-                    <span className="ml-auto text-vct-text-muted transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    <span 
+                        className="ml-auto text-vct-text-muted transition-transform" 
+                        style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                    >
                         <VCT_Icons.ChevronDown size={14} />
                     </span>
                 )}
@@ -78,25 +95,37 @@ export const PortalCategoryGroup = ({
 
             {/* Cards */}
             {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                >
                     {visibleCards.map((card) => (
-                        <PortalWorkspaceCard
-                            key={card.id}
-                            card={card}
-                            onClick={onCardClick}
-                        />
+                        <motion.div key={card.id} variants={itemVariants}>
+                            <PortalWorkspaceCard
+                                card={card}
+                                onClick={onCardClick}
+                            />
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             ) : (
-                <div className="rounded-xl border border-vct-border/60 bg-[var(--vct-bg-card)] divide-y divide-vct-border/50">
+                <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="rounded-xl border border-vct-border/60 bg-(--vct-bg-card) divide-y divide-vct-border/50"
+                >
                     {visibleCards.map((card) => (
-                        <PortalWorkspaceRow
-                            key={card.id}
-                            card={card}
-                            onClick={onCardClick}
-                        />
+                        <motion.div key={card.id} variants={itemVariants}>
+                            <PortalWorkspaceRow
+                                card={card}
+                                onClick={onCardClick}
+                            />
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             )}
 
             {/* Show more / less */}

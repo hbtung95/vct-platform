@@ -56,7 +56,29 @@ func (s *Server) handleAuthMe(w http.ResponseWriter, r *http.Request, principal 
 		methodNotAllowed(w)
 		return
 	}
-	success(w, http.StatusOK, s.authService.Me(principal))
+	
+	// Get base user and workspace data
+	result := s.authService.Me(principal)
+	
+	// For VCT Portal Hub, we inject real-time or simulated pending task counts
+	// In production, you would fetch this from a workflow/notification service.
+	response := map[string]any{
+		"token":            result.Token,
+		"accessToken":      result.AccessToken,
+		"refreshToken":     result.RefreshToken,
+		"tokenType":        result.TokenType,
+		"expiresAt":        result.ExpiresAt,
+		"refreshExpiresAt": result.RefreshExpiresAt,
+		"user":             result.User,
+		"roles":            result.Roles,
+		"permissions":      result.Permissions,
+		"workspaces":       result.Workspaces,
+		"tournamentCode":   result.TournamentCode,
+		"operationShift":   result.OperationShift,
+		"pendingTasks":     3, // Metric giả lập phục vụ Portal Hub
+	}
+
+	success(w, http.StatusOK, response)
 }
 
 func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request, principal auth.Principal) {

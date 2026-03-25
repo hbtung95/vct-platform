@@ -57,13 +57,14 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
     body?: unknown
     retries?: number
     retryDelayMs?: number
+    contextScope?: string
 }
 
 const request = async <T>(
     path: string,
     options: RequestOptions = {}
 ): Promise<T> => {
-    const { token, body, retries = 2, retryDelayMs = 500, ...init } = options
+    const { token, body, retries = 2, retryDelayMs = 500, contextScope, ...init } = options
     const headers: Record<string, string> = {
         Accept: 'application/json',
         ...(init.headers as Record<string, string>),
@@ -72,6 +73,24 @@ const request = async <T>(
     if (token) {
         headers['Authorization'] = `Bearer ${token}`
     }
+    
+    // Inject Context Scope for Tenant Validation
+    if (contextScope) {
+        headers['X-Context-Scope'] = contextScope
+    } else if (typeof window !== 'undefined') {
+        try {
+            const rawWorkspace = localStorage.getItem('vct:active-workspace')
+            if (rawWorkspace) {
+                const parsed = JSON.parse(rawWorkspace)
+                if (parsed?.scopeId) {
+                    headers['X-Context-Scope'] = parsed.scopeId
+                }
+            }
+        } catch (e) {
+            // Ignore parse errors
+        }
+    }
+
     if (body !== undefined) {
         headers['Content-Type'] = 'application/json'
     }

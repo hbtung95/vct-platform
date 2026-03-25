@@ -26,6 +26,8 @@ import { PortalFavorites } from './portal/PortalFavorites'
 import { PortalRecent } from './portal/PortalRecent'
 import { PortalCategoryGroup } from './portal/PortalCategoryGroup'
 import { PortalEmptyState } from './portal/PortalEmptyState'
+import { PortalBackground } from './portal/PortalBackground'
+import { PortalWelcomeHeader } from './portal/PortalWelcomeHeader'
 import { usePortalState } from './portal/usePortalState'
 
 // ── Workspace destination routes ──
@@ -61,7 +63,7 @@ const PortalSkeleton = () => (
 function PortalHubContent() {
     const router = useRouter()
     const { t } = useI18n()
-    const { currentUser } = useAuth()
+    const { currentUser, setActiveWorkspace } = useAuth()
     const { enterWorkspace, trackAccess } = useWorkspaceStore()
 
     // Resolve REAL workspace cards from user roles (instance-level)
@@ -85,22 +87,31 @@ function PortalHubContent() {
         (card: WorkspaceCard) => {
             // Track access
             trackAccess(card.id)
-            // Enter workspace context
+            // Enter workspace context in Zustand
             enterWorkspace(card)
+            
+            // Sync with AuthProvider for legacy components (AppShell)
+            setActiveWorkspace({
+                type: card.type,
+                scopeId: card.scope.id,
+                scopeName: card.scope.name,
+                role: currentUser.role,
+            })
+            
             // Navigate
             const dest = WORKSPACE_DESTINATIONS[card.type] ?? '/dashboard'
             router.push(dest)
         },
-        [trackAccess, enterWorkspace, router]
+        [trackAccess, enterWorkspace, setActiveWorkspace, currentUser.role, router]
     )
 
     // ── Empty state ──
     if (workspaces.length === 0) {
         return (
             <div className="relative min-h-screen w-full">
-                <PortalAmbientBackground />
+                <PortalBackground />
                 <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-                    <WelcomeHeader name={currentUser.name} count={0} t={t} />
+                    <PortalWelcomeHeader name={currentUser.name} count={0} t={t} />
                     <PortalEmptyState variant="no-workspaces" />
                 </div>
             </div>
@@ -109,7 +120,7 @@ function PortalHubContent() {
 
     return (
         <div className="relative min-h-screen w-full">
-            <PortalAmbientBackground />
+            <PortalBackground />
             <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -117,7 +128,7 @@ function PortalHubContent() {
                 className="relative z-10 mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12"
             >
                 {/* Welcome */}
-                <WelcomeHeader name={currentUser.name} count={portal.totalCount} t={t} />
+                <PortalWelcomeHeader name={currentUser.name} count={portal.totalCount} t={t} />
 
             {/* Search + Sort + View Toggle */}
             <div className="mt-6">
@@ -195,80 +206,6 @@ function PortalHubContent() {
     )
 }
 
-// ── Premium Ambient Background ──
-function PortalAmbientBackground() {
-    return (
-        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-            {/* Dark mode friendly base glow */}
-            <div className="absolute inset-0 bg-(--vct-bg-base) opacity-50 transition-colors duration-500" />
-            
-            {/* Colorful Orbs */}
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1.5, ease: 'easeOut' }}
-                className="absolute -top-[20%] -left-[10%] h-[60vh] w-[60vh] rounded-full bg-linear-to-br from-blue-600/20 to-cyan-500/10 blur-[120px]" 
-            />
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1.5, delay: 0.2, ease: 'easeOut' }}
-                className="absolute top-[30%] -right-[15%] h-[50vh] w-[50vh] rounded-full bg-blue-500/15 blur-[120px]" 
-            />
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1.5, delay: 0.4, ease: 'easeOut' }}
-                className="absolute -bottom-[20%] left-[20%] h-[70vh] w-[70vh] rounded-full bg-indigo-500/10 blur-[150px]" 
-            />
-        </div>
-    )
-}
-
-// ── Welcome Header (extracted and upgraded) ──
-function WelcomeHeader({ name, count, t }: { name: string; count: number; t: (key: string) => string }) {
-    const firstName = name.split(' ').pop() ?? name
-
-    return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-        >
-            <div>
-                <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                    className="mb-3 inline-flex items-center gap-2 rounded-full border border-vct-border/40 bg-white/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-vct-text-muted backdrop-blur-md dark:bg-black/20"
-                >
-                    <span className="h-1.5 w-1.5 rounded-full bg-vct-accent shadow-[0_0_8px_var(--vct-accent)]" />
-                    Hệ sinh thái toàn diện
-                </motion.div>
-                <h1 className="bg-linear-to-br from-vct-text via-vct-text to-vct-text-muted bg-clip-text pb-1 text-3xl font-black tracking-tight text-transparent sm:text-4xl lg:text-5xl">
-                    {t('portal.welcome')}, <span className="bg-linear-to-r from-vct-accent to-blue-500 bg-clip-text text-transparent">{firstName}</span>
-                </h1>
-                <p className="mt-2 text-sm text-vct-text-muted/80 sm:text-base">
-                    Bạn đang có quyền truy cập vào <span className="font-bold text-vct-text">{count} workspace</span> trong hệ thống.
-                </p>
-            </div>
-            
-            <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="hidden items-center gap-2 text-xs text-vct-text-muted/60 sm:flex"
-            >
-                <span>{t('portal.quickSwitch') || 'Nhấn'}</span>
-                <kbd className="flex items-center justify-center rounded-md border border-vct-border/50 bg-white/30 px-2 py-1 text-[10px] font-bold shadow-xs backdrop-blur-sm dark:bg-black/30">
-                    ⌘K
-                </kbd>
-                <span>để tìm kiếm nhanh</span>
-            </motion.div>
-        </motion.div>
-    )
-}
 
 // ── Exported Page with Suspense (for useSearchParams) ──
 export default function Page_portal_hub() {

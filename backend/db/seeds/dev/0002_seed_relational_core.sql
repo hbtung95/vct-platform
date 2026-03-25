@@ -28,7 +28,7 @@ BEGIN
         '00000000-0000-7000-8000-000000000001',
         'btc',
         '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
-        'Ban To Chuc',
+        'Ban Tổ Chức',
         'btc@vct.vn',
         '0900000003',
         true
@@ -38,7 +38,7 @@ BEGIN
         '00000000-0000-7000-8000-000000000001',
         'delegate01',
         '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
-        'Truong Doan Demo',
+        'Trưởng Đoàn Demo',
         'delegate01@vct.vn',
         '0900000004',
         true
@@ -97,16 +97,16 @@ BEGIN
     )
     VALUES (
       '11111111-1111-1111-1111-111111111111',
-      'Giai Vo Co Truyen Toan Quoc 2026',
+      'Giải Võ Cổ Truyền Toàn Quốc 2026',
       'VCT-2026',
       'quoc_gia',
       1,
       DATE '2026-08-15',
       DATE '2026-08-20',
       DATE '2026-07-31',
-      'Binh Dinh',
-      'Nha thi dau Quy Nhon',
-      'Lien Doan VCT',
+      'Bình Định',
+      'Nhà thi đấu Quy Nhơn',
+      'Liên Đoàn VCT',
       'nhap',
       '{"operation_shift":"sang","allow_live_score":true}'::jsonb
     )
@@ -128,7 +128,7 @@ BEGIN
   EXECUTE $sql$
     INSERT INTO age_groups (id, tournament_id, ten, tuoi_min, tuoi_max)
     VALUES
-      ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Thanh nien', 18, 35)
+      ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Thanh niên', 18, 35)
     ON CONFLICT (id) DO UPDATE
       SET ten = EXCLUDED.ten,
           tuoi_min = EXCLUDED.tuoi_min,
@@ -143,12 +143,12 @@ BEGIN
       (
         '33333333-3333-3333-3333-333333333333',
         '11111111-1111-1111-1111-111111111111',
-        'Ngoc Tran Quyen',
+        'Ngọc Trản Quyền',
         'quyen',
         'nu',
         '22222222-2222-2222-2222-222222222222',
         1,
-        'Noi dung quyen nu',
+        'Nội dung quyền nữ',
         'active'
       ),
       (
@@ -159,7 +159,7 @@ BEGIN
         'nam',
         '22222222-2222-2222-2222-222222222222',
         1,
-        'Noi dung doi khang nam',
+        'Nội dung đối kháng nam',
         'active'
       )
     ON CONFLICT (id) DO UPDATE
@@ -204,11 +204,11 @@ BEGIN
       (
         '55555555-5555-5555-5555-555555555551',
         '11111111-1111-1111-1111-111111111111',
-        'Doan Binh Dinh',
+        'Đoàn Bình Định',
         'BD',
         'tinh',
-        'Binh Dinh',
-        'Nguyen Van Trong',
+        'Bình Định',
+        'Nguyễn Văn Trọng',
         '0900000001',
         'bd@vct.vn',
         'da_duyet',
@@ -220,11 +220,11 @@ BEGIN
       (
         '55555555-5555-5555-5555-555555555552',
         '11111111-1111-1111-1111-111111111111',
-        'Doan Ha Noi',
+        'Đoàn Hà Nội',
         'HN',
         'tinh',
-        'Ha Noi',
-        'Tran Tuan Anh',
+        'Hà Nội',
+        'Trần Tuấn Anh',
         '0900000002',
         'hn@vct.vn',
         'da_duyet',
@@ -259,14 +259,14 @@ BEGIN
         '66666666-6666-6666-6666-666666666661',
         '11111111-1111-1111-1111-111111111111',
         '55555555-5555-5555-5555-555555555551',
-        'Pham Hoang Nam',
+        'Phạm Hoàng Nam',
         'nam',
         DATE '2002-03-01',
         54.8,
         170.0,
         'da_duyet',
         '{}'::jsonb,
-        'Van dong vien doi khang',
+        'Vận động viên đối kháng',
         NULL,
         NULL
       ),
@@ -274,14 +274,14 @@ BEGIN
         '66666666-6666-6666-6666-666666666662',
         '11111111-1111-1111-1111-111111111111',
         '55555555-5555-5555-5555-555555555552',
-        'Le Thu Huong',
+        'Lê Thu Hương',
         'nu',
         DATE '2003-07-12',
         50.0,
         162.0,
         'da_duyet',
         '{}'::jsonb,
-        'Van dong vien quyen',
+        'Vận động viên quyền',
         NULL,
         NULL
       )
@@ -312,7 +312,7 @@ BEGIN
       '33333333-3333-3333-3333-333333333334',
       '44444444-4444-4444-4444-444444444444',
       'da_duyet',
-      'Dang ky hop le'
+      'Đăng ký hợp lệ'
     )
     ON CONFLICT (id) DO UPDATE
       SET tournament_id = EXCLUDED.tournament_id,
@@ -332,22 +332,22 @@ BEGIN
       (
         '88888888-8888-8888-8888-888888888881',
         '11111111-1111-1111-1111-111111111111',
-        'San 1',
+        'Sân 1',
         'doi_khang',
         'san_sang',
         500,
-        'Nha thi dau A',
+        'Nhà thi đấu A',
         NULL,
         '[]'::jsonb
       ),
       (
         '88888888-8888-8888-8888-888888888882',
         '11111111-1111-1111-1111-111111111111',
-        'San 2',
+        'Sân 2',
         'quyen',
         'san_sang',
         300,
-        'Nha thi dau A',
+        'Nhà thi đấu A',
         NULL,
         '[]'::jsonb
       )
@@ -371,10 +371,10 @@ BEGIN
       (
         '99999999-9999-9999-9999-999999999991',
         '11111111-1111-1111-1111-111111111111',
-        'Dang Quoc Minh',
+        'Đặng Quốc Minh',
         'quoc_gia',
         'ca_hai',
-        'Binh Dinh',
+        'Bình Định',
         '0900000011',
         'tt01@vct.vn',
         12,
@@ -385,10 +385,10 @@ BEGIN
       (
         '99999999-9999-9999-9999-999999999992',
         '11111111-1111-1111-1111-111111111111',
-        'Vo Hai Yen',
+        'Võ Hải Yến',
         'cap_1',
         'quyen',
-        'Ha Noi',
+        'Hà Nội',
         '0900000012',
         'tt02@vct.vn',
         9,
@@ -447,7 +447,7 @@ BEGIN
       '88888888-8888-8888-8888-888888888881',
       '33333333-3333-3333-3333-333333333334',
       8,
-      'Lich thi dau sang ngay khai mac'
+      'Lịch thi đấu sáng ngày khai mạc'
     )
     ON CONFLICT (id) DO UPDATE
       SET tournament_id = EXCLUDED.tournament_id,
@@ -473,7 +473,7 @@ BEGIN
       54.8,
       'dat',
       NOW(),
-      'Can bo y te',
+      'Cán bộ y tế',
       NULL
     )
     ON CONFLICT (id) DO UPDATE
@@ -574,11 +574,11 @@ BEGIN
       '11111111-1111-1111-1111-111111111111',
       'khieu_nai',
       '55555555-5555-5555-5555-555555555552',
-      'De nghi xem lai diem ky thuat',
+      'Đề nghị xem lại điểm kỹ thuật',
       NULL,
       'eeeeeee1-0000-0000-0000-000000000001',
       'dang_xu_ly',
-      'Tran Tuan Anh',
+      'Trần Tuấn Anh',
       NOW(),
       NULL,
       NULL,
@@ -611,8 +611,8 @@ BEGIN
       '11111111-1111-1111-1111-111111111111',
       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
       'system',
-      'Khoi tao du lieu demo',
-      'Du lieu demo da duoc nap thanh cong.',
+      'Khởi tạo dữ liệu demo',
+      'Dữ liệu demo đã được nạp thành công.',
       '{"scope":"demo"}'::jsonb,
       false
     )
