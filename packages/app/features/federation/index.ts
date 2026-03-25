@@ -27,3 +27,17 @@ export { Page_province_athletes } from './Page_province_athletes'
 export { Page_province_coaches } from './Page_province_coaches'
 export { Page_province_tournaments } from './Page_province_tournaments'
 export { Page_province_reports } from './Page_province_reports'
+export { Page_federation_dashboard } from './Page_federation_dashboard'
+export { Page_federation_personnel } from './Page_federation_personnel'
+export { Page_federation_workflow_config } from './Page_federation_workflow_config'
+export { Page_federation_international } from './Page_federation_international'
+export { Page_federation_pr } from './Page_federation_pr'
+
+// ── New pages (restructuring) ──
+export { Page_federation_calendar } from './Page_federation_calendar'
+export { Page_federation_invoices } from './Page_federation_invoices'
+export { Page_federation_fees } from './Page_federation_fees'
+export { Page_federation_sponsorship } from './Page_federation_sponsorship'
+export { Page_federation_budget } from './Page_federation_budget'
+export { Page_federation_notifications } from './Page_federation_notifications'
+

@@ -7,8 +7,8 @@ import { VCT_IconButton } from '../components/vct-ui'
 import { VCT_Icons } from '../components/vct-icons'
 import { getSidebarGroups } from './route-registry'
 import { useI18n } from '../i18n'
-import type { UserRole, WorkspaceAccess } from '../auth/types'
-import type { WorkspaceType } from './workspace-types'
+import type { UserRole } from '../auth/types'
+import type { WorkspaceCard, WorkspaceType } from './workspace-types'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 
 interface SidebarNavItem {
@@ -37,9 +37,9 @@ interface SidebarProps {
   roleLabel: string
   navGroups?: SidebarNavGroup[]
   workspaceLabel?: string
-  workspaces?: WorkspaceAccess[]
-  currentWorkspaceType?: WorkspaceType
-  onSwitchWorkspace?: (ws: WorkspaceAccess) => void
+  workspaces?: WorkspaceCard[]
+  currentWorkspaceType?: WorkspaceType | null
+  onSwitchWorkspace?: (ws: WorkspaceCard) => void
 }
 
 const isItemActive = (currentPath: string, itemPath: string, allPaths: string[]) => {

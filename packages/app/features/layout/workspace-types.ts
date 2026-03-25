@@ -44,6 +44,12 @@ export interface WorkspaceScope {
     name: string
 }
 
+/** Workspace lifecycle status */
+export type WorkspaceStatus = 'active' | 'archived' | 'upcoming'
+
+/** Workspace permission level */
+export type WorkspacePermission = 'manage' | 'view'
+
 /** A workspace card shown on the Portal Hub */
 export interface WorkspaceCard {
     id: string
@@ -57,6 +63,14 @@ export interface WorkspaceCard {
     badge?: string
     stats?: { label: string; value: string | number }[]
     lastAccessed?: string
+    /** Workspace lifecycle: active (default), archived, upcoming */
+    status?: WorkspaceStatus
+    /** Permission level: manage (default) or view-only */
+    permission?: WorkspacePermission
+    /** Custom logo URL for tenant branding */
+    logoUrl?: string
+    /** Count of pending actions (approvals, notifications) */
+    pendingActions?: number
 }
 
 /** Active workspace context */
@@ -231,7 +245,7 @@ export const WORKSPACE_CATEGORIES: Record<WorkspaceCategory, WorkspaceCategoryMe
     },
     academic: {
         label: 'ws.cat.academic',
-        icon: 'BookOpen',
+        icon: 'Book',
         color: '#14b8a6',
         order: 4,
         types: ['federation_heritage', 'training_management'],

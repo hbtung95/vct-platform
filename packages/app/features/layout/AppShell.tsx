@@ -24,6 +24,8 @@ import {
 } from './route-registry'
 import { getFilteredSidebar, resolveWorkspacesForUser } from './workspace-resolver'
 import { WORKSPACE_META } from './workspace-types'
+import type { WorkspaceCard } from './workspace-types'
+import { useWorkspaceStore, generateWorkspaceCards } from './workspace-store'
 
 
 const MOBILE_MAX_WIDTH = 767
@@ -241,14 +243,28 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
     return getSidebarGroups(currentUser.role)
   }, [activeWorkspace, currentUser])
 
-  const userWorkspaces = useMemo(
-    () => resolveWorkspacesForUser(currentUser),
+  const userWorkspaceCards = useMemo(
+    () => generateWorkspaceCards(
+      currentUser.roles.map((r) => ({
+        role: r.roleCode,
+        scope_type: r.scopeType,
+        scope_id: r.scopeId ?? 'default',
+        scope_name: r.scopeName ?? '',
+      })),
+      currentUser.name
+    ),
     [currentUser]
   )
 
   const handleSwitchWorkspace = React.useCallback(
-    (ws: typeof userWorkspaces[number]) => {
-      setActiveWorkspace(ws)
+    (ws: WorkspaceCard) => {
+      // Convert WorkspaceCard → WorkspaceAccess for auth context
+      setActiveWorkspace({
+        type: ws.type,
+        scopeId: ws.scope.id,
+        scopeName: ws.scope.name,
+        role: currentUser.role,
+      })
       // Navigate to workspace dashboard
       const dashboardPaths: Record<string, string> = {
         system_admin: '/admin',
@@ -432,21 +448,8 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
   // ── Portal route: full-screen, NO sidebar, NO shell header ──
   // Portal Hub has its own header/layout, so we just pass children through.
   if (isPortalRoute) {
-    return (
-      <VCT_Provider>
-        <motion.div
-          key={pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.25 }}
-          className="h-dvh w-full overflow-y-auto"
-        >
-          {children}
-        </motion.div>
-        <VCT_CommandPalette />
-        <VCT_ShortcutsPanel />
-      </VCT_Provider>
-    )
+    // Portal Hub v3: renders inside the normal shell layout (sidebar + header)
+    // No special bypass needed — users stay in consistent navigation context.
   }
 
   // ── Normal workspace route: sidebar + header + main ──
@@ -474,7 +477,7 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
           roleLabel={roleLabel}
           navGroups={navigationGroups}
           workspaceLabel={activeWorkspace ? t(activeWorkspace.scopeName) : undefined}
-          workspaces={userWorkspaces}
+          workspaces={userWorkspaceCards}
           currentWorkspaceType={activeWorkspace?.type}
           onSwitchWorkspace={handleSwitchWorkspace}
         />

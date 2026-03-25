@@ -8,12 +8,20 @@ import { persist } from 'zustand/middleware'
 import type { ActiveWorkspace, WorkspaceCard, WorkspaceScope, WorkspaceType } from './workspace-types'
 import { WORKSPACE_META } from './workspace-types'
 
+const RECENT_MAX = 10
+
 interface WorkspaceState {
     /** Currently active workspace (null = Portal Hub) */
     activeWorkspace: ActiveWorkspace | null
 
     /** All workspace cards available to the current user */
     availableWorkspaces: WorkspaceCard[]
+
+    /** Pinned/favorite workspace IDs */
+    pinnedWorkspaceIds: string[]
+
+    /** Timestamp map: workspace ID → last accessed epoch ms */
+    lastAccessedMap: Record<string, number>
 
     /** Set the active workspace (entering a workspace) */
     enterWorkspace: (card: WorkspaceCard) => void
@@ -29,6 +37,24 @@ interface WorkspaceState {
 
     /** Get workspace type label */
     getWorkspaceLabel: () => string
+
+    /** Pin/favorite a workspace */
+    pinWorkspace: (id: string) => void
+
+    /** Unpin/unfavorite a workspace */
+    unpinWorkspace: (id: string) => void
+
+    /** Toggle pin state */
+    togglePin: (id: string) => void
+
+    /** Track workspace access (updates lastAccessedMap) */
+    trackAccess: (id: string) => void
+
+    /** Get recent workspace IDs (sorted by most recent) */
+    getRecentIds: () => string[]
+
+    /** Check if a workspace is pinned */
+    isPinned: (id: string) => boolean
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
@@ -36,10 +62,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         (set, get) => ({
             activeWorkspace: null,
             availableWorkspaces: [],
+            pinnedWorkspaceIds: [],
+            lastAccessedMap: {},
 
             enterWorkspace: (card) => {
                 const meta = WORKSPACE_META[card.type]
-                set({
+                const now = Date.now()
+                set((state) => ({
                     activeWorkspace: {
                         type: card.type,
                         scope: card.scope,
@@ -47,7 +76,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                         icon: meta.icon,
                         color: meta.color,
                     },
-                })
+                    lastAccessedMap: { ...state.lastAccessedMap, [card.id]: now },
+                }))
             },
 
             exitToHub: () => {
@@ -66,11 +96,54 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 const ws = get().activeWorkspace
                 return ws ? ws.label : 'VCT Ecosystem'
             },
+
+            pinWorkspace: (id) => {
+                set((state) => ({
+                    pinnedWorkspaceIds: state.pinnedWorkspaceIds.includes(id)
+                        ? state.pinnedWorkspaceIds
+                        : [...state.pinnedWorkspaceIds, id],
+                }))
+            },
+
+            unpinWorkspace: (id) => {
+                set((state) => ({
+                    pinnedWorkspaceIds: state.pinnedWorkspaceIds.filter((pid) => pid !== id),
+                }))
+            },
+
+            togglePin: (id) => {
+                const { pinnedWorkspaceIds } = get()
+                if (pinnedWorkspaceIds.includes(id)) {
+                    set({ pinnedWorkspaceIds: pinnedWorkspaceIds.filter((pid) => pid !== id) })
+                } else {
+                    set({ pinnedWorkspaceIds: [...pinnedWorkspaceIds, id] })
+                }
+            },
+
+            trackAccess: (id) => {
+                set((state) => ({
+                    lastAccessedMap: { ...state.lastAccessedMap, [id]: Date.now() },
+                }))
+            },
+
+            getRecentIds: () => {
+                const { lastAccessedMap } = get()
+                return Object.entries(lastAccessedMap)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, RECENT_MAX)
+                    .map(([id]) => id)
+            },
+
+            isPinned: (id) => {
+                return get().pinnedWorkspaceIds.includes(id)
+            },
         }),
         {
             name: 'vct-workspace',
             partialize: (state) => ({
                 activeWorkspace: state.activeWorkspace,
+                pinnedWorkspaceIds: state.pinnedWorkspaceIds,
+                lastAccessedMap: state.lastAccessedMap,
             }),
         }
     )

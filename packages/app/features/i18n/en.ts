@@ -618,6 +618,26 @@ export const en: Record<string, string> = {
     'ws.cat.personal': 'Personal',
     'ws.cat.public': 'Spectators & Public',
 
+    // ── Portal Hub v3 ──
+    'portal.welcome': 'Welcome back',
+    'portal.available': 'available',
+    'portal.quickSwitch': 'to quick switch',
+    'portal.favorites': 'Favorites',
+    'portal.recent': 'Recent',
+    'portal.allWorkspaces': 'All Workspaces',
+    'portal.searchPlaceholder': 'Search workspaces...',
+    'portal.clearSearch': 'Clear',
+    'portal.noResults': 'No workspaces found',
+    'portal.empty': 'No workspaces yet',
+    'portal.sortAZ': 'Name A-Z',
+    'portal.sortRecent': 'Most Recent',
+    'portal.sortPending': 'Pending Actions',
+    'portal.pin': 'Pin',
+    'portal.unpin': 'Unpin',
+    'portal.viewOnly': 'View only',
+    'portal.archived': 'Archived',
+    'portal.upcoming': 'Upcoming',
+
     // ── Workspace Scopes ──
     'ws.scope.sysadmin': 'System Administration',
     'ws.scope.federation': 'VCT Federation',

@@ -1,18 +1,44 @@
 'use client';
+// ════════════════════════════════════════════════════════════════
+// VCT ECOSYSTEM — Command Palette (v3 — Workspace Search)
+// Ctrl+K global overlay with:
+//   • Workspace quick-switch section (⭐ favorites + all)
+//   • Navigation commands
+//   • Vietnamese diacritics-aware search
+//   • Keyboard-first (arrows + enter)
+// ════════════════════════════════════════════════════════════════
+
 import * as React from 'react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { VCT_Icons } from './vct-icons';
+import { useWorkspaceStore, generateWorkspaceCards } from '../layout/workspace-store';
+import { WORKSPACE_META } from '../layout/workspace-types';
+import type { WorkspaceCard } from '../layout/workspace-types';
+import { useAuth } from '../auth/AuthProvider';
+import { useI18n } from '../i18n';
 
 export interface CommandItem {
     id: string;
     label: string;
+    sublabel?: string;
     icon?: React.ReactNode;
     shortcut?: string;
     section?: string;
     action?: () => void;
     href?: string;
+}
+
+// ── Vietnamese diacritics normalization ──
+function normalizeSearch(str: string): string {
+    return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase()
+        .trim();
 }
 
 const DEFAULT_COMMANDS: CommandItem[] = [
@@ -33,7 +59,24 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     // Quick actions
     { id: 'act-schedule', label: 'Xem Lịch thi đấu', icon: <VCT_Icons.Calendar size={18} />, section: 'Thao tác nhanh', href: '/schedule' },
     { id: 'act-tv', label: 'Chế độ TV Dashboard', icon: <VCT_Icons.TV size={18} />, section: 'Thao tác nhanh', href: '/tv' },
+    { id: 'act-portal', label: 'Portal Hub — Tất cả workspace', icon: <VCT_Icons.LayoutGrid size={18} />, section: 'Thao tác nhanh', href: '/' },
 ];
+
+// ── Workspace destination routes ──
+const WS_DESTINATIONS: Record<string, string> = {
+    federation_admin: '/dashboard',
+    federation_provincial: '/provincial',
+    federation_discipline: '/discipline/dashboard',
+    federation_heritage: '/heritage/dashboard',
+    training_management: '/training/dashboard',
+    tournament_ops: '/giai-dau',
+    club_management: '/clubs',
+    referee_console: '/referee-scoring',
+    athlete_portal: '/athlete-portal',
+    parent_portal: '/parent',
+    public_spectator: '/scoreboard',
+    system_admin: '/admin',
+};
 
 export const VCT_CommandPalette = ({ extraCommands = [] }: { extraCommands?: CommandItem[] }) => {
     const [open, setOpen] = useState(false);
@@ -42,13 +85,75 @@ export const VCT_CommandPalette = ({ extraCommands = [] }: { extraCommands?: Com
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const { t } = useI18n();
+    const { currentUser } = useAuth();
+    const { enterWorkspace, trackAccess, pinnedWorkspaceIds, lastAccessedMap } = useWorkspaceStore();
 
-    const allCommands = useMemo(() => [...DEFAULT_COMMANDS, ...extraCommands], [extraCommands]);
+    // ── Generate workspace cards from user roles ──
+    const workspaceCards = useMemo(() => {
+        return generateWorkspaceCards(
+            currentUser.roles.map((r) => ({
+                role: r.roleCode,
+                scope_type: r.scopeType,
+                scope_id: r.scopeId ?? 'default',
+                scope_name: r.scopeName ?? '',
+            })),
+            currentUser.name
+        );
+    }, [currentUser]);
+
+    // ── Build workspace commands ──
+    const workspaceCommands = useMemo<CommandItem[]>(() => {
+        const iconMap = VCT_Icons as Record<string, React.ComponentType<any>>;
+
+        // Sort: pinned first, then recent, then alphabetical
+        const sorted = [...workspaceCards].sort((a, b) => {
+            const aPinned = pinnedWorkspaceIds.includes(a.id) ? 1 : 0;
+            const bPinned = pinnedWorkspaceIds.includes(b.id) ? 1 : 0;
+            if (aPinned !== bPinned) return bPinned - aPinned;
+            const aRecent = lastAccessedMap[a.id] ?? 0;
+            const bRecent = lastAccessedMap[b.id] ?? 0;
+            if (aRecent !== bRecent) return bRecent - aRecent;
+            return a.label.localeCompare(b.label, 'vi');
+        });
+
+        return sorted.map((card) => {
+            const meta = WORKSPACE_META[card.type];
+            const WsIcon = iconMap[meta?.icon ?? 'Activity'] ?? VCT_Icons.Activity;
+            const displayName = card.scope.name && card.scope.name !== card.label
+                ? t(card.scope.name)
+                : t(card.label);
+            const isPinned = pinnedWorkspaceIds.includes(card.id);
+
+            return {
+                id: `ws-${card.id}`,
+                label: `${isPinned ? '⭐ ' : ''}${displayName}`,
+                sublabel: t(meta?.label ?? ''),
+                icon: <WsIcon size={18} color={meta?.color} />,
+                section: 'Workspace',
+                action: () => {
+                    trackAccess(card.id);
+                    enterWorkspace(card);
+                    router.push(WS_DESTINATIONS[card.type] ?? '/dashboard');
+                },
+            };
+        });
+    }, [workspaceCards, pinnedWorkspaceIds, lastAccessedMap, t, trackAccess, enterWorkspace, router]);
+
+    // ── All commands: workspace + nav + extras ──
+    const allCommands = useMemo(
+        () => [...workspaceCommands, ...DEFAULT_COMMANDS, ...extraCommands],
+        [workspaceCommands, extraCommands]
+    );
 
     const filtered = useMemo(() => {
         if (!query.trim()) return allCommands;
-        const q = query.toLowerCase();
-        return allCommands.filter(c => c.label.toLowerCase().includes(q) || c.section?.toLowerCase().includes(q));
+        const q = normalizeSearch(query);
+        return allCommands.filter(c =>
+            normalizeSearch(c.label).includes(q) ||
+            normalizeSearch(c.sublabel ?? '').includes(q) ||
+            normalizeSearch(c.section ?? '').includes(q)
+        );
     }, [allCommands, query]);
 
     // Group by section
@@ -111,7 +216,7 @@ export const VCT_CommandPalette = ({ extraCommands = [] }: { extraCommands?: Com
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z- bg-black/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm"
                         onClick={() => setOpen(false)}
                     />
                     {/* Palette */}
@@ -120,7 +225,7 @@ export const VCT_CommandPalette = ({ extraCommands = [] }: { extraCommands?: Com
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -20, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed left-1/2 top-[15%] z- w-full max-w-[560px] -translate-x-1/2 overflow-hidden rounded-2xl border border-(--vct-border-strong) bg-(--vct-bg-card) shadow-2xl"
+                        className="fixed left-1/2 top-[15%] z-[9999] w-full max-w-[560px] -translate-x-1/2 overflow-hidden rounded-2xl border border-(--vct-border-strong) bg-(--vct-bg-card) shadow-2xl"
                     >
                         {/* Search bar */}
                         <div className="flex items-center gap-3 border-b border-(--vct-border-subtle) px-4 py-3">
@@ -131,8 +236,9 @@ export const VCT_CommandPalette = ({ extraCommands = [] }: { extraCommands?: Com
                                 value={query}
                                 onChange={e => { setQuery(e.target.value); setActiveIdx(0); }}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Tìm lệnh, trang, tính năng..."
+                                placeholder="Tìm workspace, lệnh, trang..."
                                 className="w-full bg-transparent text-sm font-medium text-(--vct-text-primary) outline-none placeholder:text-(--vct-text-muted)"
+                                aria-label="Command palette search"
                             />
                             <kbd className="shrink-0 rounded-md border border-(--vct-border-subtle) bg-(--vct-bg-elevated) px-2 py-0.5 text-[10px] font-bold text-(--vct-text-tertiary)">
                                 ESC
@@ -143,13 +249,13 @@ export const VCT_CommandPalette = ({ extraCommands = [] }: { extraCommands?: Com
                         <div ref={listRef} className="vct-hide-scrollbar max-h-[400px] overflow-y-auto py-2">
                             {filtered.length === 0 ? (
                                 <div className="px-4 py-8 text-center text-sm font-semibold opacity-40">
-                                    Không tìm thấy lệnh phù hợp
+                                    Không tìm thấy kết quả phù hợp
                                 </div>
                             ) : (
                                 Array.from(grouped.entries()).map(([section, items]) => (
                                     <div key={section}>
                                         <div className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider opacity-40">
-                                            {section}
+                                            {section === 'Workspace' ? `🔄 ${section}` : section}
                                         </div>
                                         {items.map(item => {
                                             flatIdx++;
@@ -166,7 +272,12 @@ export const VCT_CommandPalette = ({ extraCommands = [] }: { extraCommands?: Com
                                                     <span className={`shrink-0 ${isActive ? 'opacity-100' : 'opacity-50'}`}>
                                                         {item.icon}
                                                     </span>
-                                                    <span className="flex-1 truncate">{item.label}</span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="truncate">{item.label}</span>
+                                                        {item.sublabel && (
+                                                            <span className="ml-2 text-[11px] font-normal opacity-50">{item.sublabel}</span>
+                                                        )}
+                                                    </div>
                                                     {item.shortcut && (
                                                         <kbd className="rounded border border-(--vct-border-subtle) bg-(--vct-bg-elevated) px-1.5 py-0.5 text-[10px] font-bold opacity-50">
                                                             {item.shortcut}
