@@ -26,6 +26,7 @@ import { getFilteredSidebar, resolveWorkspacesForUser } from './workspace-resolv
 import { WORKSPACE_META } from './workspace-types'
 import type { WorkspaceCard } from './workspace-types'
 import { useWorkspaceStore, generateWorkspaceCards } from './workspace-store'
+import { UI_Logo } from '../components/ui-logo'
 
 
 const MOBILE_MAX_WIDTH = 767
@@ -388,11 +389,22 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
           />
         )}
 
-        {!isMobile && (
-          <VCT_Breadcrumbs items={breadcrumbs} />
-        )}
-        {isMobile && (
-          <VCT_Breadcrumbs items={breadcrumbs.length > 2 ? breadcrumbs.slice(-2) : breadcrumbs} className="max-w-[200px]" />
+        {isPortalRoute ? (
+          <div className="flex items-center gap-2 px-1">
+            <UI_Logo size={24} />
+            <span className="hidden text-xs font-black tracking-widest text-[#00b2ff] sm:block">
+              VCT PLATFORM
+            </span>
+          </div>
+        ) : (
+          <>
+            {!isMobile && (
+              <VCT_Breadcrumbs items={breadcrumbs} />
+            )}
+            {isMobile && (
+              <VCT_Breadcrumbs items={breadcrumbs.length > 2 ? breadcrumbs.slice(-2) : breadcrumbs} className="max-w-[200px]" />
+            )}
+          </>
         )}
       </div>
 
@@ -420,8 +432,8 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
           trigger={
             <span
               className={`inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-xs font-black text-white shadow-sm ring-1 ring-vct-border transition hover:ring-vct-accent ${currentWorkspaceMeta
-                ? `bg-gradient-to-br ${currentWorkspaceMeta.gradient}`
-                : 'bg-gradient-to-br from-red-700 to-emerald-700'
+                ? `bg-linear-to-br ${currentWorkspaceMeta.gradient}`
+                : 'bg-linear-to-br from-red-700 to-emerald-700'
                 }`}
               title={`${currentUser.name} — ${roleLabel}`}
             >

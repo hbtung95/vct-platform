@@ -24,7 +24,9 @@ import type { WorkspaceCard } from '../layout/workspace-types'
 import { PortalSearchBar } from './portal/PortalSearchBar'
 import { PortalFavorites } from './portal/PortalFavorites'
 import { PortalRecent } from './portal/PortalRecent'
-import { PortalCategoryGroup } from './portal/PortalCategoryGroup'
+import { PortalCategoryTabs } from './portal/PortalCategoryTabs'
+import { PortalWorkspaceCard } from './portal/PortalWorkspaceCard'
+import { PortalWorkspaceRow } from './portal/PortalWorkspaceRow'
 import { PortalEmptyState } from './portal/PortalEmptyState'
 import { PortalBackground } from './portal/PortalBackground'
 import { PortalWelcomeHeader } from './portal/PortalWelcomeHeader'
@@ -175,30 +177,51 @@ function PortalHubContent() {
                 </div>
             )}
 
-            {/* Category Groups */}
-            {portal.categoryGroups.length > 0 ? (
-                <div className="mt-8 space-y-12">
-                    {portal.categoryGroups.map((group, index) => (
+            {/* Category Tabs */}
+            {portal.searchFilteredCards.length > 0 && (
+                <div className="mt-8 mb-6">
+                    <PortalCategoryTabs
+                        activeCategory={portal.activeCategory}
+                        onSelectCategory={portal.setActiveCategory}
+                        categoryCounts={portal.categoryCounts}
+                    />
+                </div>
+            )}
+
+            {/* Smart Unified Grid (All workspace cards) */}
+            {portal.filteredCards.length > 0 ? (
+                <motion.div
+                    className={
+                        portal.viewMode === 'list'
+                            ? 'flex flex-col gap-2'
+                            : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                    }
+                    variants={{
+                        hidden: { opacity: 0 },
+                        show: {
+                            opacity: 1,
+                            transition: { staggerChildren: 0.05 },
+                        },
+                    }}
+                    initial="hidden"
+                    animate="show"
+                >
+                    {portal.filteredCards.map((card) => (
                         <motion.div
-                            key={group.category}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                            key={card.id}
+                            variants={{
+                                hidden: { opacity: 0, scale: 0.95, y: 10 },
+                                show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', bounce: 0.4 } },
+                            }}
                         >
-                            <PortalCategoryGroup
-                                category={group.category}
-                                label={group.label}
-                                icon={group.icon}
-                                color={group.color}
-                                cards={group.cards}
-                                viewMode={portal.viewMode}
-                                isExpanded={portal.expandedCategories.has(group.category)}
-                                onToggle={() => portal.toggleCategory(group.category)}
-                                onCardClick={handleCardClick}
-                            />
+                            {portal.viewMode === 'list' ? (
+                                <PortalWorkspaceRow card={card} onClick={handleCardClick} />
+                            ) : (
+                                <PortalWorkspaceCard card={card} onClick={handleCardClick} />
+                            )}
                         </motion.div>
                     ))}
-                </div>
+                </motion.div>
             ) : portal.searchQuery ? (
                 <PortalEmptyState variant="no-results" searchQuery={portal.searchQuery} />
             ) : null}

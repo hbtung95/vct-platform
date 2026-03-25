@@ -84,10 +84,15 @@ export function usePortalState(workspaces: WorkspaceCard[]) {
     }, [])
 
     // ── Store data ──
-    const { pinnedWorkspaceIds, lastAccessedMap } = useWorkspaceStore()
+    const { 
+        pinnedWorkspaceIds, 
+        lastAccessedMap,
+        activeCategory,
+        setActiveCategory 
+    } = useWorkspaceStore()
 
-    // ── Filtered + Sorted workspaces ──
-    const filteredCards = useMemo(() => {
+    // ── Search-Filtered workspaces (for Tab counts) ──
+    const searchFilteredCards = useMemo(() => {
         let cards = [...workspaces]
 
         // Search filter (diacritics-aware)
@@ -104,6 +109,30 @@ export function usePortalState(workspaces: WorkspaceCard[]) {
                 )
             })
         }
+        return cards
+    }, [workspaces, searchQuery])
+
+    // ── Tab Counts ──
+    const categoryCounts = useMemo(() => {
+        const counts = {} as Record<WorkspaceCategory, number>
+        for (const cat of Object.keys(WORKSPACE_CATEGORIES) as WorkspaceCategory[]) {
+            counts[cat] = 0
+        }
+        for (const card of searchFilteredCards) {
+            const cat = getCategoryForType(card.type)
+            counts[cat] = (counts[cat] || 0) + 1
+        }
+        return counts
+    }, [searchFilteredCards])
+
+    // ── Final Filtered + Sorted workspaces (for Unified Grid) ──
+    const filteredCards = useMemo(() => {
+        let cards = [...searchFilteredCards]
+
+        // Category filter
+        if (activeCategory) {
+            cards = cards.filter((c) => getCategoryForType(c.type) === activeCategory)
+        }
 
         // Sort
         switch (sortMode) {
@@ -119,7 +148,7 @@ export function usePortalState(workspaces: WorkspaceCard[]) {
         }
 
         return cards
-    }, [workspaces, searchQuery, sortMode, lastAccessedMap])
+    }, [searchFilteredCards, activeCategory, sortMode, lastAccessedMap])
 
     // ── Pinned workspaces ──
     const pinnedCards = useMemo(
@@ -135,30 +164,6 @@ export function usePortalState(workspaces: WorkspaceCard[]) {
             .slice(0, 5)
     }, [workspaces, lastAccessedMap])
 
-    // ── Category groups ──
-    const categoryGroups = useMemo<PortalCategoryGroup[]>(() => {
-        const groups: PortalCategoryGroup[] = []
-
-        const sortedCategories = Object.entries(WORKSPACE_CATEGORIES)
-            .sort(([, a], [, b]) => a.order - b.order)
-
-        for (const [cat, meta] of sortedCategories) {
-            const cards = filteredCards.filter(
-                (c) => getCategoryForType(c.type) === cat
-            )
-            if (cards.length === 0) continue
-            groups.push({
-                category: cat as WorkspaceCategory,
-                label: meta.label,
-                icon: meta.icon,
-                color: meta.color,
-                cards,
-            })
-        }
-
-        return groups
-    }, [filteredCards])
-
     return {
         // Search
         searchQuery,
@@ -170,11 +175,14 @@ export function usePortalState(workspaces: WorkspaceCard[]) {
         viewMode,
         setViewMode: handleSetViewMode,
         // Categories
+        activeCategory,
+        setActiveCategory,
+        categoryCounts,
         expandedCategories,
         toggleCategory,
-        categoryGroups,
         // Data
         filteredCards,
+        searchFilteredCards,
         pinnedCards,
         recentCards,
         // Totals
