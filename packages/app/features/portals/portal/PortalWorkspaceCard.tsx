@@ -53,10 +53,10 @@ export const PortalWorkspaceCard = ({ card, onClick }: Props) => {
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => onClick(card)}
-            className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border border-vct-border/40 bg-white/40 p-6 text-left shadow-xs backdrop-blur-xl transition-all duration-300 hover:border-vct-accent/50 hover:bg-white/60 hover:shadow-2xl hover:shadow-vct-accent/20 focus:outline-none focus:ring-2 focus:ring-vct-accent/30 dark:bg-black/40 dark:hover:bg-black/60"
+            className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border border-vct-border/40 bg-white/80 p-6 text-left shadow-xs backdrop-blur-xl transition-all duration-300 hover:border-vct-accent/50 hover:bg-white hover:shadow-2xl hover:shadow-vct-accent/20 focus:outline-none focus:ring-2 focus:ring-vct-accent/30 dark:bg-black/40 dark:hover:bg-black/60"
         >
             {/* Ambient Background Glow Effect inside the card (visible on hover) */}
-            <div className="absolute -inset-x-0 -bottom-0 h-1/2 bg-gradient-to-t from-vct-accent/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-vct-accent/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
             {/* Top row: icon + pin + badges */}
             <div className="relative flex w-full items-start justify-between">

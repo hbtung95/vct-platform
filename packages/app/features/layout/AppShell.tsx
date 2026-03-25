@@ -445,11 +445,35 @@ const ShellLayout = ({ children }: { children: React.ReactNode }) => {
     </header>
   )
 
-  // ── Portal route: full-screen, NO sidebar, NO shell header ──
-  // Portal Hub has its own header/layout, so we just pass children through.
+  // ── Portal route: no sidebar ──
   if (isPortalRoute) {
-    // Portal Hub v3: renders inside the normal shell layout (sidebar + header)
-    // No special bypass needed — users stay in consistent navigation context.
+    return (
+      <VCT_Provider>
+        <a href="#vct-main-content" className="vct-skip-link">
+          {t('shell.skipNav')}
+        </a>
+        <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-vct-bg text-vct-text">
+          {renderHeader(false)}
+          <main
+            id="vct-main-content"
+            role="main"
+            className="vct-hide-scrollbar flex-1 overflow-y-auto"
+          >
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {children}
+            </motion.div>
+          </main>
+        </div>
+        <VCT_CommandPalette />
+        <VCT_ShortcutsPanel />
+      </VCT_Provider>
+    )
   }
 
   // ── Normal workspace route: sidebar + header + main ──

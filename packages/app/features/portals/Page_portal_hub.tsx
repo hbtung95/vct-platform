@@ -200,14 +200,14 @@ function PortalAmbientBackground() {
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
             {/* Dark mode friendly base glow */}
-            <div className="absolute inset-0 bg-[var(--vct-bg-base)] opacity-50 transition-colors duration-500" />
+            <div className="absolute inset-0 bg-(--vct-bg-base) opacity-50 transition-colors duration-500" />
             
             {/* Colorful Orbs */}
             <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1.5, ease: 'easeOut' }}
-                className="absolute -top-[20%] -left-[10%] h-[60vh] w-[60vh] rounded-full bg-vct-accent/20 blur-[120px]" 
+                className="absolute -top-[20%] -left-[10%] h-[60vh] w-[60vh] rounded-full bg-linear-to-br from-blue-600/20 to-cyan-500/10 blur-[120px]" 
             />
             <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -246,8 +246,8 @@ function WelcomeHeader({ name, count, t }: { name: string; count: number; t: (ke
                     <span className="h-1.5 w-1.5 rounded-full bg-vct-accent shadow-[0_0_8px_var(--vct-accent)]" />
                     Hệ sinh thái toàn diện
                 </motion.div>
-                <h1 className="bg-gradient-to-br from-vct-text via-vct-text to-vct-text-muted bg-clip-text pb-1 text-3xl font-black tracking-tight text-transparent sm:text-4xl lg:text-5xl">
-                    {t('portal.welcome')}, <span className="bg-gradient-to-r from-vct-accent to-blue-500 bg-clip-text text-transparent">{firstName}</span>
+                <h1 className="bg-linear-to-br from-vct-text via-vct-text to-vct-text-muted bg-clip-text pb-1 text-3xl font-black tracking-tight text-transparent sm:text-4xl lg:text-5xl">
+                    {t('portal.welcome')}, <span className="bg-linear-to-r from-vct-accent to-blue-500 bg-clip-text text-transparent">{firstName}</span>
                 </h1>
                 <p className="mt-2 text-sm text-vct-text-muted/80 sm:text-base">
                     Bạn đang có quyền truy cập vào <span className="font-bold text-vct-text">{count} workspace</span> trong hệ thống.
