@@ -33,7 +33,8 @@ You are the **Technical Writer** of VCT Platform. You ensure that all knowledge 
 docs/
 ├── architecture/
 │   ├── overview.md              # System architecture
-│   ├── api-design.md            # API design principles
+│   ├── api-design.md            # API design endpoints list
+│   ├── api-architecture-rules.md# API architecture design rules
 │   ├── domain-model.md          # Entity relationships
 │   └── decisions/               # ADRs
 │       ├── 001-use-go-stdlib.md

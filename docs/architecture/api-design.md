@@ -1,5 +1,10 @@
 # VCT Platform — API Design
 
+> [!IMPORTANT]
+> **Đây là tài liệu rút gọn về danh sách các endpoints.**
+> Để xem chi tiết các quy tắc thiết kế API (naming convention, versioning, pagination, middleware, errors...), vui lòng tham khảo tài liệu chuẩn:
+> 👉 [**API Architecture Rules**](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/api-architecture-rules.md)
+
 ## Base URL
 
 ```

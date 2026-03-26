@@ -68,15 +68,6 @@ export interface VCTSkeletonProps {
   className?: string
 }
 
-export interface VCTEmptyStateProps {
-  title: ReactNode
-  description?: ReactNode
-  icon?: ReactNode
-  actionLabel?: ReactNode
-  onAction?: () => void
-  className?: string
-}
-
 export interface FilterChip {
   key: string
   label: string
@@ -369,33 +360,6 @@ export const VCT_Skeleton = ({
   />
 )
 
-export const VCT_EmptyState = ({
-  title,
-  description,
-  icon,
-  actionLabel,
-  onAction,
-  className,
-}: VCTEmptyStateProps) => (
-  <div
-    className={cn(
-      'grid place-items-center gap-2 rounded-2xl border border-dashed border-vct-border bg-vct-elevated px-4 py-8 text-center',
-      className ?? ''
-    )}
-  >
-    {icon ? <div className="text-3xl">{icon}</div> : null}
-    <div className="text-base font-black text-vct-text">{title}</div>
-    {description ? (
-      <div className="max-w-[440px] text-sm text-vct-text-secondary">{description}</div>
-    ) : null}
-    {actionLabel && onAction ? (
-      <VCT_Button variant="secondary" onClick={onAction}>
-        {actionLabel}
-      </VCT_Button>
-    ) : null}
-  </div>
-)
-
 export const VCT_FilterChips = ({
   filters,
   onRemove,
@@ -651,7 +615,6 @@ export const VCTKpiCard = VCT_KpiCard as FC<VCTKpiCardProps>
 export const VCTTable = VCT_Table as FC<VCTTableProps>
 export const VCTAvatarGroup = VCT_AvatarGroup as FC<VCTAvatarGroupProps>
 export const VCTSkeleton = VCT_Skeleton as FC<VCTSkeletonProps>
-export const VCTEmptyState = VCT_EmptyState as FC<VCTEmptyStateProps>
 export const VCTFilterChips = VCT_FilterChips as FC<VCTFilterChipsProps>
 export const VCTStatusPipeline = VCT_StatusPipeline as FC<VCTStatusPipelineProps>
 export const VCTBulkActionsBar = VCT_BulkActionsBar as FC<VCTBulkActionsBarProps>

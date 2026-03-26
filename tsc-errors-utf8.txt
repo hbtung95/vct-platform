@@ -1,12 +1,4 @@
-﻿
-> typecheck
-> npx tsc -p tsconfig.json --noEmit
-
-packages/app/features/admin/__tests__/AdminEmptyState.test.tsx(5,10): error TS2305: Module '"@vct/ui"' has no exported member 'AdminEmptyState'.
-packages/app/features/admin/__tests__/AdminErrorBoundary.test.tsx(5,10): error TS2305: Module '"@vct/ui"' has no exported member 'AdminErrorBoundary'.
-packages/app/features/admin/__tests__/AdminGuard.test.tsx(16,10): error TS2305: Module '"@vct/ui"' has no exported member 'AdminGuard'.
-packages/app/features/admin/__tests__/AdminPaginationBar.test.tsx(5,10): error TS2305: Module '"@vct/ui"' has no exported member 'AdminPaginationBar'.
-packages/app/features/admin/components/AdminPageShell.tsx(4,10): error TS2305: Module '"@vct/ui"' has no exported member 'VCT_PageContainer'.
+﻿packages/app/features/admin/components/AdminPageShell.tsx(4,10): error TS2305: Module '"@vct/ui"' has no exported member 'VCT_PageContainer'.
 packages/app/features/admin/components/AdminPageShell.tsx(4,29): error TS2305: Module '"@vct/ui"' has no exported member 'VCT_StatRow'.
 packages/app/features/admin/components/AdminPageShell.tsx(5,15): error TS2724: '"@vct/ui"' has no exported member named 'StatItem'. Did you mean 'TabItem'?
 packages/app/features/admin/Page_admin_audit_log.tsx(6,15): error TS2724: '"@vct/ui"' has no exported member named 'StatItem'. Did you mean 'TabItem'?
@@ -390,4 +382,3 @@ packages/app/features/training/Page_training_plans.tsx(9,29): error TS2305: Modu
 packages/app/features/training/Page_training_plans.tsx(9,43): error TS2305: Module '"@vct/ui"' has no exported member 'VCT_StatRow'.
 packages/app/features/training/Page_training_plans.tsx(10,15): error TS2724: '"@vct/ui"' has no exported member named 'StatItem'. Did you mean 'TabItem'?
 packages/app/features/user/Page_user_profile.tsx(6,10): error TS2305: Module '"@vct/ui"' has no exported member 'VCT_PageContainer'.
-packages/ui/src/components/vct-ui.tsx(12,15): error TS2307: Cannot find module './VCT_CommandPalette' or its corresponding type declarations.

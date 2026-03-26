@@ -12,7 +12,7 @@ import * as React from 'react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { VCT_Icons } from './vct-icons';
+import { VCT_Icons } from '@vct/ui';
 import { useWorkspaceStore, generateWorkspaceCards } from '../layout/workspace-store';
 import { WORKSPACE_META } from '../layout/workspace-types';
 import type { WorkspaceCard } from '../layout/workspace-types';

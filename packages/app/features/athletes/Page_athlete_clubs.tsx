@@ -62,7 +62,8 @@ export function Page_athlete_clubs() {
                         icon={<VCT_Icons.Building size={64} className="text-(--vct-info)/50" />}
                         title="Chưa tham gia CLB nào"
                         description="Bạn hiện chưa là thành viên của bất kỳ Câu lạc bộ hay Võ đường nào. Gia nhập CLB để được đăng ký tham gia các giải đấu."
-                        action={<button onClick={() => setShowJoinModal(true)} className="mt-4 rounded-xl bg-vct-bg border border-vct-border px-6 py-2 text-sm font-bold text-vct-text hover:bg-vct-input transition-colors">Tìm kiếm CLB</button>}
+                        actionLabel="Tìm kiếm CLB"
+                        onAction={() => setShowJoinModal(true)}
                     />
                 </div>
             ) : (

@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+# ═══════════════════════════════════════════════════════════════
+# VCT PLATFORM — PRE-PUSH HOOK
+# Chạy 3 gate nhanh trước khi push: authz + typecheck + lint
+# Nếu muốn chạy full 7 gates: npm run predeploy
+# ═══════════════════════════════════════════════════════════════
+
+echo ""
+echo "🔒 Pre-push validation — checking before push..."
+echo ""
+
+npm run authz:check || {
+  echo "❌ Authz contract check failed. Fix trước khi push."
+  exit 1
+}
+
+npm run typecheck || {
+  echo "❌ TypeScript typecheck failed. Fix trước khi push."
+  exit 1
+}
+
+npm run lint || {
+  echo "❌ ESLint failed. Fix trước khi push."
+  exit 1
+}
+
+echo ""
+echo "✅ Pre-push validation passed. Pushing..."
+echo ""

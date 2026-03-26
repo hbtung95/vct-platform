@@ -10,7 +10,8 @@ description: VCT Platform Go 1.26 backend — Clean Architecture, domain modules
 > [!IMPORTANT]
 > **Source of Truth**: The definitive rules for backend engineering are maintained in two core documents:
 > 1. `docs/architecture/backend-architecture.md` (Clean Architecture, Modules, Migrations)
-> 2. `docs/architecture/report-architecture.md` (Background Async jobs for large datasets > 500 rows, Streaming DB to CSV/Excel instead of loading to RAM)
+> 2. `docs/architecture/api-architecture-rules.md` (API Naming, Versioning, Pagination, Auth)
+> 3. `docs/architecture/report-architecture.md` (Background Async jobs for large datasets > 500 rows, Streaming DB to CSV/Excel instead of loading to RAM)
 > ALL backend coding tasks must adhere to these rules.
 
 ---

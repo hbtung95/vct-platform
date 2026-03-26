@@ -34,6 +34,7 @@ You MUST cross-reference:
 2. `security-architecture.md` (Zero Trust, Cryptography, Privacy Laws)
 3. `qa-testing-architecture.md` (Testing Coverage & Quality Gates)
 4. `database-architecture.md` (Data modeling, performance scaling)
+5. `api-architecture-rules.md` (API Naming, Versioning, Pagination, Auth)
 
 Any violation of these rules by the current codebase must be flagged as a high-priority, non-negotiable finding.
 

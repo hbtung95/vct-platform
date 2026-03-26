@@ -105,10 +105,15 @@ const nextConfig = {
 
   reactStrictMode: false, // reanimated doesn't support this on web
 
-  // Type safety and lint are enforced by dedicated workspace scripts.
-  // Keeping Next build focused on bundling avoids Windows spawn issues in CI/sandbox.
+  // ═══════════════════════════════════════════════════════════
+  // ⚠️  VERCEL DEPLOY GUARD — DO NOT CHANGE THESE VALUES ⚠️
+  // Setting these to `true` will allow broken code to deploy.
+  // ═══════════════════════════════════════════════════════════
   typescript: {
     ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
   },
   experimental: {
     workerThreads: process.env.NEXT_FORCE_WORKER_THREADS === '1',

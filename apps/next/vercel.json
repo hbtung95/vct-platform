@@ -1,7 +1,8 @@
 {
   "framework": "nextjs",
-  "buildCommand": "cd ../.. && npm run build",
+  "buildCommand": "cd ../.. && npm run build:vercel",
   "outputDirectory": ".next",
   "installCommand": "cd ../.. && npm install --legacy-peer-deps",
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "ignoreCommand": "cd ../.. && node scripts/should-deploy.mjs"
 }

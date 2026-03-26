@@ -55,3 +55,6 @@ export const VCT_EmptyState = ({
         </div>
     )
 }
+
+export type VCTEmptyStateProps = EmptyStateProps
+export const VCTEmptyState = VCT_EmptyState
