@@ -1,0 +1,2298 @@
+{
+  "vct_architecture_rules": true,
+  "last_compressed": "2026-03-28T09:24:27.842Z",
+  "documents": {
+    "ai-workflow-architecture": {
+      "1 The MetaOrchestrator Pattern": [
+        "No Rogue Agents: Specialist agents (e.g., `vct-frontend`, `vct-dba`, `vct-backend-go`) MUST NOT operate in isolation when tackling complex, multi-module feature requests.",
+        "The Orchestrator First: All significant feature requests, architecture changes, and bug triage must begin with the `vct-orchestrator` agent. The Orchestrator analyzes the prompt, determines the execution sequence, and delegates tasks sequentially.",
+        "1. Analyze (BA/PO): Understand business requirements and translate them into domain models.",
+        "2. Architect (SA): Produce the database schema and API contract.",
+        "3. Data Layer (DBA): Write and validate migrations (`up.sql` / `down.sql`).",
+        "4. Backend (Go): Implement the API endpoints using Clean Architecture.",
+        "5. Frontend (Next.js/React Native): Connect the API to the UI using predefined `@vct/ui` components.",
+        "6. Verify (QA): Run automated tests and write the walkthrough."
+      ],
+      "2 Artifact  Workflow Lifecycle": [
+        "Rule: AI Agents are explicitly BANNED from immediately modifying source code or terminal commands for complex tasks.",
+        "Plan Format: The plan must explicitly state what files will be modified, what new code will look like, and what tests will be written.",
+        "Rule: The AI MUST halt execution and await user confirmation (`LGTM` or explicitly approved) before executing the Implementation Plan.",
+        "No Code-Golfing: The AI must not autonomously guess the user's intent through trial-and-error code execution.",
+        "Upon completing an Execution phase, the AI MUST summarize the specific Git diffs, operations performed, and verification steps in a `walkthrough.md` artifact. This provides a clear audit trail of the AI's actions."
+      ],
+      "3 HumanInTheLoop HITL Triggers": [
+        "1. Database Migrations: Any `up.sql` that contains `DROP TABLE`, `DROP COLUMN`, `ALTER COLUMN TYPE` operations that could lead to data loss.",
+        "2. Production Deployments: Any command that pushes code directly to production branches (e.g., `main`), executes production build scripts, or initiates Vercel/Render production deployments.",
+        "3. Financial Ledgers: Any modification to foundational finance code (`hooks/finance`, `internal/domain/invoices`, or billing webhooks). Financial arithmetic is zero-trust.",
+        "4. Security Overrides: Altering RLS (Row Level Security) policies to bypass tenant isolation, or modifying Argon2id hashing algorithms."
+      ],
+      "4 Skill Evolution Integrity vctskillevolver": [
+        "The DNA of the Platform: The 18 `.md` files residing in `docs/architecture/` represent the unchangeable core rules of the VCT Platform.",
+        "Rule: The `vct-skill-evolver` agent is ABSOLUTELY FORBIDDEN from deleting, rewriting, or removing dependencies on these 18 architectural pillars, regardless of new industry trends (unless explicitly commanded by the CTO).",
+        "Compliance Linkage: Whenever the Evolver upgrades a skill file (`SKILL.md`), it must ensure that the skill retains explicit references and compliance mandates to its corresponding `.md` pillar document in `docs/architecture/`."
+      ]
+    },
+    "analytics-architecture": {
+      "1 Telemetry Separation PostHog  Mixpanel": [
+        "Zero-DB Telemetry: Pure behavioral tracking events (e.g., `Page_Viewed`, `Button_Clicked`, `Filter_Applied`) are STRICTLY BANNED from being written to the core PostgreSQL database.",
+        "Dedicated Observability: All behavioral and funnel tracking must be sent exclusively to the designated external observability platform (e.g., PostHog) via asynchronous batching.",
+        "Anonymization law (GDPR/PDPA): Real names and cleartext emails MUST NOT be sent as metadata in telemetry events. Users must be identified solely via their internal `AthleteID` or generic `UUIDs`."
+      ],
+      "2 Domain Events vs Analytics Events": [
+        "Domain Event Publication: Core state transitions (e.g., `Match_Scored`, `Tournament_Ended`, `Athlete_Registered`) are crucial business facts. These MUST be published to the internal Event Bus (NATS) and stored permanently using an Event Sourcing pattern.",
+        "Event Enrichment: Domain events sent to telemetry tools must be enriched with business context (e.g., sending `Tournament_Ended` to PostHog must include the total participant count as a property)."
+      ],
+      "3 OLTP vs OLAP Separation Queries": [
+        "Primary Database Protection: Complex administrative reporting, statistical aggregations (e.g., \"Monthly Growth Rate\", \"Demographic Breakdowns\"), and heavy `GROUP BY` dashboard queries are BANNED from running on the Primary Write Database (OLTP).",
+        "Read-Replica BI: All Business Intelligence (BI) dashboards MUST direct their queries to PostgreSQL Read-Replicas.",
+        "Materialized Views: Highly complex multi-table aggregations must be computed asynchronously via Cron jobs into `Materialized Views` during off-peak hours (e.g., 3:00 AM) to ensure the Admin Portal loads charts instantly."
+      ],
+      "4 Ranking  Progression Algorithms ELOGlicko": [
+        "Mathematical Immutability: Athlete progression and ranking updates must follow a strict, tested mathematical formula (e.g., ELO variant for martial arts) processed transactionally.",
+        "Audit Logging: Every ELO mutation must record:",
+        "1. The specific `Match_UUID` triggering the change.",
+        "2. The `Previous_ELO` state.",
+        "3. The `Delta_Variation` (points won/lost).",
+        "4. The `New_ELO` state."
+      ],
+      "5 Key Performance Indicators KPIs": [
+        "North Star Metric definitions: The current platform North Star metric must be explicitly defined and tracked (e.g., \"Active Competition Matches per Month\").",
+        "Funnel Bottleneck Tracking: UI flows for complex operations (like \"Federation Onboarding\" or \"Tournament Setup\") must track explicit \"Step Started\" and \"Step Completed\" events to isolate drop-off friction points."
+      ]
+    },
+    "api-architecture-rules": {
+      "1 Base URL  Environments": [
+        "Môi trường  Base URL                                    Ghi chú               :",
+        "Production  `https://api.vctplatform.vn/api/v1`         TLS bắt buộc          :",
+        "Staging     `https://staging-api.vctplatform.vn/api/v1` Dữ liệu test         :",
+        "Development `http://localhost:18080/api/v1`              `VCT_STORAGE_DRIVER=*`:"
+      ],
+      "2 URL Design Convention": [
+        "Mẫu                                     Ý nghĩa                   Ví dụ                                     :",
+        "`/api/v{N}/{resource}/`                  Collection (List / Create) `GET /api/v1/athletes/`                   :",
+        "`/api/v{N}/{resource}/{id}`              Single item (Get/Put/Del)  `GET /api/v1/athletes/abc-123`            :",
+        "`/api/v{N}/{resource}/{id}/{sub}`        Sub-resource               `GET /api/v1/athletes/abc-123/belt-history`|",
+        "`/api/v{N}/{resource}-action/{verb}`     Custom Action (RPC-style)  `POST /api/v1/tournament-action/generate-brackets`:",
+        "`/api/v{N}/{module}/{sub-module}/`       Module group               `GET /api/v1/finance/invoices/`           :",
+        "`/api/v1/public/{resource}/`             Public (unauthenticated)   `GET /api/v1/public/tournaments/`         :",
+        "#   Quy tắc                                           Ví dụ đúng                Ví dụ sai              :",
+        "U1  Resource names dùng **kebab-case, plural, English** `belt-ranks`             `BeltRanks`, `belt_rank`|",
+        "U2  Trailing slash `/` cho collection routes           `/api/v1/athletes/`      `/api/v1/athletes`     :",
+        "U3  Không trailing slash cho item routes               `/api/v1/athletes/{id}`  `/api/v1/athletes/{id}/`|",
+        "U4  Không dùng verb trong URL cho CRUD                 `POST /athletes/`        `POST /athletes/create`:",
+        "U5  Custom actions dùng `{resource}-action/{verb}`     `/tournament-action/draw``/tournaments/draw`    :",
+        "U6  Tối đa **3 cấp** nesting cho sub-resources         ✅ `/clubs/{id}/members/` ❌ `/fed/{id}/province/{pid}/club/{cid}/members/`:",
+        "U7  Query params dùng **snake_case**                    `?page_size=20`          `?pageSize=20`        :"
+      ],
+      "3 HTTP Methods  Status Codes": [
+        "Method   Mục đích                    Idempotent Body Response             :",
+        "`GET`    Lấy resource                ✅          ❌    `200` + data         :",
+        "`POST`   Tạo mới resource            ❌          ✅    `201` + created item :",
+        "`PUT`    Cập nhật toàn phần          ✅          ✅    `200` + updated item :",
+        "`PATCH`  Cập nhật một phần           ❌          ✅    `200` + updated item :",
+        "`DELETE` Xóa mềm (soft-delete)      ✅          ❌    `204` No Content     :",
+        "Status Code Constant   Khi nào dùng                                                   :",
+        "`200`  —               Thành công GET/PUT/PATCH                                        :",
+        "`201`  —               Tạo thành công POST                                             :",
+        "`202`  —               Accepted — tác vụ nặng đã được đẩy vào Background Worker       :",
+        "`204`  —               Delete thành công, không body                                   :",
+        "`400`  `BAD_REQUEST`   JSON parse lỗi, thiếu field bắt buộc                            :",
+        "`401`  `UNAUTHORIZED`  Thiếu hoặc sai token                                            :",
+        "`403`  `FORBIDDEN`     Token hợp lệ nhưng thiếu quyền (RBAC)                           :",
+        "`404`  `NOT_FOUND`     Resource không tồn tại                                           :",
+        "`405`  `BAD_REQUEST`   HTTP method không hỗ trợ                                         :",
+        "`409`  `CONFLICT`      Trùng dữ liệu hoặc Optimistic Lock conflict (version mismatch)  :",
+        "`410`  —               API version đã Sunset (không còn phục vụ)                        :",
+        "`422`  `VALIDATION_ERROR` Input hợp lệ JSON nhưng vi phạm business rule                :",
+        "`429`  `RATE_LIMITED`  Quá nhiều request — trả kèm `Retry-After` header                 :",
+        "`500`  `INTERNAL_ERROR`Lỗi server — **CẤM** rò rỉ stack trace                           :"
+      ],
+      "4 Request  Response Envelope": [
+        "Field  Bắt buộc Ghi chú                                       :",
+        "`success` ✅    Luôn `true` khi HTTP 2xx                       :",
+        "`data`    ✅    Object hoặc Array                               :",
+        "`meta`    ❎    Bắt buộc cho list endpoints có pagination       :",
+        "Field              Bắt buộc Ghi chú                                              :",
+        "`error.code`       ✅        UPPER_SNAKE_CASE — dùng cho frontend switch/case      :",
+        "`error.message`    ✅        Chuỗi mô tả tiếng Việt (sẽ dịch phía frontend nếu i18n):",
+        "`error.details`    ❎        Object chứa thông tin debug (field errors, context)    :",
+        "Code                     HTTP Mô tả                                          :",
+        "`VALIDATION_ERROR`       400  Input validation failed                         :",
+        "`BAD_REQUEST`            400  Malformed request                               :",
+        "`UNAUTHORIZED`           401  Missing / invalid authentication                :",
+        "`FORBIDDEN`              403  Insufficient permissions                        :",
+        "`NOT_FOUND`              404  Resource not found                              :",
+        "`CONFLICT`               409  Duplicate / Optimistic Lock violation            :",
+        "`DUPLICATE`              409  Unique constraint violation                     :",
+        "`RATE_LIMITED`           429  Rate limit exceeded                             :",
+        "`INTERNAL_ERROR`         500  Server error (KHÔNG rò rỉ chi tiết)              :",
+        "`STATE_TRANSITION_ERROR` 422  State machine từ chối chuyển trạng thái          :",
+        "`QUOTA_EXCEEDED`         429  Vượt quota (VD: số VĐV tối đa trong CLB)        :"
+      ],
+      "5 Authentication  Authorization": [
+        "Quy tắc Chi tiết                                                               :",
+        "A1      Mọi endpoint (trừ `/public/*`, `/healthz`, `/readyz`) **BẮT BUỘC** auth:",
+        "A2      Token type: JWT (HS256), issued bởi `auth.Service`                      :",
+        "A3      Access Token TTL: 15 phút. Refresh Token TTL: 7 ngày                   :",
+        "A4      Token revocation qua Redis blacklist — check tại middleware             :",
+        "A5      WebSocket auth: First-message `{\"action\":\"auth\",\"token\":\"xxx\"}`         :",
+        "Quy tắc Chi tiết                                                                    :",
+        "R1      Dùng `requireRole()` hoặc `authz.CanEntityAction()` — **CẤM** hardcode role:",
+        "R2      Role groups được khai báo tập trung trong `middleware.go`                    :",
+        "R3      Multi-tenant: `TenantID` từ JWT, enforce qua RLS hoặc adapter WHERE clause :"
+      ],
+      "6 API Versioning": [
+        "1. URL path: /api/v1/... → \"v1\"",
+        "2. Accept header: application/vnd.vct.v2+json → \"v2\"",
+        "3. X-API-Version header: v1",
+        "4. Query param: ?version=v1",
+        "Quy tắc Chi tiết                                                                      :",
+        "V1      Mọi route **BẮT BUỘC** có version prefix (`/api/v1/`)                         :",
+        "V2      Version deprecated phải set `Deprecation` + `Sunset` + `Link` headers         :",
+        "V3      Version sunset trả `410 Gone` + `successor` info                             :",
+        "V4      Giữ backward compatibility tối thiểu **12 tháng** sau khi deprecate            :",
+        "V5      Breaking changes (đổi payload structure) → phải tạo version mới                :",
+        "V6      Additive changes (thêm field mới) → KHÔNG cần version mới                      :",
+        "Header            Ý nghĩa                          Ví dụ                                  :",
+        "`X-API-Version`   Version đang phục vụ              `v1`                                   :",
+        "`X-API-Status`    Lifecycle status                  `active`, `deprecated`, `sunset`       :",
+        "`Deprecation`     Ngày version bị deprecated        `Thu, 01 Jan 2026 00:00:00 GMT`        :",
+        "`Sunset`          Ngày version ngừng phục vụ        `Thu, 01 Jul 2026 00:00:00 GMT`        :",
+        "`Link`            Link tới version kế nhiệm         `</api/v2>; rel=\"successor-version\"`   :",
+        "`X-API-Warn`      Cảnh báo deprecation dạng text    `API version v1 is deprecated, ...`    :"
+      ],
+      "7 Pagination": [
+        "Chiến lược        Khi nào dùng                                     Query params                             :",
+        "**Offset-based**  Bảng < 50,000 rows, cần nhảy trang               `?page=2&page_size=20`                   :",
+        "**Cursor-based**  Bảng lớn (logs, events, transactions, audit)      `?cursor=eyJpZCI6Ijk5OSJ9&page_size=20` :",
+        "#   Quy tắc                                                                       :",
+        "P1  Mọi List API **BẮT BUỘC** phải phân trang — **CẤM** trả toàn bộ records       :",
+        "P2  `page_size` mặc định: `20`, tối đa: `100`                                     :",
+        "P3  Bảng > 50,000 rows **BẮT BUỘC** dùng Cursor-based                              :",
+        "P4  Response `meta` phải chứa đủ: `page`, `page_size`, `total`, `total_pages`       :",
+        "P5  Cursor-based: `meta` chứa `next_cursor` (base64 encoded keyset)                :",
+        "P6  **CẤM** dùng `OFFSET` lớn (> 10,000) — phải chuyển sang Cursor                 :"
+      ],
+      "8 Filtering Sorting  Search": [
+        "Quy tắc Chi tiết                                                               :",
+        "F1      Filter params dùng **snake_case**, match tên field trong DB             :",
+        "F2      Chỉ cho phép filter trên fields **có index** — tránh full table scan    :",
+        "F3      Multi-value filter dùng comma: `?status=active,pending`                 :",
+        "F4      Date range: `?created_from=2025-01-01&created_to=2025-12-31`           :",
+        "F5      Boolean: `?is_verified=true` (string, không phải boolean)               :",
+        "Quy tắc Chi tiết                                                                    :",
+        "S1      Chỉ cho phép sort trên fields **có index**                                   :",
+        "S2      `sort_order` chỉ chấp nhận `asc` hoặc `desc`, mặc định `desc`             :",
+        "S3      Multi-sort: `?sort_by=status,created_at&sort_order=asc,desc`                :",
+        "S4      Fields cho phép sort phải được whitelist — **CẤM** sort trên field arbitrary :",
+        "Quy tắc Chi tiết                                                         :",
+        "Q1      Full-text search param: `q` (query)                             :",
+        "Q2      Tối thiểu 2 ký tự                                               :",
+        "Q3      Backend dùng `ILIKE` cho search đơn giản, Meilisearch cho nâng cao:"
+      ],
+      "10 Middleware Stack": [
+        "#   Quy tắc                                                                       :",
+        "M1  Middleware mới đăng ký trong `middleware.go`, chain trong `server.go Handler()` :",
+        "M2  **CẤM** wrap middleware bên trong handler function                              :",
+        "M3  Auth middleware (`withAuth`) áp dụng **per-route**, không global                :",
+        "M4  Rate limit có 2 tier: Global (100 req/s) + Login (5 req/min per IP)            :",
+        "M5  Body limit mặc định 10MB, dùng `withBodyLimitSize()` cho route-specific override|"
+      ],
+      "11 Rate Limiting": [
+        "Tier         Rate                 Burst Áp dụng                              :",
+        "**Global**   100 tokens/giây      200   Tất cả endpoints                      :",
+        "**Auth**     5 tokens/phút        10    `/auth/login`, `/auth/register`, OTP  :",
+        "**Sensitive**10 tokens/phút       20    Password reset, delete operations     :"
+      ],
+      "12 Idempotency": [
+        "Tạo/sửa kết quả trận đấu (scoring)",
+        "Thanh toán / tạo giao dịch tài chính",
+        "Cấp chứng nhận / thăng đai",
+        "Phê duyệt / từ chối workflow",
+        "Quy tắc Chi tiết                                                                             :",
+        "I1      Client phải generate UUID v4 duy nhất cho mỗi mutation                                :",
+        "I2      Backend lưu key + response vào cache (Redis/DB), TTL: 24 giờ                          :",
+        "I3      Request lặp (trùng key) → trả ngay response cũ, HTTP `200`                            :",
+        "I4      Key rỗng hoặc thiếu cho sensitive endpoint → HTTP `400` + `IDEMPOTENCY_KEY_REQUIRED`  :"
+      ],
+      "13 Concurrency Control": [
+        "Quy tắc Chi tiết                                                            :",
+        "C1      Mọi bảng CRUD phải có field `version INT DEFAULT 1`                  :",
+        "C2      `PUT` / `PATCH` bắt buộc gửi `version` hiện tại                    :",
+        "C3      Version mismatch → `409 Conflict` + `CONFLICT` error code            :",
+        "C4      `SELECT FOR UPDATE` **CHỈ** dùng cho module Scoring                  :"
+      ],
+      "14 Async Operations Pattern": [
+        "Tác vụ                      Phương thức       :",
+        "Bốc thăm nhánh thi đấu      Background Worker :",
+        "Xuất báo cáo PDF/Excel      Streaming / Worker:",
+        "Gửi batch email/SMS         Outbox + Worker   :",
+        "Cấp hàng loạt chứng chỉ     Background Worker :"
+      ],
+      "15 Data Format Standards": [
+        "Loại                Convention     Ví dụ                          :",
+        "JSON response field `snake_case`   `first_name`, `created_at`     :",
+        "URL path segment    `kebab-case`   `belt-ranks`, `weight-classes` :",
+        "Query parameter     `snake_case`   `page_size`, `sort_by`         :",
+        "Error code          `UPPER_SNAKE`  `ATHLETE_NOT_FOUND`            :",
+        "Loại              Format                    Ví dụ                              :",
+        "ID                UUID v4 string            `\"550e8400-e29b-41d4-a716-446655440000\"`:",
+        "Timestamp         ISO 8601 (UTC, RFC 3339)  `\"2025-03-26T10:30:00Z\"`           :",
+        "Date              `YYYY-MM-DD`              `\"2025-03-26\"`                      :",
+        "Money (VNĐ)       Integer (đồng)            `500000` (= 500.000 VNĐ)           :",
+        "Boolean           JSON `true`/`false`       `true`                              :",
+        "Enum              UPPER_SNAKE_CASE string   `\"ACTIVE\"`, `\"PENDING_APPROVAL\"`    :",
+        "Phone             E.164 format              `\"+84901234567\"`                    :",
+        "Email             Lowercase                 `\"user@example.com\"`                :",
+        "File size         Bytes (integer)           `1048576` (= 1MB)                   :",
+        "#   Quy tắc                                                                    :",
+        "N1  Field optional vắng value → trả `null` hoặc **omit** (`omitempty` tag)      :",
+        "N2  **CẤM** trả empty string `\"\"` thay cho `null`                               :",
+        "N3  Array rỗng → trả `[]`, **KHÔNG** trả `null`                                 :"
+      ],
+      "16 Security Rules": [
+        "#    Quy tắc                                                                  :",
+        "S1   **CẤM** interpolation SQL — bắt buộc dùng parameterized queries (`$1`)   :",
+        "S2   `decodeJSON()` **BẮT BUỘC** dùng `DisallowUnknownFields()`               :",
+        "S3   Validate input size: body max 10MB mặc định, login body max 1KB          :",
+        "S4   Sanitize output: **CẤM** trả nguyên stack trace trong error response    :",
+        "S5   IDOR prevention: Mọi `GET/PUT/DELETE /{id}` phải verify ownership/RBAC  :"
+      ],
+      "17 Observability": [
+        "Header                  Giá trị                Mục đích             :",
+        "`X-Request-ID`          UUID/hex string        Trace correlation    :",
+        "`X-RateLimit-Remaining` Integer                Rate limit info      :",
+        "`X-API-Version`         `v1`                   Active version       :"
+      ],
+      "18 Health Check Endpoints": [
+        "Endpoint    Auth Mục đích                                      Response khi OK      :",
+        "`/healthz`  ❌    Liveness probe — server có đang chạy            `200 {\"status\":\"ok\"}`:",
+        "`/readyz`   ❌    Readiness probe — DB + Redis connected          `200 {\"status\":\"ok\"}`:",
+        "`/`         ❌    Root info — version, uptime, build              `200 { info }`       :"
+      ],
+      "19 WebSocket API": [
+        "Quy tắc Chi tiết                                                            :",
+        "W1      WebSocket Hub **KHÔNG** lưu state — state nằm trong DB/Redis        :",
+        "W2      Event flow: Handler → EventBus → Hub → Client                      :",
+        "W3      **CẤM** push data trực tiếp từ HTTP handler vào WebSocket           :",
+        "W4      Client phải auto-reconnect với Exponential Backoff                  :",
+        "W5      Sau reconnect, phải fetch lại data mới nhất qua HTTP GET            :"
+      ],
+      "20 Route Registration Rules": [
+        "#   Quy tắc                                                                   :",
+        "R1  Mỗi domain module **1 file** handler: `{module}_handler.go`               :",
+        "R2  Route registration tập trung tại `Handler()` — **CẤM** đăng ký rải rác    :",
+        "R3  Auth-protected routes dùng `s.withAuth(...)` wrapper                       :",
+        "R4  Public routes nằm dưới `/api/v1/public/` — không cần auth                 :",
+        "R5  Thêm route mới **BẮT BUỘC** cập nhật `api-design.md` hoặc OpenAPI spec    :"
+      ],
+      "21 API Documentation Requirements": [
+        "#   Quy tắc                                                                       :",
+        "D1  Mọi endpoint mới phải cập nhật `docs/api/openapi.yaml` hoặc `api-design.md`   :",
+        "D2  PR thay đổi API **BẮT BUỘC** ghi rõ Breaking vs Non-breaking change            :",
+        "D3  Request/Response examples phải là JSON hợp lệ, không placeholder              :",
+        "D4  Error codes mới phải thêm vào Error Code Registry (Mục 4.3)                    :",
+        "D5  Deprecated endpoints phải document sunset timeline                              :"
+      ],
+      "Tham khảo": [
+        "[VCT Backend Architecture](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/backend-architecture.md)",
+        "[VCT Architecture Guard Rails](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/architecture-guard-rails.md)",
+        "[API Versioning Implementation](file:///d:/VCT%20PLATFORM/vct-platform/backend/internal/apiversioning/versioning.go)",
+        "[API Error Envelope](file:///d:/VCT%20PLATFORM/vct-platform/backend/internal/httpapi/apierror.go)",
+        "[HTTP Middleware Stack](file:///d:/VCT%20PLATFORM/vct-platform/backend/internal/httpapi/middleware.go)",
+        "[Microsoft REST API Guidelines](https://github.com/microsoft/api-guidelines)",
+        "[Google API Design Guide](https://cloud.google.com/apis/design)"
+      ]
+    },
+    "api-design": {
+      "API Endpoints": [
+        "Method Path Description:",
+        "GET `/tournaments` List tournaments:",
+        "POST `/tournaments` Create tournament:",
+        "GET `/tournaments/:id` Get tournament detail:",
+        "PUT `/tournaments/:id` Update tournament:",
+        "GET `/tournaments/:id/categories` Get categories:",
+        "GET `/tournaments/:id/registrations` Get registrations:",
+        "Method Path Description:",
+        "GET `/athletes` List athletes (filterable):",
+        "POST `/athletes` Create athlete:",
+        "GET `/athletes/:id` Get athlete detail:",
+        "PUT `/athletes/:id` Update athlete:",
+        "GET `/athletes/:id/belt-history` Belt history:",
+        "GET `/athletes/:id/results` Competition results:",
+        "Method Path Description:",
+        "GET `/federations` List federations:",
+        "GET `/clubs` List clubs:",
+        "GET `/clubs/:id` Club detail:",
+        "GET `/clubs/:id/members` Club members:",
+        "Method Path Description:",
+        "POST `/matches/:id/events` Record match event:",
+        "GET `/matches/:id/events` Get match events:",
+        "GET `/matches/:id/state` Get computed match state:",
+        "Method Path Description:",
+        "GET `/rankings` National rankings:",
+        "GET `/rankings/doi-khang` Combat rankings:",
+        "GET `/rankings/quyen` Forms rankings:"
+      ]
+    },
+    "architecture-guard-rails": {
+      "1 Dependency Rule  Quy tắc phụ thuộc": [
+        "Lớp                Thư mục Go                                             Thư mục Frontend           Được import                 :",
+        "**Domain**         `internal/domain/*`                                    `packages/shared-types`    Chỉ stdlib Go / types cơ bản:",
+        "**Application**    `internal/domain/*/service.go`                         `packages/app/features/*`  Domain + interfaces         :",
+        "**Adapter**        `internal/adapter/`                                    `packages/app/hooks/*`     Domain + Application        :",
+        "**Infrastructure** `internal/store/`, `internal/auth/`, `internal/email/` `apps/next/`, `apps/expo/` Tất cả lớp bên trong        :",
+        "**Delivery**       `internal/httpapi/`                                    `apps/next/app/` (routes)  Tất cả lớp bên trong        :",
+        "#   Vi phạm                      Ví dụ cụ thể                                         :",
+        "D1  Domain import Adapter        `domain/athlete/service.go` import `internal/adapter`:",
+        "D2  Domain import HTTP           `domain/scoring/` import `net/http`                  :",
+        "D3  Domain import Infrastructure `domain/tournament/` import `database/sql`           :",
+        "D4  Domain import 3rd-party SDK  `domain/*/` import `github.com/jackc/pgx`            :",
+        "D5  Service trực tiếp gọi DB     `Service.Create()` gọi `sql.DB.Query()`              :",
+        "D6  Handler chứa business logic  `handler.go` chứa if/else nghiệp vụ phức tạp         :",
+        "D7  Shared-types import app code `packages/shared-types` import `packages/app`        :",
+        "D8  UI package import app logic  `packages/ui` import `packages/app/features`         :"
+      ],
+      "2 Backend Go  Cấu trúc module": [
+        "#   Quy tắc                                                    Giải thích                                                    :",
+        "B1  `repository.go` CHỈ chứa **interface**                     Tuyệt đối không chứa struct implementation                    :",
+        "B2  `service.go` nhận dependency qua **constructor injection** `NewService(repo Repository)` — không global state            :",
+        "B3  Implementation nằm trong `internal/adapter/`               File đặt tên `pg_<module>_repo.go` hoặc `mem_<module>_repo.go`:",
+        "B4  Domain dùng **domain errors**, không dùng HTTP status code `return domain.ErrAthleteNotFound` thay vì `404`              :",
+        "B5  Handler chỉ làm 3 việc: Parse → Call Service → Respond     Không logic nghiệp vụ trong handler                           :",
+        "B6  Wire (DI) tập trung trong `internal/httpapi/wire.go`       Không `new()` adapter rải rác trong handler                   :",
+        "B7  Models dùng Vietnamese field names theo conventions        `HoTen`, `TrangThai`, `DoanID` — giữ consistency              :"
+      ],
+      "3 Frontend  Cấu trúc monorepo": [
+        "#   Quy tắc                                                               Chi tiết                                  :",
+        "F1  `packages/shared-types` không import bất kỳ package nào khác          Chỉ chứa TypeScript type definitions      :",
+        "F2  `packages/shared-utils` không import `packages/app` hay `packages/ui` Chỉ pure functions, không React           :",
+        "F3  `packages/ui` không import `packages/app`                             Components không biết business logic      :",
+        "F4  `packages/app` có thể import `shared-types`, `shared-utils`, `ui`     Đây là orchestration layer                :",
+        "F5  `apps/next` và `apps/expo` import từ `packages/*`                     Không duplicate code giữa 2 apps          :",
+        "F6  API calls nằm trong `packages/app/features/` hoặc `hooks/`            Không fetch trực tiếp trong page component:",
+        "F7  Route pages chỉ compose components                                    `apps/next/app/*/page.tsx` — thin wrapper :"
+      ],
+      "4 Database  Quy tắc schema": [
+        "#   Quy tắc                                        Giải thích                                                         :",
+        "S1  **Mọi thay đổi schema qua migration**          Không ALTER TABLE trực tiếp trên DB                                :",
+        "S2  Migration files trong `backend/db/migrations/` Đặt tên `YYYYMMDDHHMMSS_description.up.sql` + `.down.sql`          :",
+        "S3  **Reference over Enum**                        Dùng lookup table, không PostgreSQL ENUM type                      :",
+        "S4  **Soft-delete only**                           `deleted_at TIMESTAMPTZ` thay vì `DELETE FROM`                     :",
+        "S5  **Mọi entity có `metadata JSONB`**             Extensibility mà không cần migration                               :",
+        "S6  Multi-tenant qua RLS                           Row Level Security, không filter trong application code            :",
+        "S7  Bitemporal design                              `valid_from/valid_to` (business) + `created_at/updated_at` (system):"
+      ],
+      "5 Naming Conventions  Quy tắc đặt tên": [
+        "Thành phần    Convention                           Ví dụ                               :",
+        "Package       `lowercase`, singular                `athlete`, `scoring`, `federation`  :",
+        "Interface     PascalCase, noun                     `Repository`, `Service`, `Store`    :",
+        "Struct        PascalCase                           `PgAthleteRepo`, `InMemStore`       :",
+        "Constructor   `New` + Type name                    `NewService()`, `NewPgAthleteRepo()`:",
+        "Adapter file  `pg_<module>.go` / `mem_<module>.go` `pg_athlete_repo.go`                :",
+        "Handler file  `<module>_handler.go`                `athlete_handler.go`                :",
+        "Test file     `<file>_test.go`                     `service_test.go`                   :",
+        "Domain errors `Err` + Description                  `ErrAthleteNotFound`                :",
+        "Thành phần     Convention         Ví dụ                                  :",
+        "Component      PascalCase         `AthleteList`, `ScoreBoard`            :",
+        "Hook           `use` + PascalCase `useAthletes`, `useScoring`            :",
+        "Type/Interface PascalCase         `Athlete`, `Tournament`                :",
+        "Feature folder kebab-case         `athlete-profile`, `tournament-scoring`:",
+        "API function   camelCase          `fetchAthletes`, `createTournament`    :",
+        "i18n key       dot-notation       `athlete.list.title`, `common.save`    :"
+      ],
+      "6 CrossCutting Concerns  Xử lý xuyên suốt": [
+        "Concern            Đặt ở đâu                                   KHÔNG đặt ở                             :",
+        "Logging            `internal/logging/` + middleware            Domain service                          :",
+        "Authentication     `internal/auth/` + middleware               Handler body                            :",
+        "Authorization      `internal/authz/` + `internal/rbac/`        Domain service                          :",
+        "Validation (input) Handler layer                               Domain service (chỉ business validation):",
+        "Caching            `internal/cache/` + `CachedStore` wrapper   Direct trong handler                    :",
+        "Rate limiting      `internal/ratelimit/` + middleware          Handler body                            :",
+        "Metrics            `internal/metrics/` + middleware            Rải rác trong code                      :",
+        "Error mapping      `internal/apierror/` + `internal/envelope/` Domain dùng HTTP codes                  :",
+        "i18n (strings)     `packages/app/` i18n config                 Hardcode trong component                :"
+      ],
+      "8 Checklist trước khi commit": [
+        "[ ] File `domain/*/` KHÔNG import `adapter/`, `httpapi/`, `store/`, `auth/`, `email/`",
+        "[ ] File `domain/*/` KHÔNG import `database/sql`, `net/http`, `github.com/jackc/*`",
+        "[ ] File `domain/*/repository.go` CHỈ chứa interface, không struct",
+        "[ ] Handler CHỈ parse → call service → respond",
+        "[ ] Adapter implement đúng interface đã define trong domain",
+        "[ ] Module mới có đủ: `models.go`, `repository.go`, `service.go`",
+        "[ ] Adapter mới nằm trong `internal/adapter/`, tên file `pg_<module>.go`",
+        "[ ] Handler mới nằm trong `internal/httpapi/`, tên file `<module>_handler.go`",
+        "[ ] DI wiring cho module mới trong `wire.go`",
+        "[ ] Migration file có cả `.up.sql` và `.down.sql`",
+        "[ ] `packages/shared-types` không import package khác",
+        "[ ] `packages/ui` không import `packages/app`",
+        "[ ] API call nằm trong feature hook, không trong page component",
+        "[ ] Component mới có TypeScript types đầy đủ",
+        "[ ] i18n keys đã thêm cho cả `vi` và `en`"
+      ],
+      "Title: UI không import app": [
+        "name: Architecture Guard Rails"
+      ],
+      "11 Testing Guard Rails": [
+        "Loại Test            Thư mục                     Quy tắc bắt buộc                                                                                                                 :",
+        "**Unit Test**        `internal/domain/<module>/` Test business logic tinh khiết trong `service.go`. KHÔNG có I/O gốc, database hay network. Phải kèm file `_test.go` cùng thư mục.:",
+        "**Integration Test** `internal/adapter/`         Test SQL query, redis cache, NATS pub/sub. Chạy với database thật (container/in-memory).                                         :",
+        "**Handler Test**     `internal/httpapi/`         Dùng `httptest` để test input validation, route mapping, request/response format và status code.                                 :",
+        "**E2E Test**         `tests/` (root)             Test flow người dùng thật từ Frontend (Playwright) gọi qua Backend API.                                                          :",
+        "❌ Mocking database interfaces quá phức tạp: Thay vì tự tạo mocks cồng kềnh, dùng In-Memory adapter cho Unit Test.",
+        "❌ Phụ thuộc thứ tự chạy test: Mỗi test case phải khởi tạo data riêng biệt và teardown sau khi chạy.",
+        "❌ Testing implementation details: Test output của Service, không test cách Service gọi function A hay function B bên trong."
+      ],
+      "12 Git  PR Conventions": [
+        "Type        Ý nghĩa                    Ví dụ                                 :",
+        "`feat/`     Tính năng mới              `feat/123-add-athlete-scoring`        :",
+        "`fix/`      Sửa bug                    `fix/456-resolve-bracket-crash`       :",
+        "`hotfix/`   Sửa gấp production         `hotfix/login-timeout`                :",
+        "`refactor/` Sửa code không đổi feature `refactor/789-extract-button-ui`      :",
+        "`docs/`     Cập nhật tài liệu          `docs/update-architecture-guard-rails`:",
+        "❌ SAI: `fix bug`, `update code`, `wip`",
+        "✅ ĐÚNG: `fix(scoring): prevent negative score submission in point-fighting`",
+        "1. PR phải điền đầy đủ template mô tả thay đổi.",
+        "2. PR thay đổi UI/UX bắt buộc đính kèm screenshot hoặc video.",
+        "3. PR thay đổi Backend API bắt buộc cập nhật `api-design.md` hoặc Swagger.",
+        "4. CI pipeline (Lint, Build, Test) phải pass 100%."
+      ],
+      "13 Performance Guard Rails": [
+        "#   Quy tắc                  Giải pháp buộc phải làm                                                                 :",
+        "P1  **N+1 Query Ban**        CẤM loop thực hiện DB query. Bắt buộc dùng SQL JOIN hoặc chạy 1 câu `WHERE id IN (...)`.:",
+        "P2  **Mandatory Pagination** Mọi API trả về danh sách (> 50 items) BẮT BUỘC phải có Limit/Offset hoặc Cursor.        :",
+        "P3  **Timeout Context**      Mọi lệnh gọi DB, Cache, External API phải truyền `ctx` có timeout.                      :",
+        "P4  **Index Coverage**       Query lọc theo trường nào (`WHERE club_id = ?`) thì trường đó phải có index.            :",
+        "#   Quy tắc                     Giải pháp buộc phải làm                                                                      :",
+        "P5  **No Heavy Imports**        Không import toàn bộ thư viện (VD: lodash, icons). Chỉ import submodule cần thiết.           :",
+        "P6  **Image Optimization**      Bắt buộc dùng `next/image` hoặc CDN Expo Image. Không map ảnh gốc quá 2MB lên giao diện list.:",
+        "P7  **Memoization chặn render** Các component nặng dính vào list lớn bắt buộc bọc `React.memo` và kiểm soát props.           :"
+      ],
+      "14 Security Guard Rails": [
+        "SQL Injection Prevention: TUYỆT ĐỐI KHÔNG nối chuỗi SQL. Bắt buộc dùng parameterized queries (`$1`, `$2` trong `pgx`) hoặc ORM/Query Builder.",
+        "XSS Prevention: Frontend phải escape HTML (mặc định của React). Nếu phải parse rich text, bắt buộc dùng thư viện sanitize (như DOMPurify).",
+        "IDOR Prevention (Insecure Direct Object Reference): Mọi endpoint lấy sửa xóa theo ID (`GET /athletes/:id`) đều phải kiểm tra quyền sở hữu hoặc quyền của role đó đối với ID đang thao tác (Tenant Isolation).",
+        "NO SECRETS IN CODE: Không hardcode API keys, passwords, JWT secrets vào mã nguồn. Bắt buộc dùng `.env` hoặc hệ thống quản lý Secret.",
+        "DO NOT log PII: Cấm in thông tin nhạy cảm (mật khẩu, sđt, email, token) ra server logs. Dùng struct tags để trigger hàm masking khi log."
+      ],
+      "15 Observability  Logging Guard Rails": [
+        "ERROR (`slog.Error`): Bắt buộc phải có lỗi thực sự (DB down, Panic, 3rd party API fail) mà engineer cần can thiệp ngay.",
+        "WARN (`slog.Warn`): Lỗi hệ thống có thể tự phục hồi (VD: Retry thành công, Request rate-limited).",
+        "INFO (`slog.Info`): Audit trail, state transition, hoặc system start/stop. Không log INFO bừa bãi trong mỗi function call.",
+        "DEBUG (`slog.Debug`): Dữ liệu chi tiết quá trình xử lý (SQL queries, raw API responses). Sẽ bị tắt trên Production.",
+        "CẤM dùng `fmt.Println()`, `log.Printf()` trong production code backend. Mọi log bắt buộc dùng instance của `slog.Logger`.",
+        "Traceability: Mọi log trong phạm vi của 1 HTTP Request BẮT BUỘC phải đính kèm `request_id`. (Đã được tự động xử lý bởi middleware, chỉ cần truyền đúng `ctx` vào hàm)."
+      ],
+      "16 Frontend State Management Guard Rails": [
+        "Server State (Dữ liệu API trả về): Danh sách giải đấu, thông tin VĐV, lịch thi đấu. Bắt buộc quản lý qua `SWR` hoặc state được hydrate từ Server Components.",
+        "❌ CẤM tự fetch bằng `fetch()` rồi call `setState(data)` trong `useEffect`.",
+        "✅ VCT Platform chuẩn hóa việc dùng custom hooks (VD: `useAthleteList()`).",
+        "Client Global State: Trạng thái UI dùng chung (Sidebar mở/đóng, Active Workspace, Theme).",
+        "✅ Chỉ dùng `Zustand` (hoặc Context API rất nhẹ) cho mục đích này. Tránh Context Hell.",
+        "Local State: Trạng thái form đang nhập, dropdown đang mở.",
+        "✅ Dùng `useState` hoặc `useReducer` độc lập trong chính component đó. Không đưa lên Global State."
+      ],
+      "17 Error Handling  Recovery Guard Rails": [
+        "❌ CẤM trả HTTP 200 `{\"success\": false, \"error\": \"Lỗi gì đó\"}`.",
+        "✅ Lỗi nhập liệu do client sai: HTTP `400 Bad Request`.",
+        "✅ Lỗi tìm không thấy resource (`ID VĐV không có`): HTTP `404 Not Found`.",
+        "✅ Lỗi Logic Domain (VD: `Chưa nạp đủ tiền`): HTTP `422 Unprocessable Entity` + Domain Error Code.",
+        "✅ Lỗi hệ thống tắt đứt kết nối DB: HTTP `500 Internal Server Error`. Lỗi do dev tạo ra KHÔNG được phép rò rỉ stack trace ra JSON response.",
+        "BẮT BUỘC sử dụng `Error Boundary` (file `error.tsx` trong Next.js App Router) để bao bọc các phân khu UI khác nhau.",
+        "Nếu Widget \"Bảng Xếp Hạng\" bị lỗi khi fetch, nó chỉ hiện fallback error cục bộ \"Không tải được bảng xếp hạng\". Toàn bộ trang web (Gồm Sidebar, Header, Form Chính) vẫn PHẢI hoạt động bình thường."
+      ],
+      "18 MultiTenancy  Data Isolation Guard Rails": [
+        "Mandatory Tenant Context: Mọi API lấy/sửa dữ liệu phải gắn chặt với `TenantID` hoặc `FederationID` của user hiện tại.",
+        "❌ CẤM truy vấn trần (VD: `SELECT * FROM athletes;`).",
+        "✅ BẮT BUỘC kẹp điều kiện Tenant (VD: `SELECT * FROM athletes WHERE club_id = $1;`).",
+        "Row-Level Security (RLS): Database phải bật RLS. Dù developer có quên thêm `WHERE club_id` trong code Go, DB Server cũng sẽ tự động chặt đứt câu query nếu user không có quyền với row đó.",
+        "Cấm hardcode quyền kiểm tra bằng chuỗi cứng trong business logic (VD: `if user.role == \"SystemAdmin\"`).",
+        "Bắt buộc kiểm tra quyền dựa trên Hành động (Action-based RBAC) thông qua middleware hoặc helper: `if !authz.Can(ctx, \"create:tournament\") { return ErrForbidden }`.",
+        "Frontend Permission Hooks: Mọi nút bấm nhạy cảm (Xóa dữ liệu, Duyệt thành viên) BẮT BUỘC bọc trong component `<Can perform=\"delete:tournament\">` hoặc logic hook để tàng hình khi User không có quyền."
+      ],
+      "19 Realtime  WebSocket Guard Rails": [
+        "Stateless Hubs: WebSocket Hub KHÔNG BAO GIỜ được lưu trữ State (lịch sử điểm, trạng thái trận). Nếu Hub bị crash/restart, State phải được lấy lại toàn bộ từ Database hoặc Redis.",
+        "Event-Driven Push: Không push dữ liệu trực tiếp trong luồng lưu DB của HTTP Handler.",
+        "✅ Chuẩn: HTTP Handler lưu điểm vào DB -> Phát Event nội bộ (`match.scored`) qua NATS/EventBus -> WebSocket Hub lắng nghe EventBus -> WebSocket Hub push JSON xuống Client.",
+        "Throttling & Batching: Cấm component (VD: Lịch thi đấu trực tiếp) re-render ngay lập tức mỗi khi nhận được 1 event từ Socket nếu event đến quá dồn dập (> 5 msg/s).",
+        "Bắt buộc dùng Throttling/Debouncing hoặc update qua Store Queue (Zustand) để gom nhóm render mỗi 500ms.",
+        "Graceful Reconnection: Frontend bắt buộc phải có logic tự động kết nối lại (Exponential Backoff) nếu rớt Socket. Khi kết nối lại thành công, PHẢI fetch lại dữ liệu mới nhất (HTTP GET) để bù đắp các event bị rớt mạng ở giữa."
+      ],
+      "20 CICD  Deployment Strategy Guard Rails": [
+        "KHÔNG BAO GIỜ sử dụng `ALTER TABLE RENAME COLUMN` hoặc `DROP COLUMN` trực tiếp. Code cũ chạy song song sẽ bị crash.",
+        "Mọi thay đổi phá vỡ (Breaking Schema Change) TỘT ĐỘNG CHUẨN 4 BƯỚC:",
+        "1. Thêm cột mới: Update Backend ghi dữ liệu vào cả cột cũ và cột mới.",
+        "2. Backfill: Chạy Script migrate dữ liệu từ cột cũ sang cột mới.",
+        "3. Switch Read: Chuyển Backend sang chỉ đọc và ghi từ cột mới.",
+        "4. Cleanup: Drop cột cũ (vào đợt release sau).",
+        "No Long-Living Branches: Tất cả developer phải push code merge ngược về nhánh `main` thường xuyên (chậm nhất mỗi 2 ngày).",
+        "Mọi tính năng lớn/chưa hoàn thiện (Epic, Hệ thống mới) khi merge vào `main` bắt buộc phải bọc trong Feature Flag (VD: `ENABLE_NEW_BRACKET_UI=false`). Đảm bảo code chết nằm an toàn trên production nhưng user không thấy được, cho tới khi Business cho phép bật flag."
+      ],
+      "21 Technical Debt  Refactoring Guard Rails Ngăn chặn Rác Code": [
+        "Bất cứ khi nào bạn mở 1 file để sửa bug hoặc thêm tính năng, nếu thấy code cũ đang vi phạm Guard Rails, BẮT BUỘC phải refactor dọn dẹp file đó trước khi commit. \"Luôn để lại khu vực code sạch hơn lúc bạn đến\".",
+        "Bất kỳ comment `// TODO` hoặc `// FIXME` nào trong code đều phải kèm theo số Issue hoặc link ticket Jira/Linear.",
+        "Ví dụ: ❌ Sai: `// TODO: Chuyển sang dùng Redis`. ✅ Đúng: `// TODO(#123): Rút trích Cache thành Service riêng`.",
+        "Chặn merge PR nếu phát hiện `TODO` mồ côi (không assignee, không ticket)."
+      ],
+      "22 Component UI  Design System Guard Rails Bảo vệ Đồng nhất Giao diện": [
+        "Mọi giá trị màu sắc, độ lớn chữ, viền, khoảng cách (margin/padding) BẮT BUỘC phải trích xuất từ Design Tokens (Theme) của VCT Platform.",
+        "❌ CẤM dùng inline style cứng: `style={{ color: '#FF0000', margin: 15 }}`",
+        "✅ Chỉ định thông qua Utils hoặc Token vars của Tailwind/Tamagui.",
+        "Ranh giới tái sử dụng: Nếu dự án đã có 1 `<Button />` trong `packages/ui`, BẮT BUỘC phải import để dùng.",
+        "TUYỆT ĐỐI KHÔNG được tự viết 1 nút bấm hay thẻ Card custom vứt trong folder tính năng riêng lẻ (`apps/next/app/my-feature/CustomButton.tsx`), dẫn đến việc cả platform có 15 cái nút bấm màu sắc lệch nhau."
+      ],
+      "23 Configuration  Environment Parity Bảo mật Môi trường": [
+        "File code KHÔNG ĐƯỢC PHÉP tự gán giá trị mặc định cho những biến cực kỳ nhạy cảm nếu thiếu file `.env`.",
+        "❌ Sai: `jwtSecret := os.Getenv(\"JWT_SECRET\"); if jwtSecret == \"\" { jwtSecret = \"default_secret\" }`",
+        "✅ Đúng: App phải Fail Fast ngay lúc khởi động (Panic) kèm log báo lỗi \"Thiếu biến môi trường JWT_SECRET\".",
+        "Local Dev, Staging và Production phải dùng chung kiến trúc Cơ sở dữ liệu (PostgreSQL) cốt lõi (có thể chạy qua Docker Compose ở Local).",
+        "❌ Cấm hành vi Dev dùng SQLite dưới máy ảo Local cho máy chạy nhẹ, nhưng Production lại là PostgreSQL. DB Driver khác nhau sẽ sinh sinh ra những bug tiềm ẩn không thể debug nổi."
+      ],
+      "24 Internationalization i18n Guard Rails Đa ngôn ngữ": [
+        "Tuyệt đối CẤM gõ trực tiếp Tiếng Việt/Tiếng Anh dạng raw string hiển thị cho user trong file Code (`<button>Đăng nhập</button>`).",
+        "✅ Bắt buộc dùng Dictionary (VD: thông qua `next-intl` ở frontend): `<button>{t('auth.login')}</button>`.",
+        "Backend KHÔNG ĐƯỢC trả về chuỗi báo lỗi ngôn ngữ tự nhiên: `{\"message\": \"Vận động viên không tồn tại\"}`.",
+        "✅ Backend phải trả về Application Error Code: `{\"code\": \"ERR_ATHLETE_NOT_FOUND\"}`. Frontend tự map mã lỗi lấy từ bản dịch tương ứng."
+      ],
+      "25 Accessibility a11y Guard Rails Tiếp cận thân thiện": [
+        "Mọi interactive component (Button, Input, Dropdown, Modal, Tabs) BẮT BUỘC phải Focus được và tương tác được bằng phím `Tab`, `Arrow Keys`, `Enter`, `Space` và `Esc`.",
+        "❌ Cấm dùng thẻ div thay cho button: `<div onClick={submit}>Gửi</div>` (Không thể nhận focus, screen reader không đọc được).",
+        "✅ Dùng semantic tags (`<button>`, `<nav>`, `<article>`) và bổ sung thuộc tính `aria-label=\"Đóng\"` cho các nút bấm chỉ có Icon."
+      ],
+      "26 Data Privacy  Compliance Guard Rails Bảo mật thông tin cá nhân": [
+        "Khi log request/response HTTP trên Server, MẶC ĐỊNH phải tự động che (mask) các trường dữ liệu cá nhân (CCCD, Mật khẩu, Số điện thoại, Email, Token) thành `*` trước khi xuất log ra Console/System Log.",
+        "Dù toàn bộ hệ thống áp dụng thiết kế Soft-Delete (`deleted_at`), vẫn phải thiết kế 1 tác vụ chạy ngầm (Background Worker) để Hard Delete hoặc Anonymize (Vô danh hóa: Đổi tên thành \"Deleted User\") sau 30-90 ngày kể từ khi có yêu cầu đóng/xóa tài khoản vĩnh viễn từ người dùng, tránh vi phạm các luật về rò rỉ dữ liệu cũ."
+      ],
+      "Tham khảo": [
+        "[Clean Architecture — Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)",
+        "[Dependency Rule](https://khalilstemmler.com/wiki/dependency-rule/)",
+        "[Go Project Layout](https://github.com/golang-standards/project-layout)",
+        "VCT Platform Architecture Overview: [`docs/architecture/overview.md`](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/overview.md)"
+      ]
+    },
+    "async-architecture": {
+      "1 The 2Second HTTP Rule": [
+        "Blocking Ban: No HTTP API request shall actively block for more than 2,000 milliseconds.",
+        "Offloading: Heavy operations (e.g., \"Generate Match Brackets for 5,000 Athletes\", \"Send Result Emails to 500 Clubs\") MUST be immediately offloaded to a message queue. The API MUST return a `202 Accepted` status with a `task_id` for the client to poll or receive WebSocket updates."
+      ],
+      "2 NATS PubSub  Worker Queues": [
+        "Infrastructure: The designated event bus broker is `NATS` (or JetStream for persistent Queues).",
+        "Domain Events: Services should emit Domain Events (e.g., `TournamentStarted`, `MatchFinished`) rather than directly calling other bounded context services."
+      ],
+      "3 Idempotent Consumers AtLeastOnce Delivery": [
+        "Message Retry Protection: Message delivery guarantees are \"At Least Once\". Therefore, EVERY worker processing a job MUST be fully idempotent.",
+        "Execution Locks: The worker must verify (via database lock or Redis cache) whether it has already processed the specific `event_id`. Processing the same message twice must not result in duplicate emails or corrupted scores."
+      ],
+      "4 Dead Letter Queues DLQ": [
+        "Maximum Retries: A background worker that encounters an error MUST NOT retry infinitely, which risks poisoning the queue.",
+        "DLQ Routing: After 3 consecutive exponential-backoff failures, the message MUST be moved to a DLQ (Dead Letter Queue) and trigger a high-priority alert for Administrator/SRE manual inspection."
+      ]
+    },
+    "backend-architecture": {
+      "1 Core Philosophy  Dependency Rule": [
+        "# Lệnh Cấm Ví dụ Sai Lầm:",
+        "D1 **Domain cấm import Adapter** `domain/athlete/service.go` import `internal/adapter`:",
+        "D2 **Domain cấm import HTTP/Web** `domain/scoring/` import `net/http`:",
+        "D3 **Domain cấm SDK bên thứ 3** Kéo `github.com/jackc/pgx` vào tầng Repository:",
+        "D4 **Service cấm gọi DB trực tiếp** `Service.Create()` gọi `sql.DB.Query()`:",
+        "D5 **Handler cấm chứa Logic** IF/ELSE tính điểm hoặc kiểm tra quyền bị vứt ngay trong handler:",
+        "D6 **Cấm dùng Web Frameworks** Tuyệt đối KHÔNG dùng *Gin, Echo, Fiber*. Chỉ dùng `net/http` thuần:",
+        "D7 **Cấm dùng ORM** Tuyệt đối KHÔNG dùng *GORM, Ent*. Chỉ dùng Raw SQL với `pgx/v5`:"
+      ],
+      "5 HTTP API Routing  Middlewares": [
+        "1. `withRecover`: Bắt Panics → 500 lỗi JSON",
+        "2. `withRequestID`: Trị inject UUID `X-Request-ID` cho Audit & Tracing",
+        "3. `withSecurityHeaders`: Chuẩn hóa headers (`X-Frame-Options`, `Content-Security-Policy`)",
+        "4. `withRateLimit`: Ngăn chặn Spam / DDOS ở cấp độ Route",
+        "5. `withBodyLimit`: Khống chế tối đa 1-5MB body tránh treo RAM",
+        "6. `withAuth`: Kiểm tra Token, gắn quyền vào Context"
+      ],
+      "7 Advanced Enterprise Guard Rails FAANG Standards": [
+        "Pessimistic Locking (`SELECT FOR UPDATE`): Bắt buộc chỉ dùng riêng cho Module _Chấm Điểm (Scoring)_, khóa dòng ngay tại DB cho đến khi Referee chốt điểm xong để tránh race-condition.",
+        "Optimistic Locking (Version Tracking): Bắt buộc dùng cho _CRUD thông thường_. Mọi bảng (như Athlete, Tournament) phải có trường `version` (hoặc `updated_at`). Nếu 2 Admin cùng sửa Hồ Sơ VĐV, ai `UPDATE` sau mà truyền sai `version` cũ sẽ bị văng lỗi `409 Conflict`.",
+        "Bắt buộc Frontend phải đính kèm Header `Idempotency-Key: <uuid>` cho các `POST/PUT/DELETE` nhạy cảm.",
+        "Backend lưu Key này tạm thời vào Redis/DB. Lần 2 (do mạng lag tự retry), nếu phát hiện trùng `Idempotency-Key` → trả ngay kết quả cũ (thường là `200 OK`) thay vì trừ tiền 2 lần hoặc tạo thành 2 VĐV giống nhau.",
+        "Quy tắc Outbox: Hàm `Service` sẽ dùng chung DB Transaction để INSERT dữ liệu chính + `INSERT INTO outbox_events (event_type, payload)` vào DB.",
+        "Ngay sau khi commit thành công 100%, một `Background Worker` chạy ngầm sẽ chồm lên đọc outbox và gọi API Gửi Email. Đảm bảo tính nhất quán cuối cùng (Eventual Consistency).",
+        "Offloading (Giải Phóng Ram): Các hành động tốn hơn 300ms (Bốc thăm 50 nhánh cho 1000 VĐV, Xuất báo cáo PDF, Sinh loạt chứng chỉ) CẤM ĐƯỢC chặn HTTP Response. API phải lập tức trả về `202 Accepted` kèm `job_id`, đẩy tác vụ xuống `Worker Queue` (Redis/NATS).",
+        "Data Privacy (PII Masking): Các trường Dữ Liệu Định Danh Cá Nhân (PII - Căn cước công dân, Email, SĐT thật của Phụ huynh) TUYỆT ĐỐI CẤM xuất hiện trần trụi dưới dạng Plain-Text trong Terminal Console. Khi `slog.Info()` phải được wrap qua một hàm Masker (ví dụ: `090123` hoặc `n@gmail.com`). Tôn trọng dữ liệu người dùng.",
+        "Quy tắc: Mọi API trả về dữ liệu phải được tiêm `TenantID` (Mã đơn vị) từ JWT Token của người gọi.",
+        "Thực thi: Nghiêm cấm gõ tay `WHERE tenant_id = ?` ở từng hàm (kẻo dev quên). Bắt buộc phải gắn Middleware ép `TenantID` vào `context.Context`, sau đó tầng Adapter sẽ tự động bọc câu query hoặc sử dụng Row-Level Security (RLS) cứng dưới đáy PostgreSQL để từ chối các Record khác TenantID dẫu bằng mọi giá.",
+        "Luật Cấm: Tuyệt đối CẤM dùng `OFFSET` và `LIMIT` (`OFFSET 50000 LIMIT 20`) cho bất kì bảng nào có rủi ro vượt quá 50,000 dòng dữ liệu (ví dụ: Bảng logs Sự kiện trận đấu, Lịch sử Giao dịch điểm). Do đặc thù của Postgres, OFFSET lớn sẽ gây treo CPU vì nó phải cày qua hàng nghìn dòng thừa.",
+        "Quy định: Yêu cầu sử dụng Cursor-based Pagination (Keyset Pagination) thông qua `WHERE id > last_seen_id ORDER BY id LIMIT 20`. Đảm bảo thời gian query luôn là $O(1)$ dù dữ liệu là 10.000 hay 10 triệu dòng.",
+        "Quy định Blacklisting: Không phụ thuộc vào thời gian Expire của JWT. Khi đổi mật khẩu, đăng xuất all devices, hoặc Block User, ID phiên đăng nhập (hoặc JTI) phải bị phiến ngay vào Revocation List trên Redis.",
+        "Ngắt kết nối: Authentication Middleware bắt buộc phải check Redis chặn cổng lập tức khi phát hiện Token nằm trong Blacklist, ném trả `401 Unauthorized` dẫu Token còn hạn.",
+        "`/healthz` (Liveness): Chỉ check Go Server có còn đang \"thở\" (không bị Deadlock) hay không. Trả `200 OK` nhanh nhất có thể.",
+        "`/readyz` (Readiness): Bắt buộc kèm theo lệnh `Ping` chạm sâu tới tận `PostgreSQL` và `Redis`. Nếu DB nghẽn hoặc sập, API này trả về `503 Service Unavailable`, Load Balancer sẽ lập tức cắt luồng tải khỏi Node này để người dùng không bị văng rớt trắng trang."
+      ],
+      "8 Ultimate UnicornTier Guard Rails": [
+        "Quy tắc Bắt buộc: CẤM ĐƯỢC PHÉP tạo Endpoint mà không gắn version (VD: `/api/users`).",
+        "Giải Pháp: Mọi route phải tuân thủ chuẩn URI Versioning (VD: `/api/v1/users`) hoặc Header Versioning (`Accept: application/vnd.vct.v1+json`). Đảm bảo khi VCT Platform release Version 2 với Payload JSON cấu trúc khác, các thiết bị iOS/Android Version 1 lười cập nhật App vẫn chạy mượt mà API `v1` trong 5 năm tiếp theo mà không bị Crash.",
+        "Soft Delete: CẤM THUỜNG TRÚ lệnh `DELETE FROM ...`. Các bảng Domain bắt buộc phải có `deleted_at`. Gọi hàm xóa chỉ là cập nhật thời gian để ẩn dữ liệu đi.",
+        "Audit Logging: Các thao tác quan trọng (Nâng Đai, Sang Nhượng VĐV, Sửa Giờ Thi Đấu) bắt buộc phải tự kích hoạt 1 Event bắn vào bảng `audit_logs` (Bao gồm: `ActorID`, `Action`, `Old_Payload`, `New_Payload`, `IP`). \"Admin A vừa sửa Đai của VĐV B từ Xanh sang Đen lúc 20:00\".",
+        "Quy tắc Ngắt Mạch: Mọi lời gọi API từ Outbox/Worker ra bên thứ 3 phải được bọc trong bộ Circuit Breaker (vd: `gobreaker`).",
+        "Cơ chế: Nếu API của Zalo Timeout quá 5 lần liên tiếp, Circuit Breaker sẽ lập tức \"Mở Mạch\", từ chối gửi requests tiếp theo và văng ngay lỗi `503 Service Unavailable` trong 0.1s thay vì 30s. Cho phép Go Server giải phóng hàng nghìn Goroutines đang nghẽn.",
+        "Quy tắc: Bắt buộc gắn OpenTelemetry (OTel) Tracing vào mọi tầng (HTTP Adapter -> UseCase -> Postgres Store -> Redis Store).",
+        "Cơ chế: Khi request chạy qua các hàm, Trace Span sẽ vẽ ra chính xác trên UI Sentry/Jaeger: \"Token Auth mất 10ms, Query DB mất 120ms, Call Zalo mất 2.8s\". Cho phép Team dev bắt trúng thủ phạm thắt nút của độ trễ.",
+        "Tuyệt đối Cấm: Cấm hardcode Key, cấm commit `.env` chứa mật khẩu lên Github.",
+        "Nguyên Tắc KMS: Mật khẩu Database, Secret JWT phải được Inject thẳng từ RAM (Môi trường máy chủ) thông qua Kubernetes Secrets, Doppler, Vault, hoặc Render Environment Variables. Code chỉ đọc qua `os.Getenv()`."
+      ]
+    },
+    "component-library-upgrade": {
+      "Scope": [
+        "`vct-ui-layout`",
+        "`vct-ui-form`",
+        "`vct-ui-data-display`",
+        "`vct-ui-overlay`"
+      ],
+      "Design goals": [
+        "Preserve existing public API names (`VCT_*`) to avoid page-level breakage.",
+        "Improve type safety for component props.",
+        "Keep accessibility defaults in core interactions:",
+        "`dialog` semantics for modal",
+        "`aria-live` for toast",
+        "`role=\"switch\"` for toggles",
+        "`progressbar` semantics for progress",
+        "Keep style tokens aligned with global VCT theme variables."
+      ],
+      "Package structure": [
+        "Layout primitives",
+        "Form controls",
+        "Data display blocks",
+        "Overlay/feedback components",
+        "Navigation and feature components"
+      ],
+      "Compatibility notes": [
+        "Existing imports from `app/features/components/vct-ui` remain valid.",
+        "Backward-compatibility aliases are supported for common legacy props:",
+        "Switch: `checked/onChange` and `isOn/onToggle`",
+        "Loading overlay: `show` and `open`",
+        "ScorePad: `onScore` and `onAdd/onSub`"
+      ],
+      "Next migration steps": [
+        "1. Move feature pages from `../components/vct-ui` to `@vct/ui`.",
+        "2. Deprecate `vct-ui.legacy` exports in phases.",
+        "3. Add visual regression tests for `VCT_Table`, `VCT_Modal`, `VCT_Toast`.",
+        "4. Add Storybook snapshots for all exported primitives."
+      ]
+    },
+    "dashboard-architecture": {
+      "1 URLDriven State The DeepLink Rule": [
+        "Mandatory Linkability: All vital dashboard states MUST be synchronized with the URL Search Params (`useSearchParams()`). This includes:",
+        "Active tabs (`?tab=settings`)",
+        "Search queries (`?q=Nguyen+Van+A`)",
+        "Pagination (`?page=2`)",
+        "Filters (`?status=active&province=HN`)",
+        "Ban on Opaque Local State: You are FORBIDDEN from using `useState` for filter/pagination state. An administrator must be able to copy the URL, paste it in Slack, and have their colleague see the exact same filtered table view."
+      ],
+      "2 Standardized Data Grids  Pagination": [
+        "Server-Side Bias: Administrative tables containing potentially unlimited rows (e.g., Athletes, Matches, Clubs) MUST use server-side pagination, sorting, and filtering. Client-side filtering is ONLY permitted for small, fixed-size dictionaries (e.g., Province List, Belt Colors).",
+        "Infinite Scroll vs. Pagination: Infinite scroll is structurally banned for B2B Dashboards. All data grids MUST use strict numeric pagination to allow accurate cross-referencing and auditing."
+      ],
+      "3 RoleBased Access Control RBAC in the UI": [
+        "Zero-Trust UI: The UI must adapt to permissions by hiding actionable buttons (e.g., `Create`, `Delete`) based on the JWT claims/context. However, the UI is explicitly treated as insecure. Missing buttons are a UX feature, not a security mechanism.",
+        "Graceful Degradation: If a user navigates directly to a URL they lack permissions for, the system MUST render the standardized `VCT_UnauthorizedState` component. It must not crash the layout or render a blank screen."
+      ],
+      "4 Asynchronous Loading  Skeleton Screens": [
+        "Ban on Global Spinners: Banned the use of full-page blocking spinners (`<div>Loading...</div>`) during minor data fetches.",
+        "Skeleton Standardization: Every dashboard widget and data table MUST implement a matching `Skeleton` variant. When data is fetching or paginating, show skeletons ONLY within the specific widget rather than blocking the entire screen."
+      ],
+      "5 Data Visualization Consistency": [
+        "Design System Integration: All charts (Bar, Line, Pie) MUST consume official VCT CSS variables (e.g., `var(--vct-color-primary)`) to ensure automatic, seamless switching between Light and Dark mode themes.",
+        "Accessibility (a11y): Data visualizations must not rely *solely* on color differences to convey meaning. Tooltips, varied textures/patterns, and clear legends are mandatory for WCAG compliance."
+      ]
+    },
+    "database-architecture": {
+      "1 Core Principles  Agnostic Design": [
+        "PostgreSQL 15+ Mandatory: The platform exclusively relies on PostgreSQL (version 15 or higher). MySQL, SQLite, and MongoDB are permanently banned.",
+        "Vendor Agnosticism: The database architecture must not lock the platform into a specific vendor. Proprietary features (like Supabase Auth triggers directly touching business logic) must be abstracted. The entire database must theoretically be able to migrate from Neon to a Raw Ubuntu `docker-compose` setup within 4 hours.",
+        "UUIDv7 as Primary Keys: All new tables must use `UUIDv7` (time-ordered UUIDs) for primary keys instead of `SERIAL` to prevent ID guessing (Insecure Direct Object Reference) and guarantee clustered index insertion speed. `UUIDv4` is deprecated for primary keys due to index fragmentation."
+      ],
+      "2 MultiTenancy  Schema Isolation": [
+        "Tenant Isolation: Every query accessing user or operational data MUST either:",
+        "1. Pass through a middleware that automatically injects `tenant_id` into the `context.Context` and appends `WHERE tenant_id = ?` to the query.",
+        "2. Enforce physical exclusion using Row-Level Security (RLS) directly in PostgreSQL. (e.g., `CREATE POLICY tenant_isolation ON athletes USING (tenant_id = current_setting('app.current_tenant_id')::uuid);`).",
+        "Schema Segregation: Use schemas to partition domains logically.",
+        "`public`: Core business tables (`athletes`, `tournaments`, `matches`).",
+        "`audit`: Tables storing historical trails (`audit_logs`).",
+        "`tenant`: Dynamic views or isolated specific federation extensions."
+      ],
+      "3 Connection Pooling Strategy": [
+        "Port 5432 (Direct / Session Mode): BANNED for application backends. ONLY allowed for CI/CD Migration runners (e.g., `golang-migrate`) and internal DBA terminal access.",
+        "Port 6543 (Transaction Mode / PgBouncer / Supavisor): MANDATORY for all Application servers (Go backend, Next.js). Allows tens of thousands of requests to multiplex over a small pool of actual DB connections.",
+        "Pool Exhaustion Prevention: Default application database pool (`max_open_conns`) in Go must not exceed `25` per node to ensure overall DB health under horizontal scaling."
+      ],
+      "4 Migration  Version Control": [
+        "Migration-Based Control: The schema is strictly controlled via ordered `UP`/`DOWN` migration scripts (e.g., using `golang-migrate` files like `00001_init.up.sql`). State-based schema diffs are forbidden in CI/CD.",
+        "Zero-Downtime Rule: NEVER execute a `DROP COLUMN` or `ALTER COLUMN TYPE` directly in production while the old version of the API is still running.",
+        "Safe Rollout Strategy (The 3-Step Dance):",
+        "1. Add the new column `new_col` (Migration 1).",
+        "2. Deploy Code that writes to BOTH `old_col` and `new_col`, and run a backfill script.",
+        "3. Deploy Code that only reads/writes `new_col`, followed by a delayed Migration 2 to `DROP old_col` one week later."
+      ],
+      "5 Indexing  Query Performance O1 Scaling": [
+        "Mandatory Foreign Key Indexes: PostgreSQL does *not* automatically index Foreign Keys. Every FK (e.g., `tournament_id`) MUST have a corresponding `CREATE INDEX` to prevent full table scans during `JOIN` or `DELETE CASCADE` operations.",
+        "Cursor-Based Pagination: `OFFSET` and `LIMIT` (`OFFSET 50000 LIMIT 20`) are EXPLICITLY BANNED on tables with high growth potential (e.g., `match_events`, `audit_logs`). You MUST use Keyset/Cursor pagination (`WHERE id > :last_id ORDER BY id LIMIT 20`).",
+        "GIN & Partial Indexes:",
+        "Use GIN indexes for JSONB fields (`metadata`).",
+        "Use Partial Indexes aggressively for Boolean flags (e.g., `CREATE INDEX active_users_idx ON users (id) WHERE is_active = true;`) to save RAM."
+      ],
+      "6 Audit Trails  Soft Deletion": [
+        "Soft Delete Mandatory: The destructive `DELETE FROM <table>` is banned from Application code. All core business entities must implement `deleted_at (timestamptz)`. Deletions are strictly `UPDATE <table> SET deleted_at = NOW()`.",
+        "Immutable Audit Logging: For hyper-sensitive objects (Belt Certifications, Official Scores), implement Triggers or Application-Layer interception that writes to an `audit_logs` table (Tracking: `actor_id`, `action`, `old_json`, `new_json`, `ip_address`)."
+      ],
+      "7 Database Naming Conventions": [
+        "Tables: `snake_case`, strictly plural (`athletes`, `tournaments`, `match_scores`).",
+        "Primary Keys: Always `id` (UUIDv7). Never `user_id` inside the `users` table.",
+        "Foreign Keys: Singular table name + `_id` (`athlete_id`, `tournament_id`).",
+        "Booleans: Always prefixed with `is_`, `has_`, or `can_` (`is_active`, `has_paid`).",
+        "Timestamps: Always `timestamptz` (never `timestamp` without timezone). Standard columns: `created_at`, `updated_at`, `deleted_at`.",
+        "Enums/Status: Avoid native PostgreSQL `ENUM` types because adding values requires taking a table lock. Use `VARCHAR(50)` with Application-Level validation and/or `CHECK (status IN ('PENDING', 'ACTIVE'))` constraints."
+      ],
+      "8 Ultimate SRELevel Database Guard Rails": [
+        "Rule: BANNED from being a single monolithic table.",
+        "Solution: MUST use PostgreSQL Declarative Partitioning by time (`RANGE (created_at)` per month). This maintains small index depths and allows instant data retention pruning (e.g., `DROP TABLE audit_logs_2024_01` takes 0.1s instead of a heavy `DELETE` taking hours and locking the table).",
+        "Rule: The Application Server MUST maintain 2 separate connection pools:",
+        "1. `Primary Pool` (WRITE/Master): Exclusively for `INSERT/UPDATE/DELETE`.",
+        "2. `Replica Pool` (READ/Follower): Exclusively for `SELECT` queries across public dashboards, rankings, and reporting.",
+        "Rule: The Application DB Role MUST be configured with a strict `statement_timeout` (e.g., `SET statement_timeout = 5000;` / 5 seconds). Any query exceeding this limit is instantly aborted by Postgres. ONLY specific Backend Worker Roles or Migration Roles bypass this limit.",
+        "Rule: High-churn tables MUST explicitly override default autovacuum thresholds.",
+        "e.g., `ALTER TABLE match_scores SET (autovacuum_vacuum_scale_factor = 0.02);` (Vacuum at 2% dead tuples instead of the default 20%, ensuring the index remains extremely fast and compact)."
+      ]
+    },
+    "database_erd": {
+      "Tổng quan Schemas": [
+        "Schema Số bảng Mô tả:",
+        "`public` 88 Nghiệp vụ giải đấu chính (VĐV, trận đấu, đăng ký, kết quả):",
+        "`core` 34 Identity & multi-tenancy (users, roles, tenants, approval):",
+        "`system` 126 Hạ tầng nội bộ (audit log, jobs, feature flags, notifications, A/B testing):",
+        "`platform` 31 Tài chính, cộng đồng, di sản, marketplace:",
+        "`tournament` 29 Event sourcing & scoring nâng cao:",
+        "`training` 12 Đào tạo, kỹ thuật, đai, chương trình giảng dạy:",
+        "`people` 6 Câu lạc bộ chi nhánh, thành viên, chứng chỉ:",
+        "`temporal` 4 Temporal history tracking:",
+        "`archive` 10 Lưu trữ dữ liệu theo quý:",
+        "`ml` 6 Machine Learning (model registry, predictions):",
+        "`api_v1` — Views phục vụ API (không phải base tables):"
+      ],
+      "Thống kê Foreign Keys theo Schema": [
+        "Schema Unique FKs Ghi chú:",
+        "`core` 31 Chủ yếu liên kết tenants ↔ users ↔ roles:",
+        "`public` 89 Trung tâm nghiệp vụ: tournaments là hub chính:",
+        "`platform` 35 Liên kết core.users + core.tenants:",
+        "`system` 40+ Nhiều partitioned tables tạo FKs trùng lặp:",
+        "`people` 6 Đều FK tới core.tenants:",
+        "`training` 0 Chưa có FK (tự quản lý):",
+        "`ml` 3 predictions → model_registry:"
+      ]
+    },
+    "database_erd_report": {
+      "1 Tổng quan kiến trúc Database": [
+        "Schema Mục đích Số tables:",
+        "`public` Tournament, Competition, Auth (legacy) 22:",
+        "`core` Multi-tenant, Users, RBAC, Sessions 5:",
+        "`training` Curricula, E-learning, Belt exams 10:",
+        "`people` Club branches, Coaches, Certifications 6:",
+        "`platform` (Finance) Fees, Payments, Invoices, Budgets 7:",
+        "`platform` (Heritage) Martial schools, Lineage, Glossary 7:",
+        "`platform` (Community) Posts, Groups, Marketplace 7:"
+      ],
+      "3 Reference Tables Bảng tham chiếu": [
+        "Table Mô tả Số records mẫu:",
+        "`ref_sport_types` Loại hình thi đấu (Quyền, Đối kháng, Binh khí...) 6:",
+        "`ref_competition_formats` Thể thức thi đấu (Loại trực tiếp, Vòng tròn...) 5:",
+        "`ref_penalty_types` Các loại phạt (Cảnh cáo, Trừ điểm...) 7:",
+        "`ref_scoring_criteria` Tiêu chí chấm điểm (Kỹ thuật, Lực, Tốc độ...) 7:",
+        "`ref_belt_ranks` Hệ thống đai (Trắng → Đen) 6:",
+        "`ref_age_categories` Lứa tuổi (Thiếu nhi → Cao tuổi) 5:",
+        "`ref_equipment_types` Loại thiết bị 0:"
+      ],
+      "4 Utility Tables public schema": [
+        "Table Mô tả:",
+        "`entity_records` Legacy EAV store (JSONB):",
+        "`users` Legacy auth users:",
+        "`sessions` Legacy JWT sessions:",
+        "`auth_audit_log` Legacy auth audit:",
+        "`notifications` Hệ thống thông báo:",
+        "`medical_records` Hồ sơ y tế VĐV:",
+        "`media_files` File media (ảnh, video):",
+        "`data_audit_log` Audit trail dữ liệu:",
+        "`schedule_entries` Lịch thi đấu:",
+        "`appeals` Khiếu nại / Kháng nghị:",
+        "`weigh_ins` Cân nặng thi đấu:"
+      ],
+      "5 Thống kê kiến trúc": [
+        "Loại quan hệ Số lượng:",
+        "Foreign Keys (explicit) ~45:",
+        "Self-referencing FK 4 (tenants, federations, lineage_nodes, comments):",
+        "Cross-schema references Core tenants → mọi enterprise schemas:",
+        "Feature Áp dụng:",
+        "Row Level Security (RLS) Tất cả tables trong `core`, `training`, `people`, `platform`:",
+        "Tenant isolation policy Mọi enterprise table:",
+        "Soft delete (`is_deleted`) Mọi entity tables (enterprise):",
+        "Audit trigger (`updated_at`) ~30 tables:",
+        "Hard delete prevention `core.users`:",
+        "Pattern Mô tả:",
+        "**UUIDv7** Time-ordered UUID cho enterprise tables:",
+        "**Multi-tenant** `tenant_id` FK trên mọi table enterprise:",
+        "**Bitemporal** `people.athlete_belt_history` (valid_from/valid_to + recorded_at/superseded_at):",
+        "**Event Sourcing** `match_events` với sequence_number:",
+        "**Versioning** Cột `version` trên mọi mutable entity:",
+        "**JSONB** Metadata, configs, scores, tags:"
+      ],
+      "7 Đánh giá  Nhận xét": [
+        "1. Multi-tenant architecture vững chắc — RLS + tenant isolation policy",
+        "2. Event Sourcing cho scoring — replay, audit trail hoàn hảo",
+        "3. Bitemporal data cho belt history — truy vấn lịch sử chính xác",
+        "4. UUIDv7 — hiệu suất insert tốt hơn 40-60% so với UUIDv4",
+        "5. Soft delete — bảo vệ dữ liệu, cho phép restore",
+        "6. Reference tables — chuẩn hóa dữ liệu domain VCT",
+        "1. Dual schema — `public.users` và `core.users` tồn tại song song (legacy migration)",
+        "2. Mối quan hệ cross-schema chưa đầy đủ FK constraints giữa enterprise tables (dùng UUID nhưng thiếu explicit FK do composite PK)",
+        "3. JSONB usage — Nhiều trường dùng JSONB (scores, config) — cần GIN indexes cho query performance",
+        "4. No partitioning declared yet cho `match_events` — cần khi data grow lớn"
+      ]
+    },
+    "database_upgrade_phase2_proposal": {
+      "P0  Khẩn Cấp": [
+        "Extension `pg_trgm` cho trigram similarity search",
+        "Trigram GIN indexes trên tên VĐV, HLV, CLB, trường phái",
+        "Hàm `search_fuzzy()` trả kết quả ranked theo similarity score",
+        "Threshold configurable (mặc định 0.3 = 30% match)",
+        "Bảng `athlete_ratings` lưu ELO/Glicko-2 rating per weight class",
+        "Bảng `rating_history` track thay đổi sau mỗi trận (bitemporal)",
+        "Function `calculate_elo()` tự động trigger sau match kết thúc",
+        "Decay function cho VĐV không thi đấu >6 tháng",
+        "Leaderboard materialized view per weight class",
+        "Bảng `system.query_cache` lưu pre-computed results",
+        "Function `cached_query()` check cache trước khi query",
+        "Auto-invalidation triggers khi data thay đổi",
+        "TTL configurable per entity type",
+        "Cache hit/miss metrics view"
+      ],
+      "P1  Ưu Tiên Cao": [
+        "Publication cho critical tables",
+        "Logical replication slot setup",
+        "CDC events table cho downstream consumers",
+        "Integration config cho MeiliSearch, analytics pipeline",
+        "`ltree` column cho `federations`, `martial_schools`, `community_groups`",
+        "Automatic path maintenance triggers",
+        "Index `USING GIST (path ltree_ops)` cho ancestor/descendant queries",
+        "Function `get_subtree()`, `get_ancestors()` dùng ltree operators",
+        "`_history` tables cho: `athletes`, `tournaments`, `combat_matches`",
+        "Trigger-based system versioning (valid_from, valid_to)",
+        "`AS OF` query function — xem snapshot tại thời điểm bất kỳ",
+        "Automatic cleanup old history entries",
+        "BRIN trên `created_at` cho tất cả bảng >10K rows",
+        "BRIN trên `recorded_at` cho event_store, audit_log",
+        "View kiểm tra BRIN coverage tự động"
+      ],
+      "P2  Trung Bình": [
+        "Function `system.create_backup_checkpoint()` — ghi metadata trước migration",
+        "Recovery point tracking table",
+        "Neon branch-based backup strategy with naming convention",
+        "Automated pre-migration branching",
+        "Per-table vacuum configuration (high-churn tables cần aggressive vacuum)",
+        "Custom auto-analyze thresholds cho bảng lớn",
+        "Vacuum progress monitoring view",
+        "Alert khi bloat vượt ngưỡng",
+        "Dynamic search_path function based on user role",
+        "Schema access matrix view",
+        "Function routing based on tenant type",
+        "Default schema per tenant configuration",
+        "`system.db_webhooks` table mapping table events → HTTP endpoints",
+        "Integration với `pg_net` extension (nếu available trên Neon)",
+        "Fallback: queue webhook events vào outbox table",
+        "Retry logic với exponential backoff"
+      ],
+      "P3  Longterm": [
+        "Pattern cho \"lazy materialized views\" chỉ refresh khi truy vấn + stale",
+        "`last_read_at` tracking để identify hot vs cold views",
+        "Auto-drop unused materialized views sau 30 ngày",
+        "Tenant-based feature rollout với `system.experiments` table",
+        "Traffic splitting configuration",
+        "Result tracking via analytics tables",
+        "Statistical significance function",
+        "Helper functions trả nested JSON (tournament + athletes + matches in 1 query)",
+        "`to_connection()` function cho Relay-style pagination",
+        "Batch loading functions (DataLoader pattern ở DB level)",
+        "`ml.training_datasets` — curated datasets cho model training",
+        "`ml.predictions` — pre-computed predictions (bracket, match outcome)",
+        "`ml.model_registry` — track deployed models",
+        "Feature store pattern cho athlete statistics"
+      ],
+      "Verification Plan": [
+        "1. Neon branch test — tạo branch, apply migration, kiểm tra lỗi",
+        "2. Schema validation — chạy `system.validate_schema()` sau mỗi migration",
+        "3. Smoke test queries — kiểm tra functions/views trả kết quả đúng"
+      ]
+    },
+    "database_upgrade_proposal": {
+      "Tóm Tắt Hiện Trạng": [
+        "Tính năng Migration Trạng thái:",
+        "Multi-tenancy + RLS 0004, 0015 ✅ Đầy đủ:",
+        "Table Partitioning (match_events, audit_log) 0012 ✅ Đầy đủ:",
+        "Vietnamese FTS (unaccent + tsvector) 0012 ✅ 6 tables:",
+        "Transactional Outbox 0012 ✅:",
+        "Job Queue (SKIP LOCKED) 0014 ✅:",
+        "Rate Limiting 0014 ✅:",
+        "GDPR + Data Masking 0022 ✅:",
+        "PII Encryption 0017 ✅:",
+        "PostGIS Geospatial 0019 ✅:",
+        "Advisory Locks 0017 ✅:",
+        "State Machine (3 entities) 0015 ✅:",
+        "Approval Workflows 0018 ✅:",
+        "Webhooks 0018 ✅:",
+        "Feature Flags 0011 ✅:",
+        "Analytics Pre-aggregation 0019 ✅:",
+        "Health Check Function 0017 ✅:"
+      ],
+      "P0  Khẩn Cấp Phải sửa trước Production": [
+        "Entity Schema cũ (0001–0003) Schema mới (0035–0048) Xung đột:",
+        "Tournaments `public.tournaments` `public.tournaments` (cùng) Columns khác nhau:",
+        "Athletes `public.athletes` `athlete_profiles` (0047) 2 bảng song song:",
+        "Results `public.results` / `public.medals` `tournament_results` (0045) Denormalized vs normalized:",
+        "Registrations `public.registrations` `tournament_registrations` (0045) Schema hoàn toàn khác:",
+        "Training `training.training_sessions` (0006) `training_sessions` (0048) Public vs schema:",
+        "Clubs `public.clubs` / `people.club_branches` `clubs_vo_duong` (0046) 3 bảng trùng:"
+      ],
+      "P1  Ưu Tiên Cao Nên làm trước khi golive": [
+        "Sử dụng Neon's built-in connection pooler (PgBouncer)",
+        "Cấu hình `statement_timeout`, `idle_in_transaction_session_timeout`",
+        "Thêm connection pool monitoring"
+      ],
+      "P2  Trung Bình Roadmap Q3Q4 2026": [
+        "Sử dụng Neon Read Replicas (compute endpoints)",
+        "Route Read-heavy queries (báo cáo, analytics, dashboard) sang replica",
+        "Write queries vẫn đi qua primary",
+        "GET /api/v1/tournaments → REPLICA",
+        "POST /api/v1/scoring → PRIMARY",
+        "GET /api/v1/analytics/* → REPLICA",
+        "`trigger_audit_log()` chỉ gắn vào 13 bảng critical → nhiều bảng không được audit",
+        "Bảng mới (0044–0048) hoàn toàn thiếu audit"
+      ],
+      "P3  Thấp Longterm Improvements": [
+        "Feature Ứng dụng Lợi ích:",
+        "`MERGE` statement Upsert athlete stats, rankings Cleaner than INSERT...ON CONFLICT:",
+        "`JSON_TABLE()` Parse JSONB metadata columns Replace manual jsonb_each/jsonb_array:",
+        "Incremental Sort Multi-column sorting trên tournaments, athletes Faster ORDER BY:",
+        "Parallel Hash Full Join Analytics reporting joins Faster dashboard queries:",
+        "ref_* tables: Cache 24h (belt ranks, weight classes, etc.)",
+        "tournaments (listing): Cache 5 min",
+        "athlete profile: Cache 2 min",
+        "Live scoring: NO CACHE (bypass Redis)",
+        "Feature flags: Cache 1 min"
+      ],
+      "Đánh Giá Tác Động": [
+        "Hạng mục Trước nâng cấp Sau nâng cấp Cải thiện:",
+        "Data integrity (FK) ~60% tables 100% tables +40%:",
+        "Tenant isolation ~70% tables 100% tables +30%:",
+        "Query performance Baseline Composite indexes + covering ~2-5x faster:",
+        "Observability Basic health check Full monitoring suite Comprehensive:",
+        "Partition management Manual quarterly Auto monthly Zero-maintenance:",
+        "Audit coverage 13 tables All tenant tables ~3x coverage:",
+        "Schema consistency Dual-schema conflicts Unified schema Eliminates bugs:"
+      ],
+      "Rủi Ro  Giảm Thiểu": [
+        "Rủi ro Xác suất Tác động Giảm thiểu:",
+        "Data loss khi consolidate schema Thấp Cao Backup full + dry-run migration + rollback plan:",
+        "Downtime khi thêm FK constraints Trung bình Trung bình `NOT VALID` → `VALIDATE` 2 bước:",
+        "Lock contention khi thêm columns Thấp Thấp `ADD COLUMN IF NOT EXISTS` (no rewrite):",
+        "Breaking API changes Trung bình Cao API views giữ nguyên contract:"
+      ]
+    },
+    "devops-architecture": {
+      "1 Core Philosophy The 12Factor App": [
+        "Stateless Compute: Every Go and Node.js process MUST be completely stateless. A server can be randomly destroyed at any time without losing data.",
+        "No Local State: Uploads, logs, or sessions MUST NEVER be stored on the local filesystem. Use MinIO/S3 for files, Redis for sessions, and Datadog/Sentry for logs.",
+        "Port Binding: Apps must be completely self-contained. The Go backend must spin up its own HTTP server on its designated `PORT`."
+      ],
+      "2 Infrastructure as Code IaC": [
+        "All infrastructure MUST be codified and version-controlled.",
+        "Acceptable formats: `render.yaml`, `vercel.json`, `docker-compose.yml`, or Terraform `.tf` files.",
+        "If a server crashes, deploying a new one must require exactly zero manual configuration."
+      ],
+      "3 Strict Secrets Management": [
+        "The `.env` Ban: Committing `.env` files containing actual passwords, API keys, or JWT secrets to Git is a critical security violation.",
+        "KMS Injection: All operational secrets MUST be stored securely in a Key Management System (e.g., Doppler, AWS Secrets Manager, Vercel Environment UI, Render Env Groups) and injected into the container's RAM exclusively at runtime."
+      ],
+      "4 CICD Pipeline Gates": [
+        "Continuous Integration (CI): `main` branch is protected. No PR can be merged unless:",
+        "1. `npm run lint:arch` passes (proving no UI boundary violations).",
+        "2. `go test -race ./...` passes (proving no backend logic/goroutine breaks).",
+        "Continuous Deployment (CD):",
+        "`main` branch pushes automatically deploy to Staging for UAT.",
+        "Production deployments are gated by explicit Git Tags (e.g., `git tag v1.0.0`) triggered by the Release Manager."
+      ],
+      "5 ZeroDowntime Deployments": [
+        "Rolling Updates / Blue-Green: The infrastructure MUST boot the new version completely, wait for the `/healthz` probe to return `200 OK`, explicitly shift load-balancer traffic to the new version, and finally send `SIGTERM` to gracefully drain connections from the old version over a 30-second window.",
+        "Distroless Docker Images: Final production Docker images MUST use Alpine or Distroless. They must contain exactly the compiled binary and zero build tools to minimize the vulnerability attack surface."
+      ],
+      "6 Observability  SRE Alerting": [
+        "Centralized Telemetry: All services must output structured JSON logs (via `slog` for Go, `pino` for Next.js) pushing to a centralized aggregator.",
+        "Actionable Alerts Only: PagerDuty / Slack alerts are strictly reserved for critical P1 anomalies:",
+        "Database Unavailable.",
+        "HTTP 5xx Error Spike > 1%.",
+        "Payment Webhook Failures.",
+        "No Alert Fatigue: CPU warnings or minor 404s MUST be routed to silent dashboards, never pinging the on-call engineer in the middle of the night."
+      ],
+      "7 Disaster Recovery DR Strategy": [
+        "RTO (Recovery Time Objective): The platform must be capable of spinning up from scratch in a completely new AWS/Cloud region within 15 minutes of a complete Data Center outage using the IaC manifests.",
+        "RPO (Recovery Point Objective): Database snapshots MUST guarantee data loss in the event of hardware failure is no greater than 24 hours (Daily automated backups pushed to physically isolated off-site cold storage)."
+      ],
+      "8 UltraSRE Peak Resilience Đỉnh Cao Bất Tử": [
+        "Rule: Manual SSH access to production servers to run \"hot-patches\" or manual `npm install` is BANNED.",
+        "Solution: Servers are ephemeral \"cattle\". If a Node/Container misbehaves or memory leaks, the orchestrator (Kubernetes/Cloud) MUST instantly kill (Terminate) the instance and spin up a fresh pristine image.",
+        "Rule: Auto-healing mechanisms MUST be proven, not assumed.",
+        "Solution: The Staging environment must undergo periodic \"Chaos Monkey\" tests where processes (Go API, Redis) are intentionally killed to verify that health checks `/healthz` instantly re-route traffic and deploy new containers without dropping simulated user flows.",
+        "Rule: Users MUST NEVER see generic HTTP `502 Bad Gateway` or `503 Service Unavailable` raw text pages.",
+        "Solution: The Edge/CDN layer (Vercel/Cloudflare) must catch `5xx` errors from the Origin Backend and instantly serve a beautifully designed, branded \"Under Maintenance / Đang Bảo Trì\" static HTML page.",
+        "Rule: Business Logic Servers (Go) MUST NOT waste CPU cycles processing DDoS volumetric attacks, Spam, or Credential Stuffing bots.",
+        "Solution: A Web Application Firewall (WAF) MUST sit at the extreme edge (e.g., Cloudflare, Vercel Edge). Strict Rate Limits (e.g., `Max 100 req/min/IP`) must instantly HTTP `429 Too Many Requests` malicious traffic before it ever touches the Go backend."
+      ]
+    },
+    "file-storage-architecture": {
+      "1 Zero Binary Backend The Upload Bottleneck": [
+        "Rule: The Go backend HTTP server MUST NOT accept large `multipart/form-data` file uploads directly if the file size exceeds 5MB.",
+        "Base64 Ban: Submitting Base64-encoded files embedded inside JSON payloads is strictly prohibited. It bloats JSON deserialization memory and stresses the Garbage Collector."
+      ],
+      "2 Presigned URLs Workflow": [
+        "Rule: All file uploads MUST utilize the S3/MinIO Presigned URL pattern:",
+        "1. Client sends metadata (`filename`, `mimetype`) to Backend.",
+        "2. Backend validates permissions and returns a short-lived `PUT` Presigned URL.",
+        "3. Client uploads directly to the Object Store (MinIO/S3), bypassing the Go Backend.",
+        "4. Client notifies Backend that the upload is complete."
+      ],
+      "3 Media Optimization  Edge Compression": [
+        "Format Standard: All raw `JPEG/PNG` avatar or gallery uploads MUST be asynchronously processed into `WebP` or `AVIF` formats for optimal web/mobile delivery.",
+        "Image Resizing: The backend MUST NOT serve multi-megabyte raw images to mobile devices. Images must be stored with multiple resolution variants (e.g., `sm`, `md`, `lg`) or transformed dynamically on the edge (e.g., Cloudflare Image Resizing)."
+      ],
+      "4 Privacy and Access Control": [
+        "Public Assets: Club Logos, Athlete Avatars, and Banner images are stored in a `public` bucket and served directly via CDN with cache-control headers.",
+        "Private Assets: Identity Cards (CCCD), Medical Certificates, and Financial Invoices MUST be stored in a `private` bucket. They can only be accessed via secure `GET` Presigned URLs that expire quickly (e.g., 15 minutes)."
+      ]
+    },
+    "finance-architecture": {
+      "1 The IntegerDecimal Rule No Floats": [
+        "Absolute Ban on Floating Point: Using `float32`, `float64`, or JavaScript `Number` for currency calculations is Strictly Banned.",
+        "Backend Standard: The Go backend MUST handle currency in either the lowest possible denomination as `int64` (e.g., Vietnam Dong directly, or US Cents) OR use an arbitrary-precision library like `shopspring/decimal`.",
+        "Database Standard: All financial columns in PostgreSQL MUST use precision data types: `NUMERIC(15,2)` or `BIGINT`. Never use `REAL` or `DOUBLE PRECISION`."
+      ],
+      "2 Idempotency Preventing Double Charges": [
+        "Mandatory Idempotency Keys: Any API endpoint that mutates financial state (Create Invoice, Pay Bill, Process Refund) MUST require an `Idempotency-Key` header provided by the client.",
+        "Execution Locking: The backend MUST store this key in an `idempotency_keys` table using a `SELECT FOR UPDATE` lock (or Redis `SETNX`) to ensure that if a user clicks the \"Pay\" button 5 times due to lag, the transaction is only executed exactly once. Subsequent identical requests within 24 hours must return the cached result of the first successful request."
+      ],
+      "3 Financial State Machine Strictness": [
+        "Immutable State Progression: An `Invoice` or `PaymentIntent` must strictly transition through: `DRAFT -> PENDING -> PROCESSING -> (SUCCESS | FAILED | REFUNDED)`.",
+        "Enforced Locking: Transitioning into `SUCCESS` must validate the current state inline using compare-and-swap SQL (e.g., `UPDATE payments SET status='SUCCESS' WHERE id=$1 AND status='PROCESSING'`).",
+        "No Skipping States: Manually updating a FAILED payment directly to SUCCESS is banned. A new payment attempt must be initiated."
+      ],
+      "4 ZeroTrust Webhooks  Verification": [
+        "Untrusted Frontend: The client UI returning with `?status=success` from a payment gateway (e.g., VNPay, MoMo) is completely untrusted and MUST NOT change the database status.",
+        "Webhook Middleware: Server-to-server webhook callbacks MUST pass through a middleware that cryptographically validates the HMAC/RSA signature comparing it with the Gateway's secret key. Invalid signatures result in an immediate `401 Unauthorized` without database processing.",
+        "Amount Validation: The webhook handler MUST verify that the precise `Amount` reported by the gateway matches the expected `Amount` in the local database invoice before marking it paid."
+      ],
+      "5 AppendOnly Ledgers GAAP Compliance": [
+        "Immutability of History: Once a financial transaction reaches a terminal state (`SUCCESS`, `FAILED`, `REFUNDED`), the `amount`, `currency`, and `tax` fields become read-only.",
+        "Correcting Mistakes: If a payment amount was recorded incorrectly, it is explicitly forbidden to run an `UPDATE` statement to fix the `amount`. The system must issue a compensating transaction (a `Credit Note` or `Reversal`) to balance the ledger, preserving the strict append-only audit trail required by accounting standards."
+      ]
+    },
+    "frontend-architecture": {
+      "MỤC LỤC": [
+        "#   Phần                                                                        Mục đích                                    :",
+        "1   [Technology Stack](#1-technology-stack)                                     Versions & dependencies                     :",
+        "2   [Monorepo Architecture](#2-monorepo-architecture)                           Package boundaries & dependency graph       :",
+        "3   [Layout Architecture](#3-layout-architecture)                               AppShell, Provider tree, page structure     :",
+        "4   [Routing & Navigation](#4-routing--navigation)                              App Router, RSC vs Client boundaries        :",
+        "5   [Page Patterns](#5-page-patterns)                                           Standard, Admin Table+Drawer, Dashboard     :",
+        "6   [State Management](#6-state-management)                                     Server vs Client vs Local state             :",
+        "7   [API Integration](#7-api-integration)                                       Fetch patterns, REST conventions, WebSocket :",
+        "8   [Form & Validation](#8-form--validation)                                    Zod schemas, form patterns                  :",
+        "9   [Internationalization](#9-internationalization)                             i18n rules, key format                      :",
+        "10  [Error Handling](#10-error-handling)                                        Error Boundary, loading/empty states        :",
+        "11  [Performance](#11-performance)                                              Code splitting, lazy loading                :",
+        "12  [RBAC & Permissions UI](#12-rbac--permissions-ui)                           `useRouteActionGuard`, conditional rendering:",
+        "13  [Real-time UI](#13-real-time-ui)                                            WebSocket, notifications, scoring           :",
+        "14  [Mobile (Expo)](#14-mobile-expo)                                            Cross-platform code sharing                 :",
+        "15  [Testing Strategy](#15-testing-strategy)                                    Vitest, Playwright, coverage targets        :",
+        "16  [Naming Conventions](#16-naming-conventions)                                Files, components, hooks, types             :",
+        "17  [SEO & Meta Tags](#17-seo--meta-tags)                                       Public page metadata                        :",
+        "18  [Toast & Notifications](#18-toast--notifications)                           Toast hook, notification system             :",
+        "19  [Data Tables](#19-data-tables)                                              VCT_DataGrid patterns                       :",
+        "20  [PWA & Offline](#20-pwa--offline)                                           Offline scoring, sync                       :",
+        "21  [Print & Export](#21-print--export)                                         CSV export, print styles                    :",
+        "22  [Security & CSP](#22-security--csp)                                         XSS, CSRF, DOMPurify, headers               :",
+        "23  [Observability](#23-observability)                                          Sentry, Web Vitals, logging                 :",
+        "24  [CI/CD & Git Pipeline](#24-cicd--git-pipeline)                              Husky, lint-staged, code review             :",
+        "24  [Git Pipeline & Format](#24-git-pipeline--format)                   pre-commit, prettier, lint-staged           :",
+        "25  [Feature Flags](#25-feature-flags)                                          Trunk-based dev, hidden WIP features        :",
+        "26  [Performance Budgets & Dependencies](#26-performance-budgets)       Giới hạn Bundle Size, cấm thư viện nặng       :",
+        "A   [Engineering Anti-Patterns](#a-engineering-anti-patterns)                   Lỗi kiến trúc bị cấm                        :",
+        "B   [Pre-Delivery Engineering Checklist](#b-pre-delivery-engineering-checklist) Quality gates                               :",
+        "C   [New Feature Workflow](#c-new-feature-workflow)                             Step-by-step feature creation               :"
+      ],
+      "1 Technology Stack": [
+        "Tech              Version Usage                     :",
+        "**Next.js**       16.1.6  Web framework (App Router):",
+        "**React**         19.2.4  UI library                :",
+        "**TypeScript**    5.9.3   Type safety               :",
+        "**TailwindCSS**   4.2.1   CSS utility framework     :",
+        "**Zustand**       5.0.12  Global state management   :",
+        "**Zod**           4.3.6   Schema validation         :",
+        "**Framer Motion** 12.37.0 Page transitions          :",
+        "**Vitest**        4.1.0   Unit/component testing    :",
+        "**Playwright**    1.52.0  E2E testing               :",
+        "**Node.js**       ≥22.0.0 Runtime                   :",
+        "**Expo**          Latest  Mobile (React Native)     :"
+      ],
+      "2 Monorepo Architecture": [
+        "Rule   Description                                                       Enforced By      :",
+        "**F1** `shared-types` KHÔNG import bất kỳ package nào khác               ESLint boundaries:",
+        "**F2** `shared-utils` KHÔNG import `app` hoặc `ui`                       ESLint boundaries:",
+        "**F3** `packages/ui` KHÔNG import `packages/app`                         ESLint boundaries:",
+        "**F4** `packages/app` có thể import `shared-types`, `shared-utils`, `ui` —                :",
+        "**F5** `apps/next` và `apps/expo` import từ `packages/*`                 —                :",
+        "**F6** API calls chỉ nằm trong `features/` hoặc `hooks/`                 Code review      :",
+        "**F7** Route pages (`apps/next/app/`) chỉ compose components — NO logic  Code review      :"
+      ],
+      "4 Routing  Navigation": [
+        "Central config: `packages/app/features/layout/route-registry.ts`",
+        "Sidebar: `getSidebarGroups(role: UserRole)` — nav items per role",
+        "RBAC matrix: `packages/app/features/layout/rbac-matrix.ts`",
+        "Workspace configs: `packages/app/features/layout/workspace-sidebar-configs.ts`",
+        "Loại Component Render ở đâu? JavaScript tới Browser? Lúc nào dùng?:",
+        "**Server Component** (Mặc định) Server **0kb JS** Page layouts, SEO data fetching, tĩnh.:",
+        "**Client Component** (`'use client'`) Cả Server (SSR) & Client Có (Hyration) `onClick`, `useState`, `useEffect`, Animation, Hooks.:",
+        "1. ❌ CẤM đặt `'use client'` ở Root Layout hoặc Page ngoài cùng trừ khi trang đó 100% interactive (ví dụ: `refeere-scoring`).",
+        "2. ✅ ĐẨY `'use client'` XUỐNG DƯỚI JUNCTION (LÁ): Nếu chỉ có cái nút bấm cần `onClick`, hãy tách cái nút đó ra file riêng có `'use client'`, đừng để cả page thành client.",
+        "3. ✅ Server Component có thể import Client Component, nhưng Client Component KHÔNG THỂ import Server Component trực tiếp (phải pass qua `children` props).",
+        "#   Rule                                                              :",
+        "N1  ❌ **KHÔNG** dùng `<a>` tags → `router.push()` hoặc `onNavigate()`:",
+        "N2  ❌ **KHÔNG** dùng `next/router` → dùng `next/navigation`          :",
+        "N3  ✅ Route pages chỉ import và re-export feature page component     :",
+        "N4  ✅ Navigation logic nằm trong AppShell và route-registry          :",
+        "1. ✅ `error.tsx` (Error Boundary): Bắt buộc bọc các Module lớn. Lỗi xảy ra ở nhánh nào thì chỉ nhánh đó hiện Box cảnh báo (kèm Nút `Thử Lại`), giữ Sidebar và Header hoạt động bình thường.",
+        "2. ✅ `loading.tsx` (Suspense): Bắt buộc dùng `loading.tsx` bọc các Page tốn thời gian Fetch API trên server. Next.js tự động streaming Shell UI.",
+        "3. ✅ `not-found.tsx`: Tại các file Dynamic Route (ví dụ `[tournamentId]/page.tsx`), thay vì redirect thủ công về trang 404, phải ném lỗi bằng hàm `notFound()` để hiển thị giao diện 404 chuyên nghiệp của hệ thống."
+      ],
+      "6 State Management": [
+        "Type              Tool                                        Examples                 :",
+        "**Server State**  Custom hooks (`useAdminAPI`, `useAthletes`) API data                 :",
+        "**Global Client** Zustand stores                              Sidebar, workspace, theme:",
+        "**Local State**   `useState`, `useReducer`                    Form input, dropdown open:",
+        "**URL State**     `useSearchParams`, `usePathname`            Filters, pagination      :",
+        "#   Rule                                                                  :",
+        "S1  ❌ **CẤM** `fetch()` rồi `setState(data)` trong `useEffect` trong page:",
+        "S2  ✅ Server State phải qua custom hooks                                 :",
+        "S3  ❌ **CẤM** Context API cho complex state → Zustand                    :",
+        "S4  ❌ **CẤM** local state (form input) lên Global Store                  :",
+        "S5  ✅ Global State chỉ cho: sidebar, workspace, theme, auth              :",
+        "Hook                       Purpose                :",
+        "`useAdminAPI`              Admin CRUD             :",
+        "`useApiQuery`              Generic API fetching   :",
+        "`useCalendarAPI`           Calendar events        :",
+        "`useClubAPI`               Club management        :",
+        "`useCommunityAPI`          Community features     :",
+        "`useDebounce`              Debounced value        :",
+        "`useDivisions`             Province/District/Ward :",
+        "`useFederationAPI`         Federation operations  :",
+        "`useFinanceAPI`            Finance & billing      :",
+        "`useHeritageAPI`           Belt ranking           :",
+        "`useNotificationAPI`       Notification CRUD      :",
+        "`usePagination`            Pagination logic       :",
+        "`usePeopleAPI`             People directory       :",
+        "`usePublicAPI`             Public data            :",
+        "`useRankingsAPI`           Rankings               :",
+        "`useRealtimeNotifications` WebSocket notifications:",
+        "`useTrainingAPI`           Training programs      :",
+        "`useTournamentAPI`         Tournament management  :",
+        "`useMarketplaceAPI`        Marketplace features   :",
+        "`useWebSocket`             Raw WebSocket          :",
+        "`useRouteActionGuard`      Permission checks      :",
+        "`useToast`                 Toast system           :"
+      ],
+      "7 API Integration": [
+        "Loại dữ liệu Strategy khuyên dùng Thời gian TTL Công cụ khuyến nghị:",
+        "**Dữ liệu tĩnh** (Tỉnh thành, Hệ phái) `Cache-First` (vĩnh viễn) Vô hạn (Local Storage) Zustand Persist:",
+        "**Danh mục ít đổi** (DS Trọng tài, CLB) `Stale-While-Revalidate` Đọc cache, gọi ngầm API API (30p TTL) Custom Hook + SWR pattern:",
+        "**Dữ liệu động** (DS Thi đấu, Hồ sơ) `Network-Only` Không dùng cache Fetch API trực tiếp:",
+        "**Realtime** (Chấm điểm trực tiếp) `WebSocket` WebSocket Connection `useWebSocket`:"
+      ],
+      "8 Form  Validation": [
+        "1. ✅ All fields MUST have `<label>` (not just placeholder)",
+        "2. ✅ Validation errors shown below field",
+        "3. ✅ Submit button disabled when form invalid",
+        "4. ✅ Loading state on submit button during API call"
+      ],
+      "9 Internationalization": [
+        "#   Rule                                                            :",
+        "I1  ❌ **TUYỆT ĐỐI CẤM** hardcode text: `<button>Đăng nhập</button>`:",
+        "I2  ✅ BẮT BUỘC: `<button>{t('auth.login')}</button>`               :",
+        "I3  ✅ Key format: `module.section.label`                           :",
+        "I4  ✅ Default locale: Vietnamese (`vi`), supported: `vi`, `en`     :",
+        "I5  ✅ New keys → add for BOTH locales                              :",
+        "I6  ✅ Backend returns error codes, frontend translates             :"
+      ],
+      "10 Error Handling": [
+        "#   Rule                                                :",
+        "E1  ❌ NO blank page during loading → `VCT_PageSkeleton`:",
+        "E2  ❌ NO spinner → skeleton cards/rows                 :",
+        "E3  ✅ Error state → retry button                       :",
+        "E4  ✅ Empty state → `VCT_EmptyState`                   :",
+        "E5  ✅ Widget error → local fallback, NOT app crash     :"
+      ],
+      "11 Performance": [
+        "#   Rule               Solution                                      :",
+        "P1  No heavy imports   Import submodules, not entire libraries       :",
+        "P2  Image optimization `next/image`, no images > 2MB                 :",
+        "P3  Memoization        `React.memo` for heavy list components        :",
+        "P4  Code splitting     Dynamic import for heavy components           :",
+        "P5  SSR-safe           No `window`/`localStorage` outside `useEffect`:",
+        "P6  Bundle monitoring  `@next/bundle-analyzer`                       :"
+      ],
+      "12 RBAC  Permissions UI": [
+        "1. ❌ KHÔNG check `if (user.role === 'admin')` → dùng `can('action')`",
+        "2. ✅ LUÔN ẩn UI elements user không có quyền",
+        "3. ✅ Backend PHẢI validate lại — frontend chỉ là UX"
+      ],
+      "13 Realtime UI": [
+        "Status         Indicator                        :",
+        "`connecting`   🟡 \"Đang kết nối...\"             :",
+        "`connected`    🟢 (hide after 2s)               :",
+        "`disconnected` 🟠 \"Mất kết nối, đang thử lại...\":",
+        "`error`        🔴 \"Lỗi kết nối\" + retry button  :",
+        "1. ✅ LUÔN show connection indicator",
+        "2. ✅ Auto-reconnect with exponential backoff",
+        "3. ❌ KHÔNG infinite re-render loops",
+        "4. ✅ Throttle high-frequency event renders"
+      ],
+      "14 Mobile Expo": [
+        "Feature    Web (Next.js)      Mobile (Expo)             :",
+        "Navigation App Router URLs    React Navigation          :",
+        "Layout     AppShell (sidebar) Bottom tabs + stack       :",
+        "Theme      CSS variables      React context + StyleSheet:",
+        "Storage    localStorage       AsyncStorage / SecureStore:",
+        "Animations Framer Motion      Reanimated                :",
+        "Offline    Service Worker     OfflineManager + SQLite   :",
+        "1. ✅ Business logic hooks → shared in `packages/app/features/hooks/`",
+        "2. ❌ KHÔNG import web components in mobile",
+        "3. ✅ Mobile screen naming: `Screen_{module}_{name}.tsx`",
+        "4. ✅ Offline-first for scoring features"
+      ],
+      "15 Testing Strategy": [
+        "Layer          Tool           Location                       :",
+        "Unit/Component Vitest + jsdom `features/**/__tests__/`       :",
+        "Mobile Unit    Jest           `features/mobile/**/__tests__/`:",
+        "E2E (Web)      Playwright     `tests/e2e/`                   :",
+        "E2E (Mobile)   Maestro        `maestro/`                     :",
+        "Category     Target    Priority  :",
+        "Custom hooks ≥ 80%     **Cao**   :",
+        "Admin pages  ≥ 60%     Trung bình:",
+        "Auth flows   ≥ 90% E2E **Cao**   :",
+        "Scoring UI   ≥ 90% E2E **Cao**   :",
+        "1. ✅ Every hook MUST have unit test",
+        "2. ✅ Every page MUST test: loading, error, success states",
+        "3. ❌ KHÔNG test implementation details → test behavior",
+        "4. ✅ Test by user interaction: `getByRole`, `getByText`"
+      ],
+      "16 Naming Conventions": [
+        "Type            Pattern                       Example                   :",
+        "Page            `Page_{module}_{subpage}.tsx` `Page_athlete_profile.tsx`:",
+        "Mobile Screen   `Screen_{module}_{name}.tsx`  `Screen_athlete_home.tsx` :",
+        "Component       `VCT_{ComponentName}.tsx`     `VCT_DataGrid.tsx`        :",
+        "Multi-component `vct-{group}.tsx`             `vct-charts.tsx`          :",
+        "Hook            `use{Domain}API.ts`           `useAdminAPI.ts`          :",
+        "Types           `{module}.types.ts`           `admin.types.ts`          :",
+        "CSS Module      `{module}.module.css`         `admin.module.css`        :",
+        "Data            `{module}.data.ts`            `admin-users.data.ts`     :",
+        "Item           Convention         Example             :",
+        "Component      PascalCase         `AthleteList`       :",
+        "Hook           `use` + PascalCase `useAthletes`       :",
+        "Type/Interface PascalCase         `Athlete`           :",
+        "Feature folder kebab-case         `athlete-profile`   :",
+        "API function   camelCase          `fetchAthletes`     :",
+        "i18n key       dot-notation       `athlete.list.title`:"
+      ],
+      "17 SEO  Meta Tags": [
+        "1. ✅ Trang Giải Đấu/Kết Quả: Bắt buộc tạo Endpoint `@vercel/og` (ví dụ `app/api/og/route.tsx`) để vẽ ảnh động. Khi paste link giải đấu lên Facebook/Zalo, ảnh Thumbnail (ImageResponse) hiện ra phải báo luôn Logo + Tên Giải Đấu + Trạng thái.",
+        "2. ❌ Cấm: Share link kết quả Môn Phái mà chỉ ra dòng chữ vô hồn \"Hệ thống VCT\". Hình ảnh hiển thị phải được render SSR mang đậm tính Sports."
+      ],
+      "18 Toast  Notifications": [
+        "Type      Auto-dismiss Sound             :",
+        "`success` 3.5s         None              :",
+        "`error`   Manual close None              :",
+        "`warning` 5s           Vibration (mobile):",
+        "`info`    3.5s         None              :"
+      ],
+      "20 PWA  Offline": [
+        "1. Referee opens scoring → data cached locally",
+        "2. Scores entered → saved to local queue",
+        "3. Network restored → auto-sync to server",
+        "4. Conflict resolution: last-write-wins",
+        "State   Banner                                                :",
+        "Online  Hidden                                                :",
+        "Offline 🔴 \"Đang ngoại tuyến — dữ liệu sẽ đồng bộ khi có mạng\":",
+        "Syncing 🟡 \"Đang đồng bộ... (3/5)\"                            :",
+        "Failed  🔴 \"Đồng bộ thất bại\" + retry                         :"
+      ],
+      "23 Observability": [
+        "Khi dùng `VCT_ErrorBoundary`: LUÔN đẩy lỗi lên dịch vụ tracking thay vì chỉ hiện Modal lỗi.",
+        "Rule M3: Cấm dùng `console.error` trên production để giấu thông tin kiến trúc. Thay vào đó dùng cơ chế custom logger (chỉ emit trace id)."
+      ],
+      "24 CICD  Git Pipeline": [
+        "Branch phải build thành công (`npm run build`).",
+        "TypeScript compiler phải qua (`tsc --noEmit`).",
+        "eslint boundaries KHÔNG CÓ VI PHẠM."
+      ],
+      "A Engineering AntiPatterns": [
+        "#   ❌ CẤM                                   ✅ ĐÚNG                               :",
+        "1   Feature code trong `apps/next/app/`      Feature trong `packages/app/features/`:",
+        "2   Pages Router (`apps/next/pages/`)        App Router: `apps/next/app/`          :",
+        "3   `packages/ui` imports `packages/app`     UI KHÔNG biết business logic          :",
+        "4   API call trong page component            API call trong custom hook            :",
+        "5   Custom button/card trong feature         Import từ `@vct/ui`                   :",
+        "6   `<a>` tags trực tiếp                     `router.push()` / `onNavigate()`      :",
+        "7   `fetch()` + `setState` trong `useEffect` Custom hook pattern                   :",
+        "8   Hardcode text strings                    `useI18n()` cho tất cả text           :",
+        "9   Bỏ qua loading states                    `VCT_PageSkeleton` / skeleton         :",
+        "10  Bỏ qua error handling                    Error boundary + retry                :",
+        "11  Context API cho complex state            Zustand stores                        :",
+        "12  `if (user.role === 'admin')`             `can('action')` via RBAC hook         :"
+      ],
+      "B PreDelivery Engineering Checklist": [
+        "[ ] Components imported từ `@vct/ui`",
+        "[ ] Feature code trong `packages/app/features/`",
+        "[ ] Route page chỉ là thin wrapper",
+        "[ ] No import violations (package boundaries)",
+        "[ ] API calls trong custom hooks",
+        "[ ] Loading + Error + Empty states đầy đủ",
+        "[ ] TypeScript types complete (no `any`)",
+        "[ ] i18n keys cho cả `vi` và `en`",
+        "[ ] No hardcoded user-facing text",
+        "[ ] ESLint pass (`npm run lint`)",
+        "[ ] TypeScript pass (`npm run typecheck`)",
+        "[ ] Unit tests cho hooks",
+        "[ ] E2E test cho critical flows"
+      ],
+      "C New Feature Workflow": [
+        "1. Xác định feature module",
+        "2. Module đã tồn tại? → Thêm page/hook",
+        "3. Tạo Page component: Page_{module}_{subpage}.tsx",
+        "4. Tạo custom hook (nếu cần API): use{Name}API.ts",
+        "5. Thêm i18n keys cho vi và en",
+        "6. Tạo route page: apps/next/app/{route}/page.tsx (thin wrapper)",
+        "7. Đăng ký sidebar navigation trong route-registry.ts",
+        "8. Implement loading/error/empty states",
+        "9. Chạy Visual Checklist (xem ui-architecture-rules.md §B)"
+      ],
+      "26 Performance Budgets  Dependencies": [
+        "❌ Thư Viện Bị Cấm (Quá Nặng) ✅ Giải Pháp Thay Thế (Mỏng, Treeshake):",
+        "`moment.js` `date-fns` hoặc `dayjs`:",
+        "`lodash` (toàn cục) `lodash-es` (hoặc import cục bộ `lodash/debounce`):",
+        "`framer-motion` (full import) Nhúng file `LazyMotion` (giảm hàng trăm KB):",
+        "Bắt buộc dùng `const HeavyChart = dynamic(() => import('@vct/ui/Chart'))` đối với mọi thư viện vẽ Biểu Đồ, RichText Editor, PDF Viewer. CẤM import tĩnh gây nhồi nhét bundle size toàn cục."
+      ],
+      "CrossReference": [
+        "Tài liệu                  Đường dẫn                                         Phạm vi                                        :",
+        "**UI Architecture Rules** `/docs/architecture/ui-architecture.md`     Design System: tokens, colors, components, a11y:",
+        "Architecture Guard Rails  `/docs/architecture/architecture-guard-rails.md`  Full-stack architecture rules (26 rules)       :",
+        "Route Registry            `/packages/app/features/layout/route-registry.ts` All routes & sidebar                           :",
+        "RBAC Matrix               `/packages/app/features/layout/rbac-matrix.ts`    Role-action permissions                        :",
+        "Component API             `/packages/ui/src/index.ts`                       59 component exports                           :"
+      ]
+    },
+    "high-load-architecture": {
+      "2 HighLoad Principles": [
+        "1. Stateless Compute: All API servers (Go) and Frontend middleware (Next.js) MUST be 100% stateless. No in-memory sessions; no local file writes.",
+        "2. Push over Pull: Use WebSockets/SSE for real-time updates rather than client-side polling.",
+        "3. Async Everything: Any heavy computation (e.g., bracket generation, complex PDF exports) must be offloaded to background workers via a message queue (NATS JetStream).",
+        "4. Cache First: Database is the last line of defense. All read-heavy operations must be cached.",
+        "5. Horizontal Scalability: The infrastructure must be able to add instances dynamically (Horizontal Pod Autoscaler or Serverless compute) within seconds."
+      ],
+      "3 Architecture Layers": [
+        "Global CDN: Cache static assets (images, CSS, JS) at edge nodes.",
+        "DDoS Protection & Rate Limiting: Block abusive traffic before it hits the compute layer.",
+        "Edge Caching via Vercel: Next.js App Router utilizes ISR (Incremental Static Regeneration) to cache pages like `Tournaments List` or `Leaderboards` for a set TTL (Time To Live).",
+        "Stateless Handlers: JWT-based authentication ensures the API does not need to look up session state in a database for every request.",
+        "Containerization: Deploy via Docker on Kubernetes or Serverless platforms (Fly.io/Render) with auto-scaling configured based on CPU/RAM thresholds.",
+        "Load Balancing: Distribute traffic evenly across healthy pods.",
+        "Centralized Cache: Redis Cluster handles session data (if required), rate limiting counters, and caches heavy aggregation queries.",
+        "Cache-Aside Pattern:",
+        "1. Go backend checks Redis for `match:123:score`.",
+        "2. If Cache Miss, query DB, then write to Redis with a TTL.",
+        "3. On score update, emit event to invalidate cache and broadcast via WebSocket.",
+        "Event-Driven Workflows: Example: `ScoreSubmitted` event.",
+        "1. API receives score -> validates -> publishes to NATS -> Returns 202 Accepted.",
+        "2. Background Worker consumes NATS message -> updates DB -> triggers cache invalidation -> broadcasts to WebSocket clients.",
+        "Connection Pooling: Use PgBouncer to limit maximum physical connections to the DB, funneling thousands of logical Go connections into a safe pool.",
+        "Read Replicas: Separate Write load (Master node) from Read load (Replica nodes). Queries for leaderboards point to Read Replicas.",
+        "Serverless Scaling: Neon dynamically scales CPU/Memory for the Postgres instance during sudden traffic spikes without manual intervention."
+      ],
+      "4 Risks and Mitigations": [
+        "Cache Stampede: When a popular cache key expires, thousands of requests might hit the DB simultaneously.",
+        "*Mitigation*: Implement probabilistic early expiration or a distributed lock (e.g., Redis Redlock) to ensure only one worker regenerates the cache.",
+        "Eventual Consistency: Asynchronous writes mean the client might see stale data for a few milliseconds.",
+        "*Mitigation*: Optimistic UI updates on the frontend (Next.js) coupled with real-time websocket pushes for correction."
+      ]
+    },
+    "i18n-time-architecture": {
+      "1 The UTCZero Rule Database  Server": [
+        "Absolute Time Law: All `TIMESTAMP` values stored in PostgreSQL MUST use `TIMESTAMPTZ` (Timestamp with Time Zone) and MUST exclusively be saved in `UTC-0`.",
+        "Backend Time: Go struct fields for datetime MUST only ever hold UTC values (`time.Now().UTC()`).",
+        "No Local Server Time: The Go backend logic MUST NEVER assume that the server it runs on is located in the `Asia/Ho_Chi_Minh` timezone. Any offset calculation happens on the edge."
+      ],
+      "2 ClientSide Time Localization": [
+        "UI Responsibility: The React Native and Next.js applications receive `ISO-8601` UTC strings (e.g., `2026-03-26T07:12:00Z`). It is the absolute responsibility of the Frontend/Client UI to format this time into the user's localized timezone (`Asia/Ho_Chi_Minh` for VN users)."
+      ],
+      "3 Ban on Hardcoded UI Strings i18n": [
+        "No Static Text: Hardcoding Vietnamese strings like `<div>Đăng ký thi đấu</div>` directly into `.tsx` components is BANNED.",
+        "i18n Dictionaries: Developers MUST use the designated internationalization hook (e.g., `const { t } = useI18n()`) to inject text."
+      ],
+      "4 Currency and Unit Formatting": [
+        "Currency: `VND` does not have decimal/cents formatting, whereas `USD` and `EUR` do. Financial displays MUST utilize `Intl.NumberFormat` in the browser or an equivalent highly robust locale formatter on mobile, leveraging the user's `Locale` context, avoiding manual string concatenation like `price + \" VNĐ\"`."
+      ]
+    },
+    "legal-architecture": {
+      "1 Terms of Service  Electronic Consent": [
+        "Versioned Agreements: All \"Terms of Service\" (Điều khoản sử dụng), \"Privacy Policies\" (Chính sách bảo mật), and \"Competition Rules\" (Điều lệ thi đấu) must be stored with explicit version numbers (e.g., `v1.2.0`).",
+        "Cryptographic Consent Logging: When a user registers or accepts a policy, the system must generate an immutable audit log row containing: `<User_UUID>`, `<Agreement_Type>`, `<Agreement_Version>`, `<Timestamp_UTC>`, `<Client_IP>`, and `<User_Agent>`.",
+        "Forced Re-consent: If the Federation updates a policy to a breaking version, the authentication/routing middleware (`middleware.ts` or Go Auth Check) MUST intercept the user and force explicit re-consent before allowing them to access the application."
+      ],
+      "2 Minor Protection  Parental Guardianship COPPA Equivalent": [
+        "Strict Age Gating: Any Athlete entity with a `DateOfBirth` making them strictly under 18 years old MUST have a verified `Parent/Guardian` relation.",
+        "Delegated Authority (Waivers): Minors cannot legally sign injury waivers or consent forms for tournaments. All tournament registrations, belt exams, and high-risk activities for minors MUST trigger an approval workflow requiring explicit digital consent from the linked Parent/Guardian account."
+      ],
+      "3 Data Privacy  The Right to be Forgotten": [
+        "Absolutely No Hard Deletes: Running `DELETE FROM athletes WHERE ...` is universally BANNED. Deletion must strictly be implemented as a \"Soft Delete\" by setting a `deleted_at` timestamp.",
+        "Anonymization over Deletion: If an athlete exercises their legal \"Right to be Forgotten\", their Personally Identifiable Information (PII) like `full_name`, `email`, `phone_number`, and `address` must be overwritten with scrambled/anonymized values.",
+        "Historical Integrity: Under no circumstances can an athlete's historical match records or belt progressions be deleted. The system must retain their generic `Athlete_UUID` to ensure previous opponents' ELO scores and historical tournament bracket structures remain perfectly intact.",
+        "Data Export: The platform must provide an API endpoint returning a standard JSON/CSV representation of all data held on a user if they submit a \"Data Subject Access Request\"."
+      ],
+      "4 Official Federation Documents  Immutable Storage": [
+        "Stamped PDF Integrity: Official documents (e.g., \"Điều lệ giải PDF có dấu mộc\") uploaded by organizing committees must be stored in Immutable Cloud Storage (S3/MinIO with Object Lock enabled).",
+        "Hash Verification: The system must track the SHA-256 hash of these files to prevent malicious/silent replacement of tournament rules mid-event.",
+        "Digital Certificates: Any certificate (Chứng nhận đai, Bằng khen) generated by the system must include a QR code linking securely to the VCT Platform verification endpoint (e.g., `https://vct.vn/verify/{uuid}`) to prove authenticity against forgery."
+      ],
+      "5 Financial  Tax Accounting Compliance": [
+        "Immutable Invoices: A generated and paid `Invoice` record is a sacred financial document. Modifying the amount, line items, or tax data of a finalized invoice is BANNED.",
+        "Credit Notes (Hóa đơn điều chỉnh): If an invoice was issued incorrectly, the system must issue a subsequent \"Credit Note\" offsetting the original invoice, creating a clear GAAP-compliant audit trail.",
+        "Webhook Securirty: All financial webhook callbacks (from VNPay, MoMo, Stripe) MUST have their HMAC/cryptographic signatures strictly verified before modifying any database state."
+      ]
+    },
+    "micro-frontend-architecture": {
+      "MỤC LỤC": [
+        "# Phần Mục đích:",
+        "1 [MFE Vision & Strategy](#1-mfe-vision--strategy) Tầm nhìn và lộ trình MFE:",
+        "2 [Domain Architecture](#2-domain-architecture) 7 domains, module mapping, dependency:",
+        "3 [Shared Shell Specification](#3-shared-shell-specification) Platform shell contract:",
+        "4 [Cross-Domain Contracts](#4-cross-domain-contracts) TypeScript contracts, event bus:",
+        "5 [Build & Deploy Pipeline](#5-build--deploy-pipeline) Build strategy per phase:",
+        "6 [MFE Guard Rails](#6-mfe-guard-rails) Rules bắt buộc tuân thủ:",
+        "7 [Migration Path](#7-migration-path) Lộ trình 3 phases:",
+        "8 [Agent Integration](#8-agent-integration) Tích hợp với hệ thống AI agents:"
+      ],
+      "1 MFE Vision  Strategy": [
+        "Problem MFE Solution:",
+        "1 bug trong Tournament → sập cả app Error Boundary per domain → chỉ Tournament bị ảnh hưởng:",
+        "Deploy fix nhỏ → rebuild toàn bộ Independent domain builds → chỉ build domain liên quan:",
+        "2 teams sửa cùng file → merge conflict Domain ownership → team chỉ touch code trong domain mình:",
+        "Bundle size ngày càng lớn Code splitting per domain → chỉ load domain user cần:",
+        "Feature phức tạp → khó trace ownership Domain registry → mọi module có owner rõ ràng:"
+      ],
+      "2 Domain Architecture": [
+        "URL Pattern Domain Entry Module:",
+        "`/` D7: Platform `home`:",
+        "`/login`, `/register`, `/forgot-password` D7: Platform `auth`:",
+        "`/dashboard` D7: Platform `dashboard`:",
+        "`/portal/*` D7: Platform `portals`:",
+        "`/user/*` D7: Platform `user`:",
+        "`/tournament/*` D1: Tournament `tournament`:",
+        "`/referee-scoring/*` D1: Tournament `pwa`:",
+        "`/scoreboard/*` D1: Tournament `pwa`:",
+        "`/calendar/*` D1: Tournament `calendar`:",
+        "`/rankings/*` D1: Tournament `rankings`:",
+        "`/athlete-portal/*` D2: Athlete `athletes`:",
+        "`/people/*` D2: Athlete `people`:",
+        "`/training/*` D2: Athlete `training`:",
+        "`/parent/*` D2: Athlete `parent`:",
+        "`/federation/*` D3: Organization `federation`:",
+        "`/provincial/*` D3: Organization `provincial`:",
+        "`/club/*` D3: Organization `club`:",
+        "`/admin/*` D4: Admin `admin`:",
+        "`/settings/*` D4: Admin `settings`:",
+        "`/finance/*` D5: Finance `finance`:",
+        "`/marketplace/*` D5: Finance `marketplace`:",
+        "`/heritage/*` D6: Heritage `heritage`:",
+        "`/community/*` D6: Heritage `community`:",
+        "`/public/*` D6: Heritage `public`:"
+      ],
+      "3 Shared Shell Specification": [
+        "# Rule Description:",
+        "SH1 Shell KHÔNG chứa business logic Chỉ layout + auth + theme + i18n + generic hooks:",
+        "SH2 Shell KHÔNG import từ feature domains D7 không biết D1-D6 tồn tại:",
+        "SH3 Domain pages được compose vào Shell qua routing `apps/next/app/{route}/page.tsx`:",
+        "SH4 Shell Error Boundary bọc ngoài cùng Fallback toàn trang nếu Shell lỗi:",
+        "SH5 Domain Error Boundary bọc riêng Mỗi domain pages có `error.tsx` riêng:"
+      ],
+      "4 CrossDomain Contracts": [
+        "Type Location Example:",
+        "**Type Contract** `packages/shared-types/` `Athlete`, `Tournament`, `Club` interfaces:",
+        "**API Contract** Backend REST endpoints `GET /api/v1/athletes/{id}`:",
+        "**Event Contract** Event bus messages `{ type: 'tournament.completed', payload: { id } }`:",
+        "**Route Contract** URL patterns `/athlete-portal/profile/{id}`:"
+      ],
+      "5 Build  Deploy Pipeline": [
+        "Domain Budget (gzipped) Current Estimate:",
+        "D1: Tournament 250KB ~200KB:",
+        "D2: Athlete 150KB ~120KB:",
+        "D3: Organization 200KB ~180KB:",
+        "D4: Admin 300KB ~250KB:",
+        "D5: Finance 200KB ~150KB:",
+        "D6: Heritage 150KB ~100KB:",
+        "D7: Platform (Shell) 200KB ~180KB:",
+        "**Shared (@vct/ui)** 150KB ~130KB:"
+      ],
+      "6 MFE Guard Rails": [
+        "# Rule Enforcement:",
+        "MFG-1 Feature domain KHÔNG import từ feature domain khác `npm run lint:mfe-boundaries`:",
+        "MFG-2 Feature domain CHỈ import từ: `@vct/ui`, Platform modules, `shared-types`, `shared-utils` ESLint boundaries:",
+        "MFG-3 Cross-domain data access CHỈ qua shared hooks hoặc API calls Code review:",
+        "MFG-4 Cross-domain navigation CHỈ qua URL routing (`router.push`) Code review:",
+        "MFG-5 Shared state (Zustand) CHỈ cho Platform concerns (sidebar, theme, auth) Architecture review:"
+      ],
+      "Title: Generic check: no cross-domain imports between D1-D6": [
+        "# Anti-Pattern Detection Fix:",
+        "MFA-1 God Component spanning 2+ domains Component imports from 2+ domain dirs Split into domain-specific components:",
+        "MFA-2 Cross-domain Zustand store Store imported by multiple domains Use API/event bus instead:",
+        "MFA-3 Shared CSS class across domains Non-`@vct/ui` CSS class used in multiple domains Move to `@vct/ui` or use CSS Modules:",
+        "MFA-4 Cross-domain component import `import { X } from '../other-domain/components/X'` Use shared hook + local component:"
+      ],
+      "7 Migration Path": [
+        "1. Extract Shell app (D7) thành standalone Next.js app",
+        "2. Configure Multi-Zone rewrites cho từng domain",
+        "3. Setup independent build pipeline per domain",
+        "4. Implement shared dependency versioning (@vct/ui, React)",
+        "5. Add contract testing between Shell and domains",
+        "6. Gradual migration: 1 domain at a time (start with smallest)"
+      ],
+      "8 Agent Integration": [
+        "Request Type Domain Skills Activated:",
+        "\"Tạo trang giải đấu mới\" D1 `vct-micro-frontend` → `vct-frontend` → `vct-realtime-scoring`:",
+        "\"Sửa form hồ sơ VĐV\" D2 `vct-micro-frontend` → `vct-frontend` → `vct-ba`:",
+        "\"Thêm báo cáo admin\" D4 `vct-micro-frontend` → `vct-frontend` → `vct-cto`:",
+        "\"Feature span Tournament + Athlete\" D1+D2 `vct-mfe-domain-owner` → negotiate contract → implement separately:"
+      ],
+      "Tham khảo": [
+        "[Micro Frontends — Martin Fowler](https://martinfowler.com/articles/micro-frontends.html)",
+        "[Module Federation — Webpack 5](https://webpack.js.org/concepts/module-federation/)",
+        "[Next.js Multi-Zones](https://nextjs.org/docs/advanced-features/multi-zones)",
+        "[Team Topologies — Matthew Skelton & Manuel Pais](https://teamtopologies.com/)",
+        "VCT Frontend Architecture: [`docs/architecture/frontend-architecture.md`](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/frontend-architecture.md)",
+        "VCT Guard Rails: [`docs/architecture/architecture-guard-rails.md`](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/architecture-guard-rails.md)"
+      ]
+    },
+    "mobile-architecture": {
+      "1 Unified Framework  Monorepo Boundaries": [
+        "Expo Managed Workflow: Working directly inside `/ios` or `/android` raw native directories is categorically banned. We rely 100% on Expo Prebuild (Managed Workflow) config plugins.",
+        "Expo Router (File-Based Routing): Manual `react-navigation` configurations are deprecated. All navigation runs through `expo-router` to enforce 1:1 parity with Next.js web URLs, enabling seamless deep linking.",
+        "Shared Business Logic: The mobile app must not duplicate domain models or API definitions. It must import pure logic from `packages/app/features/` or `packages/core/` within the monorepo workspace."
+      ],
+      "2 FAANGLevel Mobile Performance": [
+        "List Virtualization (`FlashList`): Standard `<FlatList>` components are banned for rendering Athlete/Tournament rosters. You MUST use `@shopify/flash-list`. This recycles views and prevents memory crashes explicitly on lower-end Android devices.",
+        "Image Caching (`expo-image`): Standard React Native `<Image>` is banned for fetching network imagery. Use `<Image>` from `expo-image` exclusively to leverage powerful disk-based caching and blurhash loading placeholders.",
+        "UI Thread Animations: JavaScript-driven animations (`Animated.timing`) are banned. All layout shifts, sidebars, and fluid animations must run on the dedicated UI thread using `react-native-reanimated`."
+      ],
+      "3 The OfflineFirst Shield Stadium Resilience": [
+        "Local Persistence: Relying solely on real-time `fetch` calls for critical data (like Match Scoring or Brackets) is banned. The Mobile app must implement a Local Database (WatermelonDB / SQLite / AsyncStorage + TanStack Persister) to hydrate the UI instantly upon launch.",
+        "Fail-Safe Mutation Sync: When referees input scores offline, mutations MUST NOT throw an error. They must be saved locally into a robust Offline Sync Queue (e.g., WatermelonDB sync or TanStack offline queues) and automatically re-broadcasted the second standard cellular connection is restored.",
+        "Stale-While-Revalidate: Always render cached UI states instantaneously. Background tasks fetch to revalidate without presenting full-page loading spinners blocking the UI."
+      ],
+      "4 Continuous Delivery  OTA Updates": [
+        "EAS Build Automation: Developers must not build standard production binaries from local Xcode/Android Studio. All RC (Release Candidate) and Production binaries must be generated deterministically via Expo Application Services (EAS Build).",
+        "Instant Hotfixing via OTA (Over The Air): Critical bug fixes addressing pure JavaScript logic or UI errors MUST utilize EAS Update for instant deployment, bypassing the multi-day Apple App Store or Google Play Store review delays."
+      ],
+      "5 Mobile UI  Accessibility Parity": [
+        "Safe Areas & Notches: The app must mathematically respect modern hardware bezels. Direct rendering into the top/bottom 30 pixels is banned unless wrapped inside `<SafeAreaView>` or explicitly padding out safe insets.",
+        "Accessibility Attributes: Screen readers (Apple VoiceOver / Google TalkBack) must be fully supported. All interactive custom elements (buttons, pressable cards) must strictly provide `accessible={true}`, an `accessibilityRole`, and an `accessibilityLabel`."
+      ]
+    },
+    "overview": {
+      "Key Principles": [
+        "1. Event-First — Events are the source of truth",
+        "2. Bitemporal Design — Track both business time and system time",
+        "3. Config over Code — Business rules configurable from admin UI",
+        "4. Stable View Layer — Applications query API Views, not tables directly",
+        "5. Extension by Default — Every entity has `metadata JSONB`",
+        "6. Reference over Enum — Use lookup tables instead of PostgreSQL ENUM",
+        "7. Offline Resilience — Scoring works offline, syncs when connected",
+        "8. Zero Trust Isolation — Multi-tenant RLS at database layer",
+        "9. Immutable History — Soft-delete only, no data destruction"
+      ],
+      "Technology Stack": [
+        "Layer Technology:",
+        "Frontend Next.js (App Router), TypeScript, React 19:",
+        "Backend Go (Golang) 1.26+:",
+        "Database PostgreSQL 18+, Supabase, Neon:",
+        "ORM Drizzle ORM (TS), sqlc (Go):",
+        "Cache Redis 7+:",
+        "Search Meilisearch:",
+        "Storage MinIO / Supabase Storage:",
+        "Queue NATS:",
+        "Container Docker + Kubernetes:",
+        "CI/CD GitHub Actions:",
+        "Monitoring Grafana + Prometheus + Loki:"
+      ],
+      "Module Structure": [
+        "Module Description:",
+        "Organization Federation, Club, Branch management:",
+        "People Athletes, Coaches, Referees:",
+        "Training Curriculum, Techniques, Belt Exams:",
+        "Tournament Core module — all competition management:",
+        "Scoring Real-time scoring (quyền + đối kháng):",
+        "Ranking ELO/Glicko ratings, national rankings:",
+        "Heritage Cultural heritage, lineage trees:",
+        "Finance Fees, budgets, sponsorships:",
+        "Community Social features, marketplace:",
+        "Admin System administration, RBAC:"
+      ]
+    },
+    "portal_hub_technical_architecture": {
+      "1 Phân tích Khối UIUX Frontend Design System": [
+        "Bypass Global Sidebar: Ở cấp độ Root Layout (`AppShell.tsx`), chúng ta bắt buộc phải có điều kiện ngắt ngầm `if (isPortalRoute)`. Sidebar Width sẽ bằng `0px`.",
+        "Container: Sử dụng `max-w-7xl mx-auto` để giới hạn chiều rộng nội dung thay vì trải dài 100% gây loãng.",
+        "Nền (Background):",
+        "Dark mode gốc: `--vct-bg-base: #0B0F19`.",
+        "Ánh sáng Ambient (Orbs): Sử dụng 3 khối Blur khổng lồ đằng sau `bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))]` với tông màu `purple-900/40` và `blue-900/30`.",
+        "Thẻ Kính (Glass Card):",
+        "Dark Mode: `bg-white/5 backdrop-blur-xl border border-white/10`. Tương phản text `text-zinc-100`.",
+        "Light Mode: `bg-white/80 backdrop-blur-xl border border-zinc-200/50`. Tương phản text `text-zinc-900`.",
+        "Tương tác (Hover Effects):",
+        "Chuyển động thẻ: `hover:-translate-y-1 transition-all duration-300 ease-out`.",
+        "Đèn phản chiếu bóng (Glowing shadow): `hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]` (Light) hoặc Glow màu tương ứng của Workspace ở Dark Mode.",
+        "Sử dụng `Zustand` (hoặc Jotai) để lưu giữ mảng `workspaces[]`.",
+        "Cần một Store Slice là `usePortalUIStore` để quản lý: `searchQuery` (lọc cục bộ), `activeTab` (Yêu thích/Tất cả), `isImpersonating` (false/true)."
+      ],
+      "2 Kiến trúc Data  Frontend Nextjs App Router": [
+        "1. `PortalHeader`: Chứa Lời chào động ngữ cảnh + Text Input Search Xuyên không gian + Menu Profile (Chuyển đổi ngôn ngữ/Đăng xuất).",
+        "2. `PortalRecentSection`: Gọi dữ liệu từ `localStorage` hiển thị bằng Component `PortalWorkspaceCard` chạy ngang bằng Flexbox.",
+        "3. `PortalGrid`: Hiển thị bằng CSS Grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`), sử dụng Thư viện Framer Motion để tạo hiệu ứng `staggerChildren` (nhảy thẻ xếp tầng khi load trang).",
+        "Thẻ Card sẽ được wrap bằng thư viện Component của Next.js: `<Link href={dashboardPath} prefetch={true} />`.",
+        "Các ảnh Logo của Câu lạc bộ/Liên đoàn phải dùng `<Image src={...} />` của Next.js với thuộc tính `priority` cho các thẻ mục Recent để tránh LCP (Largest Contentful Paint) chậm."
+      ],
+      "3 Kiến trúc Backend Server Go HTTP API": [
+        "Đầu vào: JWT Token bearer.",
+        "Đầu ra (JSON):",
+        "Go Middleware (`tenant_middleware.go`) sẽ chặn ở cửa, so sánh `X-Context-Scope` có nằm trong danh sách quyền của User ID đó trên DataBase không. Nếu Role Revocation đã xảy ra (quyền bị tước cớ), lập tức trả mã `403 Forbidden` và ép Frontend đá User văng ngược ra Portal Hub để làm mới lại danh sách Workspace."
+      ],
+      "4 Kiến trúc Database PostgreSQL Schema": [
+        "Table `users`: Chứa thông tin tài khoản cá nhân gốc (id, email, password_hash, full_name, is_banned).",
+        "Table `scopes` (Thực thể Workspace): Đại diện cho tất cả thực thể có thể là 1 không gian.",
+        "`id`",
+        "`scope_type` (enum: federation, subdivision, club, tournament)",
+        "`name`, `logo_url`",
+        "`metadata` (JSONB) - Chứa cấu hình lặt vặt.",
+        "Table `user_roles` (Bảng trung gian định nghĩa thẩm quyền):",
+        "`user_id` (FK tới users)",
+        "`scope_id` (FK tới scopes)",
+        "`role_name` (enum: owner, admin, referee, athlete, member)",
+        "`granted_at`",
+        "Table `audit_logs`:"
+      ],
+      "6 Chiến lược Hạ tầng  Caching Infrastructure  CDN": [
+        "Vercel Edge Network: Trang `/` phải được tận dụng Route Segment Config của Next.js (`export const dynamic = 'force-dynamic'`) để lấy Context cá nhân hoá, nhưng tài nguyên tĩnh (Background Orbs, JS/CSS Chunks, Logos) phải được Cache tuyệt đối tại Vercel Edge.",
+        "Database Connection Pooling: Khi 1.000 trọng tài đồng loạt đăng nhập vào Portal lúc 7h sáng ngày khai mạc giải đấu, lệnh Query dò tìm `user_roles` sẽ bùng nổ. Phải sử dụng PgBouncer (được cung cấp bởi Neon/Supabase) để gom (multiplexing) các kết nối, tránh sập Database cấp phát.",
+        "Redis Cache (Tùy chọn): Dữ liệu phân quyền (Roles & Workspaces) của 1 User hiếm khi thay đổi từng giây. Có thể Cache JSON response của `/api/v1/auth/me` vào Redis với TTL là 15 phút. Nếu Frontend có hành vi F5, Backend trả Redis ra ngay (3ms) thay vì Query Database (30ms)."
+      ],
+      "7 Giải pháp An ninh  Chống Tấn công Security  Rate Limiting": [
+        "Rate Limiting (Cửa ngõ): Màn hình Portal cung cấp rất nhiều thông tin nhạy cảm. API `/auth/me` phải được bảo vệ bởi Rate Limiter (ví dụ: tối đa 30 requests/phút/1 IP).",
+        "JWT Token Rotation & Trạm gác Middleware: Header `X-Context-Scope` truyền từ Portal Frontend không có giá trị tuyệt đối. Mọi API call ở Backend (như `/api/tournaments` hay `/api/clubs`) LUÔN LUÔN phải Query chéo `X-Context-Scope` với Token JWT gốc để đảm bảo Frontend không bị Hacker sửa biến `localStorage`."
+      ],
+      "8 Chiến lược Kiểm thử Tự động Testing Strategy": [
+        "1. Unit Test (Go Backend): Viết bộ Test cho `tenant_middleware_test.go` với các User Inject Role khác nhau. Kiểm tra xem Middleware có chặn đúng `403 Forbidden` khi truyền `X-Context-Scope` rác (thuộc về CLB khác) hay không.",
+        "2. E2E Testing (Playwright):",
+        "Giả lập 1 User mang 3 Role (Federation Admin, Club Leader, Referee).",
+        "Kịch bản tự động: Playwright mở trang `/`, đếm xem có đúng 3 thẻ Card hiển thị.",
+        "Playwright click vào thẻ `Referee`, kiểm tra xem URL có chuyển sang `/referee-scoring` và Header Authorization có gắn đúng Scope ID hay chưa."
+      ],
+      "9 Giám sát Hiệu năng  Truy vết Lỗi Observability  APM": [
+        "  Datadog / Sentry Integration: Portal phải được cắm đầu dò APM. Nếu API `/auth/me` chậm hơn 200ms, hệ thống tự động bắn alert qua Slack cho Đội ngũ Kỹ thuật.",
+        "  Truy vết Lỗi Frontend (Error Tracking): Mọi thao tác click lỗi (kể cả lỗi JS) trên Portal đều được thu thập kèm theo `user_id` hiện tại để có thể debug chính xác nguyên nhân thay vì \"lỗi màn hình trắng\"."
+      ],
+      "10 Tự động hóa CICD Continuous Integration  Deployment": [
+        "  GitHub Actions: Bất cứ khi nào lập trình viên push code thay đổi cấu trúc `PortalWorkspaceCard`, GitHub Actions sẽ tự chạy Cypress/Playwright E2E Test.",
+        "  Preview Environments: Vercel sẽ tự động tạo một URL độc lập (Preview Link) cho riêng thay đổi của Portal. Đội QA có thể tự do test thẻ Workspace trên URL này mà không sợ vỡ Production."
+      ],
+      "11 Quản lý Biến thể Tính năng Feature Flags  AB Testing": [
+        "  Vercel Edge Config / LaunchDarkly: Khi ra mắt tính năng *Omni-Search* trên Portal, không được bật cho 100% người dùng ngay lập tức. Tính năng này được \"giấu\" sau một Biến cờ (Feature Flag). Chỉ bật trước cho 5% Liên đoàn nội bộ test thử, nếu sập Database, chỉ cần tắt cờ (Toogle off) trong 0.1 giây mà không cần Rollback Code."
+      ],
+      "12 Khôi phục Thảm họa Disaster Recovery  DR": [
+        "  Dữ liệu Bảng `scopes` và `user_roles` là xương sống của nền tảng. Database Neon phải được kích hoạt tính năng Point-In-Time-Recovery (PITR) lùi thời gian. Nếu một System Admin lỡ tay xóa nhầm quyền của 500 Câu lạc bộ trên Portal, hệ thống có khả năng tua ngược thời gian (Rewind) về trước thời điểm xóa chính xác tới từng giây."
+      ],
+      "13 Quyền riêng tư  Tuân thủ Dữ liệu Compliance  Data Privacy": [
+        "  Dynamic Data Masking: CSDL phải tuân thủ PDPA (Luật Bảo vệ Dữ liệu Cá nhân). Khi Đội trưởng CLB xem danh sách võ sinh từ Portal Hub, các thông tin nhạy cảm như CCCD, Số điện thoại phải được che giấu (Masking) ở ngay tầng Database (`090123`), chỉ những Role cấp Liên đoàn được xét duyệt mới gọi API giải mã được dữ liệu chuẩn.",
+        "  Data Residency: Phân mảnh lưu trữ (Data Sharding) để đảm bảo dữ liệu giải đấu thuộc khu vực Châu Âu (nếu mở rộng) mặc định nằm ở Data Center Châu Âu thay vì châu Á để tránh vi phạm GDPR."
+      ],
+      "14 Kiến trúc Hướng Sự kiện Thời gian thực EventDriven Architecture": [
+        "  Thay vì dùng Polling (Pull) khiến API gọi liên tục 10s/lần để đếm số lượng \"Pending Badges\" trên thẻ Workspace, Portal Hub sẽ sử dụng kết nối WebSocket/Server-Sent Events (SSE).",
+        "  Khi có một Vận động viên mới đăng ký vào CLB, Backend Go đẩy một Message vào NATS/Kafka. NATS sẽ stream (truyền) thẳng sự kiện đó xuống đúng cái Tab Portal đang mở của Chủ nhiệm CLB: Huy hiệu từ số `[5]` nhảy mượt mà sang `[6]` kèm tiếng tít (Notification Sound) mà không tốn lấy một truy vấn bóp nghẹt Database."
+      ],
+      "15 Tính Sẵn sàng Cao  Đa vùng MultiRegion HA": [
+        "  Kiến trúc VCT Platform không thể sập ở bất kỳ vĩ độ nào. Dùng Cloudflare Global Load Balancer kết nối phía trước. Nếu Data Center chính ở Singapore bị bão làm đứt cáp, Traffic của Portal lập tức Route (chuyển hướng) không độ trễ sang Data Center dự phòng (Disaster Read Replica) ở Tokyo. Người dùng chỉ thấy tải chậm hơn 100ms chứ không bao giờ thấy trang báo lỗi 502/504."
+      ],
+      "16 Lịch sử Nhật ký Bất biến Immutable Audit Trails": [
+        "  Những hành động liên quan đến tước quyền (Revoke Role), thăng cấp đai đẳng quốc gia phải được ghi vào một sổ cái bất biến (Append-Only Ledger hoặc ứng dụng Blockchain nội bộ).",
+        "  Không một ai, kể cả DBA (Quản trị viên Database) có quyền truy cập vào CSDL để sửa (UPDATE/DELETE) dòng lịch sử cấp quyền này. Trên Portal Hub, có thể cung cấp thêm một thẻ \"Verify Certificate\" cho phép quét mã QR chứng nhận để check chéo với Ledger này."
+      ],
+      "17 Chiến lược Đồng bộ Hóa Đa nền tảng CrossPlatform Consistency": [
+        "  Universal Design System (UI/UX):",
+        "  Sử dụng thư viện hệ giao diện đa nền tảng (ví dụ: `Tamagui` hoặc `NativeWind`).",
+        "  Một dòng code `className=\"bg-white/5 backdrop-blur-xl\"` sẽ tự động biên dịch thành mã CSS thực cho trình duyệt (Web) và mã Skia/React Native Views tạo độ mờ thực tế cho Mobile (iOS/Android).",
+        "  Giao diện Glassmorphism trên App điện thoại sẽ hiển thị chính xác từng mm bóng đổ (Shadow) hệt như trên máy tính.",
+        "  Shared State & Logic (Business Context):",
+        "  Toàn bộ logic quản lý thẻ Workspace, phân giải quyền (Role Hierarchy) và Zustand Store (`useWorkspaceStore`) được đặt ở thư mục dùng chung `packages/app/`.",
+        "  Cả `apps/web` (Next.js) và `apps/mobile` (Expo) đều *import* chung 100% logic này. Nếu Web nhận huy hiệu [5] thì ứng dụng Mobile cũng tự động Re-render hiển thị số 5 cùng lúc. Không có chuyện 2 team Web/App code lệch logic nhau.",
+        "  Universal Routing (Điều hướng Hợp nhất):",
+        "  Sử dụng công nghệ điều hướng thông minh (như `Solito`). Khi võ sư nhấn vào thẻ \"Liên đoàn VCT\" trên Web, nó đẩy URL sang `/federation_dashboard`. Khi chạm vào trên điện thoại, hệ thống tự hiểu và dùng Native Stack Navigator để trượt màn hình sang `FederationScreen` cực kỳ mượt mà."
+      ]
+    },
+    "qa-testing-architecture": {
+      "1 The VCT Testing Pyramid Strategy": [
+        "70% Unit Tests: Fast, totally isolated tests executing solely in memory. No network, no database. Covers Go functions, Next.js pure logic hooks, pure UI components, and state reducers.",
+        "20% Integration Tests: Slower tests that cross module boundaries but stay within the application sandbox. Covers React component mounting with Mock HTTP (MSW) or Go HTTP Handlers hitting throw-away isolated databases (e.g., Testcontainers).",
+        "10% E2E (End-to-End) Tests: Slow, expensive, but highest-confidence tests. Controls a full browser instance (Playwright) or mobile emulator (Maestro) against a full staging replica environment. Reserved strictly for critical user journeys (e.g., Login -> Register for Tournament)."
+      ],
+      "2 Backend Validation Rules Go 126": [
+        "Table-Driven Tests: All Go logic must be tested using standard Go table-driven tests (`[]struct{ name string, input any, want any_or_error }`). Do not write linear, manually repeating setups.",
+        "Strict Mocking via Interfaces: Business logic (Usecases) MUST NEVER depend on `sql.DB` or concrete repositories directly. They must use strictly defined Go `interface`s, so tests can easily swap in mock implementations.",
+        "Contract & HTTP Integration: Using `httptest.NewServer` to test API handlers. Integration tests must spin up isolated databases inside actual Docker containers (via Testcontainers-go); mocking SQL drivers (e.g., `sqlmock`) is banned as it obfuscates real database behavior and leads to fake confidence."
+      ],
+      "3 Frontend Validation Rules Nextjs  React": [
+        "Logic Isolation: Pure logic handlers, utility functions, and complex math formatting MUST be extracted outside component files and tested individually with Vitest/Jest.",
+        "Interaction over State: Avoid testing React hooks' internal values or components' shallow markup. Tests MUST use `@testing-library/react` and `user-event` to simulate how humans use the interface: querying by visible text/Roles and clicking elements realistically.",
+        "Network Boundaries Mocking: React components making `fetch` calls MUST be tested using Mock Service Worker (MSW). The test environment must seamlessly intercept the component's HTTP requests to provide deterministic responses, preventing unstable network reliance."
+      ],
+      "4 EndtoEnd  Mobile Flow Rules Playwright  Maestro": [
+        "Unbreakable Locators: Absolute ban on using `.css-class-xyz` or XPath paths (`div > div > span`) for element targeting. These break whenever UI architecture changes. Playwright and Maestro MUST rely on semantic attributes: `data-testid=\"submit-btn\"`, W3C ARIA Roles (e.g., `getByRole('button', { name: 'Save' })`), or exact localized text matches.",
+        "Anti-Flake Wait Assertions: Never use forced manual timeouts (e.g., `await sleep(5000)`). Tests MUST use native automated wait states (e.g., `expect(locator).toBeVisible()` or Waiting for specific Network Response JSON payloads).",
+        "Graceful Degradation Tolerances: Test flows must not fail exclusively because an external tracking/analytics API returned a 500 error. The core business scenario must pass independent of external integrations."
+      ],
+      "5 Continuous Quality Gates The CI Blockers": [
+        "Strict Code Coverage Minimal Threshold: Pull Requests will be systematically rejected by GitHub Actions if the automated Code Coverage calculation for newly added/modified code falls below 80%.",
+        "The Zero Flakes Policy: If an integration or E2E test randomly fails 1 out of every 10 runs (a \"flaky\" test), the Developer or QA MUST either immediately fix the race condition, quarantine it (`.skip()`), or permanently delete it. Flaky tests destroy the team's trust in the CD pipeline."
+      ]
+    },
+    "README": {
+      "Documentation Structure": [
+        "Scope: \"How things are built\" on the client side.",
+        "Topics: Monorepo boundaries (`apps/*` vs `packages/*`), Next.js App Router rules, state management (Zustand), API integration hooks, forms, internationalization, and testing strategy.",
+        "Target Audience: Frontend Engineers, Full-stack Developers.",
+        "Scope: \"How things look\" and behave visually.",
+        "Topics: CSS variables/tokens (`globals.css`), component catalog (`@vct/ui`), dark/light mode, accessibility (WCAG 2.1 AA), typography, animations, and CSS utilities.",
+        "Target Audience: UI/UX Designers, Frontend Engineers.",
+        "Scope: \"How things are processed\" on the server side (Go 1.26).",
+        "Topics: Clean Architecture (Domain->Adapter), Standard HTTP patterns, Auth, Postgres/Raw SQL integration, Dual Storage Pattern, Context Propagation, and Graceful Shutdown.",
+        "Target Audience: Backend Engineers, Platform Architects.",
+        "Scope: \"How data is structured and stored\" at scale (Postgres 15+).",
+        "Topics: Multi-Tenancy Isolation, Zero-Downtime Migrations, Pooling ports (5432 vs 6543), Keyset Pagination, Soft Deletion, and PII Masking.",
+        "Target Audience: Database Administrators, Backend Engineers.",
+        "Scope: \"How code runs in reality\" (Servers, Databases, CI/CD).",
+        "Topics: 12-Factor App, Infrastructure as Code, CI/CD Gates, Zero-Downtime Deployments, SRE Alerting, and Disaster Recovery.",
+        "Target Audience: DevOps Engineers, Release Managers, SRE/Incident Managers.",
+        "Scope: High-level, absolute rules for the entire project.",
+        "Topics: Strict domain separation, CQRS concepts, database interaction limits, security boundaries.",
+        "Target Audience: Tech Leads, Solution Architects, All Developers.",
+        "Scope: \"How code quality is enforced\" (Go Backend, React Frontend, Mobile, E2E).",
+        "Topics: Testing Pyramid (70/20/10), Go Table-Driven Tests, Mocking Interfaces, Playwright/Maestro Automation, Unbreakable Locators, Code Coverage Gates (80%), and Zero Flakes Policy.",
+        "Target Audience: QA Engineers, Tech Leads, Automations Engineers, SDETs.",
+        "Scope: \"How the platform is protected\" (Zero Trust, Data Privacy, OWASP Prevention).",
+        "Topics: JWT Sliding Sessions, Argon2id, CSP/CORS, Preventing SQLi/IDOR, PII Masking, Secret Management (No `.env`), and CI Supply Chain Scanning.",
+        "Target Audience: Security Engineers, Backend Engineers, DevOps, Platform Architects.",
+        "Scope: \"How the Expo/React Native app is built and delivered\".",
+        "Topics: Expo Router, Offline-First (Local Sync Queues), FAANG-Level list performance (FlashList), expo-image caching, Reanimated UI thread usage, and EAS (OTA) Build Automation.",
+        "Target Audience: Mobile App Leads, Mobile QA, React Native Devs.",
+        "Scope: \"How data is tracked, visualized, and calculated for business success\".",
+        "Topics: Zero-DB Telemetry (PostHog), OLAP vs OLTP separation, Materialized Views, Domain vs Analytics Events, Ranking Algorithms (ELO/Glicko), and Funnel tracking.",
+        "Target Audience: Data Analysts, Business Analysts, Product Owners, Data Engineers.",
+        "Scope: \"How the platform complies with laws, manages financial/tax integrity, and protects user rights\".",
+        "Topics: Explicit Consent Auditing, Minors & Parental Guardianship (COPPA), GDPR/PDPA Right to be Forgotten (Anonymization), Immutable Federal Documents, and Accounting strictness.",
+        "Target Audience: Tech Leads, Business Analysts, Solution Architects, Domain Experts.",
+        "Scope: \"How the platform handles payments, ledgers, and subscriptions with absolute precision.\"",
+        "Topics: Strict integer arithmetic (No Floats), Idempotency enforcement, Zero-Trust webhooks, and Append-Only immutable ledgers.",
+        "Target Audience: CTO, Solution Architects, Business Analysts.",
+        "Scope: \"How complex, data-heavy B2B administrative interfaces are built.\"",
+        "Topics: URL-Driven State (Deep Linking), Severe pagination rules, Role-Based Access Control UI patterns, and Asynchronous Skeleton screens.",
+        "Target Audience: Frontend Engineers, Design Leads, Tech Leads.",
+        "Scope: \"How binary assets, images, and documents are securely processed and stored.\"",
+        "Topics: Presigned URLs, Zero-binary backend rules, MinIO/S3 Bucket Strategies, Edge Compression, and Public vs Private access control.",
+        "Target Audience: Backend Engineers, Tech Leads, Application Developers.",
+        "Scope: \"How heavy background operations are decoupled from HTTP request loops.\"",
+        "Topics: The 2-Second HTTP Ban, NATS Pub/Sub, Worker Queue Idempotency, and Dead Letter Queues (DLQ) protection.",
+        "Target Audience: Backend Engineers, DevOps, Solution Architects.",
+        "Scope: \"How advanced full-text search and filtering are separated from primary OLTP databases.\"",
+        "Topics: Banning Wildcard ILIKE scans, Meilisearch CDC Syncing, Search Rate Limiting, and Vietnamese Typo Tolerance.",
+        "Target Audience: Backend Engineers, Data Analysts, Solution Architects.",
+        "Scope: \"How the platform manages multiple timezones, languages, and regional formatting constraints.\"",
+        "Topics: The Absolute UTC-0 PostgreSQL Rule, Client-size ISO-8601 formatting, i18n dictionaries, and Currency formatters.",
+        "Target Audience: Frontend Engineers, Mobile Engineers, Backend Engineers, i18n Managers.",
+        "Scope: \"How the suite of 20+ specialized AI Agents interact, plan, and operate.\"",
+        "Topics: The Meta-Orchestrator Pattern, Mandatory Implementation Plans, Human-In-The-Loop Triggers, and Skill Evolver Constraints.",
+        "Target Audience: All AI Agents, Tech Leads, Application Developers.",
+        "Scope: \"How large datasets (Excel/CSV) and visual templates (PDF) are generated and delivered.\"",
+        "Topics: The 500-Row Async Limit, Streaming vs. Buffering, Headless HTML-to-PDF, and Export Watermarking.",
+        "Target Audience: Data Analysts, Backend Engineers, Solution Architects."
+      ],
+      "Enforcement": [
+        "Monorepo package boundaries are enforced via `eslint-plugin-boundaries` (`npm run lint:arch`).",
+        "AI coding agents are strictly instructed to read these files before making any codebase changes via their dedicated skills (`vct-frontend`, `vct-ui-ux`, etc.)."
+      ]
+    },
+    "report-architecture": {
+      "1 Asynchronous Generation Rule The 500Row Limit": [
+        "Any CSV/Excel export containing fewer than 500 rows, or a simple single-page PDF (like an individual Invoice or Certificate), may be generated synchronously.",
+        "The Go Backend can return the file directly over the HTTP response stream (with correct `Content-Disposition` headers).",
+        "Any report exceeding 500 rows, complex aggregated analytics (e.g., federation-wide year-end statistics), or bulk certificate generations (e.g., printing ID cards for 1,000 athletes) MUST be offloaded to a Background Worker.",
+        "Workflow:",
+        "1. The UI sends the export request.",
+        "2. The Backend validates access and dispatches an event via NATS (`reporting.export.requested`).",
+        "3. The Backend responds to the UI with `202 Accepted` and a `job_id`.",
+        "4. The UI displays a \"Generating...\" state (e.g., a toast notification overlay).",
+        "5. The Background Worker processes the file, uploads it to File Storage (MinIO/S3), and dispatches a completion event (`reporting.export.completed`).",
+        "6. The UI receives real-time notification via WebSocket that the file is ready to download."
+      ],
+      "2 Stream Dont Buffer Memory Protection": [
+        "It is strictly forbidden to execute a query, load 50,000 Go structs into an array (RAM), and then write them to a file. This leads to Out-Of-Memory (OOM) crashes under load.",
+        "Standard Practice (Streaming):",
+        "You must use `rows, err := db.Query(ctx, ...)` and iterate using `for rows.Next()`.",
+        "Inside the loop, immediately serialize the single row to CSV/Excel and flush it to the `io.Writer`."
+      ],
+      "3 File Storage  Delivery The Presigned Link": [
+        "Zero Binary Transit: The Go application server must never hold large generated report files on local disk (beyond `/tmp/` staging).",
+        "Generated reports are streamed directly into MinIO/S3 private buckets.",
+        "Delivery Validation: Users download the report via a dynamically generated Presigned S3 URL with a strict expiration mechanism (e.g., valid for 5 minutes). Direct binary distribution across the VCT Gateway is banned to save HTTP bandwidth."
+      ],
+      "4 PDF Generation Standardization": [
+        "The HTML-to-PDF Rule: For certificates, ID cards, and invoices, the platform avoids hardcoding X/Y PDF coordinates using Go libraries like `gofpdf`, as it is incredibly brittle to design changes.",
+        "Workflow:",
+        "Create a standard HTML/Tailwind template.",
+        "Inject data into the template.",
+        "Pass the HTML to a headless rendering microservice (e.g., Gotenberg, Playwright/Puppeteer cluster) to generate pixel-perfect PDFs."
+      ],
+      "5 Watermarking  Audit Trails": [
+        "Traceability: Massive exports of sensitive data (e.g., full Athlete Registries, financial ledgers) present a data-leak risk.",
+        "Mandate: The export service must insert hidden metadata or subtle watermarks (e.g., in PDF footers or as a hidden Excel sheet property) containing:",
+        "`Exported_By_User_ID`",
+        "`Timestamp_UTC`",
+        "`Audit_Hash`",
+        "All generation requests must be logged in the centralized Audit Log."
+      ]
+    },
+    "route-ia-rbac-matrix": {
+      "IA groups": [
+        "`trung_tam_dieu_hanh`: Trung tâm điều hành",
+        "`chuan_bi_giai`: Chuẩn bị giải",
+        "`dang_ky_kiem_tra`: Đăng ký & kiểm tra",
+        "`dieu_hanh_thi_dau`: Điều hành thi đấu",
+        "`ket_qua_tong_hop`: Kết quả & tổng hợp",
+        "`he_thong`: Hệ thống"
+      ],
+      "Action vocabulary": [
+        "`view`: xem màn hình/dữ liệu",
+        "`create`: tạo mới bản ghi",
+        "`update`: cập nhật dữ liệu",
+        "`delete`: xóa dữ liệu",
+        "`approve`: duyệt dữ liệu hoặc bước nghiệp vụ",
+        "`publish`: công bố dữ liệu chính thức",
+        "`assign`: phân công nhân sự/tài nguyên",
+        "`import`: nhập dữ liệu lô",
+        "`export`: xuất dữ liệu/báo cáo",
+        "`monitor`: giám sát realtime, tác nghiệp trực ca",
+        "`manage`: quản trị hệ thống và phân quyền",
+        "`lock`: khóa cấu hình hoặc đóng giai đoạn nghiệp vụ"
+      ],
+      "AdminBTC matrix": [
+        "Route Group Admin BTC:",
+        "`/` Trung tâm điều hành `view monitor export` `view monitor export`:",
+        "`/giai-dau` Chuẩn bị giải `view create update approve publish lock` `view update approve publish`:",
+        "`/noi-dung` Chuẩn bị giải `view create update delete approve publish` `view create update approve publish`:",
+        "`/san-dau` Chuẩn bị giải `view create update delete assign approve monitor` `view create update assign monitor`:",
+        "`/referees` Chuẩn bị giải `view create update delete assign approve export` `view create update assign approve`:",
+        "`/teams` Đăng ký & kiểm tra `view create update delete approve import export` `view create update approve import export`:",
+        "`/athletes` Đăng ký & kiểm tra `view create update delete approve import export` `view create update approve import export`:",
+        "`/registration` Đăng ký & kiểm tra `view create update delete approve import export` `view create update approve import export`:",
+        "`/hop-chuyen-mon` Điều hành thi đấu `view create update approve publish` `view create update approve publish`:",
+        "`/boc-tham` Điều hành thi đấu `view create update approve publish` `view create update approve publish`:",
+        "`/weigh-in` Điều hành thi đấu `view create update approve monitor export` `view create update approve monitor export`:",
+        "`/schedule` Điều hành thi đấu `view create update delete approve publish export` `view create update approve publish export`:",
+        "`/referee-assignments` Điều hành thi đấu `view create update delete assign approve publish` `view create update assign approve publish`:",
+        "`/combat` Điều hành thi đấu `view create update approve monitor publish` `view update approve monitor publish`:",
+        "`/forms` Điều hành thi đấu `view create update approve monitor publish` `view update approve monitor publish`:",
+        "`/bracket` Điều hành thi đấu `view create update approve publish export` `view update approve publish export`:",
+        "`/results` Kết quả & tổng hợp `view create update delete approve publish export` `view create update approve publish export`:",
+        "`/medals` Kết quả & tổng hợp `view update approve publish export` `view update approve publish export`:",
+        "`/appeals` Kết quả & tổng hợp `view create update approve publish export` `view create update approve publish export`:",
+        "`/reports` Kết quả & tổng hợp `view export publish` `view export publish`:",
+        "`/users/[userId]` Hệ thống `view create update delete manage` `-`:"
+      ],
+      "Refactor starting point": [
+        "1. Dùng `canPerformRouteAction(path, role, action)` để khóa action theo nút hành động trong từng module.",
+        "2. Ưu tiên module bắt đầu: `teams`, `athletes`, `registration`, `schedule`, `results`.",
+        "3. Chuẩn hóa guard action-level trước khi bật adapter `api` cho từng module."
+      ]
+    },
+    "search-architecture": {
+      "1 The Wildcard LIKE Ban": [
+        "Strict Prohibition: Developers MUST NEVER build user-facing search features on large tables using `WHERE document LIKE '%search_term%'` or `ILIKE` clauses. This defeats B-Tree indexes and causes massive I/O spikes.",
+        "Exception: Simple exact-match searches or prefix searches on tiny lookup tables (e.g., finding a Province by code) are permitted."
+      ],
+      "2 Meilisearch Synchronization": [
+        "Primary Search Engine: `Meilisearch` is the officially designated Full-Text Search and faceted filtering engine.",
+        "Replication: Bounded contexts that require search (e.g., `AthleteDirectory`, `TournamentHub`) MUST sync their read-models into Meilisearch via CDC (Change Data Capture) or asynchronous Domain Events handlers.",
+        "Client Queries: Frontend clients MUST either query Meilisearch directly using a scoped, read-only API key, or route via a thin Go Backend Proxy. Do not proxy heavy search payloads through the Go Database models."
+      ],
+      "3 Search Rate Limiting": [
+        "DDoS Protection: Search endpoints (Autocomplete, Full-Text Search) are highly susceptible to scraping and denial-of-service attacks.",
+        "Aggressive Limits: All search endpoints MUST apply decoupled rate limiting."
+      ],
+      "4 Typo Tolerance and Vietnamese Language": [
+        "The search engine MUST support Vietnamese diacritics ( dấu thanh ) natively, allowing users to search \"Nguyen Van A\" and still match \"Nguyễn Văn A\". Meilisearch handles this inherently, but tokenizer configurations must be explicitly defined and tested."
+      ]
+    },
+    "security-architecture": {
+      "1 Zero Trust  Network Boundaries": [
+        "Content Security Policy (CSP): Next.js must define a strict CSP. Inline scripts (`unsafe-inline`) and `eval()` are categorically banned to eradicate Cross-Site Scripting (XSS).",
+        "CORS Blacklisting: `Access-Control-Allow-Origin: *` is banned in the Go Backend. Only explicitly verified domains (e.g., `https://*.vctplatform.com`) are allowed via precise regex matching.",
+        "Edge Mitigations: Rate Limiting and Web Application Firewalls (WAF) must be configured at the Edge (Vercel/Cloudflare). Sustained 4xx/5xx errors from the same IP will trigger automatic temporary bans."
+      ],
+      "2 Authentication Identity  Cryptography": [
+        "Argon2id Hashing: The use of MD5, SHA-1, SHA-256, and bcrypt for password hashing is banned. `argon2id` is the mandatory algorithm for storing user credentials.",
+        "Sliding JWT Sessions: JWT lifetimes must be no longer than 15-60 minutes. Continuous user activity seamlessly requests new tokens via secure HTTP-Only Refresh Cookies.",
+        "Instant Invalidation: Upon password change, 2FA toggle, or logout, all associated Refresh Tokens must be synchronously burned in the database, severing all live sessions globally.",
+        "Token-Bound RBAC: Role-Based Access Control parameters (e.g., `role: federation_admin`) must be read exclusively from the cryptographically verified JWT claims by the Go Middleware. Never trust client-provided payloads like `{\"role\": \"admin\"}`."
+      ],
+      "3 Threat Vulnerability Defense OWASP Top 10": [
+        "SQL Injection (SQLi): String concatenation for database queries (`\"SELECT * FROM users WHERE id = '\" + req.ID + \"'\"` ) is absolutely forbidden. The Go `database/sql` package must be used exclusively with Parameterized Queries (`$1`, `?`), or a secure ORM equivalent.",
+        "IDOR Eradication: Insecure Direct Object Reference is the #1 API vulnerability. Every data mutation (Update/Delete) or sensitive fetch query MUST append a secondary validation layer asserting ownership: `WHERE id = $1 AND tenant_id = $2`. Accessing an ID indiscriminately is an automatic architecture violation.",
+        "CSRF Mutations: All non-GET requests modifying state must be protected either by Same-Site `strict` cookies combined with custom Authorization Headers, verifying the request originated specifically from our interface."
+      ],
+      "4 Secret Management  IaC": [
+        "The `.env` Ban: Hardcoding real secrets, database passwords, or JWT sign keys into Git-tracked `.env` files is a terminable offense.",
+        "Vault Injection: Production secrets exist solely within the Cloud Provider's Secret Manager (e.g., Vercel Secrets, Hashicorp Vault, AWS KMS). Applications pull these secrets strictly at runtime via environment variables passed down by the container orchestrator."
+      ],
+      "5 Data Privacy  Log Masking": [
+        "TLS 1.3 Strict: All traffic is encrypted in transit using the highest available TLS protocol. Traffic attempting HTTP or outdated TLS 1.0/1.1 is forcefully dropped.",
+        "PII / PHI Obfuscation: Passwords, Social Security Numbers (CCCD), Emails, and Phone Numbers MUST NOT appear in server logs or Sentry error reports. A middleware masking interceptor must scrub these fields (e.g., replacing with `*`) before any payload is stringified.",
+        "Data Minimization: The API must never return wildcard responses (`SELECT *` mapped directly to JSON). Only explicitly modeled fields specifically required by the UI can be returned to the client payload."
+      ],
+      "6 Supply Chain  Dependency Security": [
+        "CI Dependency Gates: `npm audit` and `govulncheck` must run on every CI pipeline. If any dependency introduces a CVE (Common Vulnerabilities and Exposures) score $>=$ 5.0 (High/Critical), the PR status is marked `Failing` permanently until the dependency is patched or replaced."
+      ]
+    },
+    "ui-architecture": {
+      "MỤC LỤC": [
+        "#   Phần                                                              Mục đích                      :",
+        "1   [Design Philosophy](#1-design-philosophy)                         Tinh thần thiết kế            :",
+        "2   [User Personas](#2-user-personas)                                 Đối tượng sử dụng             :",
+        "3   [Design Token System](#3-design-token-system)                     CSS Custom Properties         :",
+        "4   [Theme System](#4-theme-system)                                   Dark/Light mode               :",
+        "5   [Color System](#5-color-system)                                   Semantic colors, status colors:",
+        "6   [Typography](#6-typography)                                       Font scale, font family       :",
+        "7   [Spacing & Layout Tokens](#7-spacing--layout-tokens)              Spacing, radius, z-index      :",
+        "8   [Shadow & Effects](#8-shadow--effects)                            Shadows, glass, glow          :",
+        "9   [Icon System](#9-icon-system)                                     VCT_Icons                     :",
+        "10  [Component Library](#10-component-library-vctui)                  59 VCT\\_\\* components         :",
+        "11  [Animation & Motion](#11-animation--motion)                       Framer Motion, CSS transitions:",
+        "12  [Responsive Design](#12-responsive-design)                        Breakpoints, grid             :",
+        "13  [Accessibility](#13-accessibility-wcag-21-aa)                     WCAG 2.1 AA                   :",
+        "14  [Overlays Decision Guide](#14-overlays-decision-guide)            Modal vs Drawer vs Popover    :",
+        "15  [Loading & Empty States UX](#15-loading--empty-states-ux)         Skeletons, empty illustrations:",
+        "16  [Critical Operations UX](#16-critical-operations-ux)              Destructive actions, hard delete:",
+        "17  [CSS Architecture](#17-css-architecture)                          Tailwind 4, naming            :",
+        "18  [CSS Utility Classes](#18-css-utility-classes)                    vct-glass, vct-card-hover...  :",
+        "19  [Print Media UX](#19-print-media-ux)                              @media print utilities        :",
+        "A   [Visual Anti-Patterns](#a-visual-anti-patterns)                   Lỗi thiết kế bị cấm           :",
+        "B   [Pre-Delivery Visual Checklist](#b-pre-delivery-visual-checklist) Quality gate trước merge      :"
+      ],
+      "1 Design Philosophy": [
+        "#   Nguyên tắc                       Giải thích                                         :",
+        "1   **Professional & Authoritative** Nền tảng cấp quốc gia, không phải consumer app     :",
+        "2   **Dark-first, Light-supported**  Cả 2 mode PHẢI dùng design tokens                  :",
+        "3   **Information-dense but clean**  Dashboards, data tables, forms là UI patterns chính:",
+        "4   **Culturally respectful**        Tôn trọng di sản Võ thuật                          :",
+        "5   **Premium feel**                 ❌ TUYỆT ĐỐI CẤM ship UI \"basic/simple\"            :",
+        "6   **Vietnamese-first**             UI, thuật ngữ, tiền tệ mặc định tiếng Việt         :"
+      ],
+      "2 User Personas": [
+        "Persona      Vai trò              Tech Level Device chính     Nhu cầu            :",
+        "Chủ tịch LĐ  Federation President Medium     Desktop          Tổng quan điều hành:",
+        "Quản lý tỉnh Provincial Manager   Medium     Desktop + Mobile Quản lý tỉnh/thành :",
+        "Chủ CLB      Club Owner           Low-Medium Mobile           Vận hành câu lạc bộ:",
+        "HLV          Coach                Medium     Tablet + Mobile  Quản lý tập luyện  :",
+        "VĐV          Athlete              High       Mobile           Thi đấu & tiến độ  :",
+        "Trọng tài    Referee              Medium     Tablet           Chấm điểm real-time:",
+        "Phụ huynh    Parent               Low-Medium Mobile           Theo dõi con em    :"
+      ],
+      "3 Design Token System": [
+        "File                                           Import           Vai trò                                     :",
+        "`apps/next/app/globals.css`                    CSS variables    **Primary source** — `:root` và `:root.dark`:",
+        "`packages/ui/src/tokens.ts`                    `@vct/ui/tokens` JS/TS token cho component library           :",
+        "`packages/app/features/theme/design-tokens.ts` App-level        Mở rộng (belt colors, đai...)               :"
+      ],
+      "4 Theme System": [
+        "Provider: `packages/app/features/theme/ThemeProvider.tsx`",
+        "Hook: `useTheme()` → `{ theme, toggleTheme }`",
+        "Default: Theo OS preference (`prefers-color-scheme: dark`)",
+        "#   Rule                                                                             :",
+        "T1  ❌ **TUYỆT ĐỐI CẤM** dùng Tailwind `dark:` modifier — CSS variables tự chuyển đổi:",
+        "T2  ❌ **CẤM** hardcode: `color: '#fff'`, `background: '#0f172a'`                    :",
+        "T3  ✅ **LUÔN** dùng token: `text-vct-text`, `bg-vct-elevated`, `border-vct-border`  :",
+        "T4  ✅ **LUÔN** test cả 2 modes trước delivery                                       :"
+      ],
+      "5 Color System": [
+        "Status          Token      Vietnamese           Sử dụng            :",
+        "Active/Approved `success`  Hoạt động / Đã duyệt VĐV, CLB, tài khoản:",
+        "Pending         `warning`  Chờ duyệt            Đăng ký, yêu cầu   :",
+        "Rejected        `danger`   Từ chối              Hồ sơ bị từ chối   :",
+        "Draft           `tertiary` Bản nháp             Chưa gửi           :",
+        "Locked          `info`     Đã khóa              Tài khoản bị khóa  :",
+        "Champion        `gold`     Vô địch              Kết quả thi đấu    :",
+        "Suspended       `danger`   Đình chỉ             Vi phạm, kỷ luật   :"
+      ],
+      "6 Typography": [
+        "Token             Size Line Height Sử dụng               :",
+        "`--vct-font-xs`   11px 16px        Badges, micro-labels  :",
+        "`--vct-font-sm`   13px 20px        Table cells, captions :",
+        "`--vct-font-base` 14px 22px        Body text, form fields:",
+        "`--vct-font-md`   16px 24px        Card titles           :",
+        "`--vct-font-lg`   18px 28px        Section headers       :",
+        "`--vct-font-xl`   22px 32px        Page subtitles        :",
+        "`--vct-font-2xl`  26px 36px        Page titles           :",
+        "`--vct-font-3xl`  32px 40px        Hero headers, KPIs    :",
+        "Weight         Sử dụng                     :",
+        "400 (Regular)  Body text, descriptions     :",
+        "500 (Medium)   Labels, table headers       :",
+        "600 (Semibold) Card titles, section headers:",
+        "700 (Bold)     Page titles, KPI numbers    :"
+      ],
+      "7 Spacing  Layout Tokens": [
+        "Token              Value Sử dụng                 :",
+        "`--vct-z-dropdown` 100   Dropdown menus, popovers:",
+        "`--vct-z-sticky`   200   Sticky headers, toolbars:",
+        "`--vct-z-drawer`   300   Side drawers, sheets    :",
+        "`--vct-z-modal`    400   Modal dialogs           :",
+        "`--vct-z-toast`    500   Toast notifications     :",
+        "`--vct-z-tooltip`  600   Tooltips (always on top):"
+      ],
+      "9 Icon System": [
+        "#   Rule                                                                        :",
+        "I1  ✅ Luôn import từ `VCT_Icons` (wraps Lucide)                                :",
+        "I2  ❌ KHÔNG import trực tiếp từ `lucide-react`                                 :",
+        "I3  ❌ KHÔNG dùng emoji thay icon                                               :",
+        "I4  ✅ Size chuẩn: `14` (inline), `16` (button), `18` (navigation), `20`+ (hero):"
+      ],
+      "10 Component Library vctui": [
+        "59 components trong `packages/ui/src/components/`",
+        "Export: `packages/ui/src/index.ts`",
+        "Import: `import { VCT_Card, VCT_Button } from '@vct/ui'`",
+        "Prefix: TẤT CẢ PHẢI có prefix `VCT_`",
+        "Component            Mô tả                                    :",
+        "`VCT_PageContainer`  Page content wrapper với padding chuẩn   :",
+        "`VCT_PageHeader`     Title + subtitle + action buttons        :",
+        "`VCT_PageToolbar`    Toolbar dưới header (filters, search)    :",
+        "`VCT_PageTransition` Animated page transitions (framer-motion):",
+        "`VCT_SectionCard`    Section grouping card                    :",
+        "`VCT_Card`           Base card component                      :",
+        "Component                           Mô tả                                             :",
+        "`VCT_DataGrid`                      Advanced data grid (sort, filter, paginate) — 18KB:",
+        "`VCT_ResponsiveTable`               Mobile-responsive table                           :",
+        "`VCT_InfoGrid`                      Key-value info display                            :",
+        "`VCT_Timeline`                      Event timeline vertical                           :",
+        "`VCT_StatBlock`                     Stat card với icon                                :",
+        "`VCT_StatRow`                       Inline stat display                               :",
+        "`VCT_ListItem`                      List item với icon                                :",
+        "`VCT_ProfileHeader`                 Profile card header                               :",
+        "`VCT_Avatar`                        User avatar (fallback initials)                   :",
+        "`VCT_Badge`                         Status badge với semantic colors                  :",
+        "`VCT_EmptyState`                    Empty data illustration                           :",
+        "`VCT_Skeleton` / `VCT_PageSkeleton` Loading skeleton shimmer                          :",
+        "`VCT_Image`                         Optimized image (next/image)                      :",
+        "`VCT_ImageGallery`                  Image gallery viewer                              :",
+        "Component                Mô tả                   :",
+        "`VCT_BarChart`           Vertical bar chart      :",
+        "`VCT_HorizontalBarChart` Horizontal bar chart    :",
+        "`VCT_DonutChart`         Pie/donut chart         :",
+        "`VCT_StatCard`           Stat card with sparkline:",
+        "`VCT_ChartProgressBar`   Progress bar chart      :",
+        "Component              Mô tả                          :",
+        "`VCT_Input`            Text input                     :",
+        "`VCT_NumberInput`      Number input with stepper      :",
+        "`VCT_Select`           Select dropdown                :",
+        "`VCT_Textarea`         Multi-line text                :",
+        "`VCT_Checkbox`         Checkbox with label            :",
+        "`VCT_RadioGroup`       Radio button group             :",
+        "`VCT_Slider`           Range slider                   :",
+        "`VCT_TagInput`         Tag/chip input                 :",
+        "`VCT_DatePicker`       Date picker                    :",
+        "`VCT_AddressSelect`    Province/District/Ward selector:",
+        "`VCT_FileUpload`       File upload area               :",
+        "`VCT_RichTextEditor`   Rich text editor               :",
+        "`VCT_DigitalSignature` Digital signature pad          :",
+        "Component            Mô tả                     :",
+        "`VCT_Modal`          Modal dialog              :",
+        "`VCT_Drawer`         Side panel (480px default):",
+        "`VCT_Sheet`          Bottom sheet (mobile)     :",
+        "`VCT_Popover`        Popover content           :",
+        "`VCT_Tooltip`        Hover tooltip             :",
+        "`VCT_CommandPalette` ⌘K search command palette :",
+        "`VCT_ShortcutsPanel` Keyboard shortcuts panel  :",
+        "Component       Mô tả                :",
+        "`VCT_Tabs`      Tab navigation       :",
+        "`VCT_Dropdown`  Context menu dropdown:",
+        "`VCT_Accordion` Collapsible accordion:",
+        "`VCT_Calendar`  Calendar widget      :",
+        "Component              Mô tả                          :",
+        "`VCT_NotificationBell` Notification icon + badge count:",
+        "`NotificationCenter`   Full notification panel        :",
+        "`VCT_CopyToClipboard`  Copy button                    :",
+        "`VCT_CommentThread`    Discussion thread              :",
+        "Component       Mô tả                   :",
+        "`VCT_Wizard`    Multi-step wizard       :",
+        "`VCT_QRCode`    QR code generator       :",
+        "`VCT_QRScanner` QR code scanner (camera):",
+        "#   Rule                                                                             :",
+        "C1  ✅ Import từ `@vct/ui` — KHÔNG import trực tiếp file                             :",
+        "C2  ✅ Tất cả component dùng prefix `VCT_`                                           :",
+        "C3  ❌ Component KHÔNG chứa business logic — chỉ nhận data qua props                 :",
+        "C4  ✅ Component PHẢI support dark/light qua CSS tokens                              :",
+        "C5  ✅ Component PHẢI có TypeScript types đầy đủ                                     :",
+        "C6  ✅ Component mới → tạo trong `packages/ui/src/components/`, export qua `index.ts`:"
+      ],
+      "11 Animation  Motion": [
+        "Element                            Max Duration  Easing                         :",
+        "Micro-interactions (hover, toggle) 150ms         `ease-out`                     :",
+        "UI transitions (expand, slide)     250ms         `var(--vct-ease-out)`          :",
+        "Page transitions                   200ms         `cubic-bezier(0.16, 1, 0.3, 1)`:",
+        "Complex animations                 **400ms max** `var(--vct-ease-spring)`       :",
+        "Sidebar collapse                   220ms         `ease-out`                     :",
+        "#   Rule                                          :",
+        "M1  ❌ KHÔNG animation > 400ms                    :",
+        "M2  ✅ Respect `prefers-reduced-motion`           :",
+        "M3  ❌ KHÔNG animation gây layout shift           :",
+        "M4  ✅ Hover → `translateY(-2px)` + shadow (cards):",
+        "M5  ✅ Press → `scale(0.98)` (buttons)            :",
+        "1. ✅ Haptic Feedback (Mobile/Tablet): Mọi thao tác cộng/trừ điểm đều phải trigger `Haptics.impactAsync` (Expo Haptics) để giám định viên biết đã chạm trúng mà không cần nhìn màn hình.",
+        "2. ✅ Sound UI (Web/Tablet): Bắt buộc cấu hình Audio Context để phát âm thanh:",
+        "*Time up* (Tiếng cồng/chuông hết giờ trận đấu).",
+        "*Action success* (Tiếng bíp nhẹ khi xác nhận submit điểm thành công).",
+        "*Error* (Tiếng tít lỗi khi vi phạm rules nhập điểm vi phạm/knock-out).",
+        "3. ❌ CẤM spam âm thanh ở các màn hình quản trị thông thường (CRUD trang Admin) để tránh làm phiền môi trường văn phòng."
+      ],
+      "12 Responsive Design": [
+        "Name    Width      Target Sidebar          :",
+        "Mobile  < 768px    Phone  Hidden, hamburger:",
+        "Tablet  768–1199px Tablet Collapsed (88px) :",
+        "Desktop ≥ 1200px   Admin  Full (272px)     :",
+        "#   Rule                                   :",
+        "R1  ❌ NO horizontal scroll trên mobile    :",
+        "R2  ❌ NO content ẩn sau fixed elements    :",
+        "R3  ✅ Touch targets ≥ 44px                :",
+        "R4  ✅ DataGrid → card layout trên mobile  :",
+        "R5  ✅ Sidebar → hamburger menu trên mobile:"
+      ],
+      "13 Accessibility WCAG 21 AA": [
+        "#   Requirement         Chi tiết                                                          :",
+        "A1  **Keyboard**        Tab, Arrow, Enter, Space, Esc — PHẢI hoạt động                    :",
+        "A2  **Semantic HTML**   `<button>`, `<nav>`, `<article>`, `<main>` — ❌ NO `<div onClick>`:",
+        "A3  **Skip-to-content** `<a href=\"#vct-main-content\">` (trong AppShell)                   :",
+        "A4  **ARIA labels**     Icon-only buttons → `aria-label=\"Đóng\"`                           :",
+        "A5  **Form labels**     Mọi input PHẢI có `<label>` — KHÔNG chỉ placeholder               :",
+        "A6  **Alt text**        Mọi `<img>` PHẢI có `alt`                                         :",
+        "A7  **Color contrast**  Text ≥ 4.5:1, large text ≥ 3:1                                    :",
+        "A8  **Focus visible**   `:focus-visible` outline (trong globals.css)                      :",
+        "A9  **Active nav**      `aria-current=\"page\"` trên nav item active                        :",
+        "A10 **Touch targets**   ≥ 44px trên mobile                                                :",
+        "A11 **Focus Trap**      Modal/Drawer mở lên PHẢI nhốt Tab vòng lặp (Focus Trap) bên trong :",
+        "A12 **Aria Live**       Toast báo điểm/kết quả chớp nhoáng PHẢI có `aria-live=\"polite\"`     :"
+      ],
+      "14 Overlays Decision Guide": [
+        "Overlay              Content Size Blocks?        Use Case              Z-Index:",
+        "`VCT_Tooltip`        1 line       No             Hover hint            600    :",
+        "`VCT_Popover`        Small card   Click-away     Mini-form, context    100    :",
+        "`VCT_Dropdown`       Menu list    Click-away     Context menu, actions 100    :",
+        "`VCT_Sheet`          Medium       Yes (mobile)   Mobile action list    300    :",
+        "`VCT_Drawer`         Large panel  Side panel     Record detail, edit   300    :",
+        "`VCT_Modal`          Medium       Yes (backdrop) Confirmation, alert   400    :",
+        "`VCT_CommandPalette` Full search  Yes            ⌘K global search      400    :"
+      ],
+      "15 Loading  Empty States UX": [
+        "Thời gian chờ dự kiến Giải pháp khuyên dùng Ứng dụng cụ thể:",
+        "**< 300ms** **Không hiện loading** Đổi tab cục bộ, validation form:",
+        "**1s - 2s** **VCT_Spinner (Inline)** Submit form (trên nút Button), load danh sách dropdown:",
+        "**> 2s** **VCT_Skeleton** Lần đầu load trang, load báo cáo thống kê, chuyển route:",
+        "**Global Load** **Top Progress Bar** Chuyển trang Next.js App Router (NProgress):",
+        "**Background Sync** **VCT_Toast (Loading)** Đang upload file lớn, đang xuất file Excel:",
+        "1. Illustration: Hình ảnh minh họa (mờ, watermark style).",
+        "2. Title & Description: Giải thích rõ ràng tại sao trống (VD: \"Chưa có vận động viên nào. Vui lòng thêm mới hoặc import từ Excel\").",
+        "3. Call-to-Action (CTA): Nút thao tác chính (Thêm VĐV) nằm ngay bên dưới."
+      ],
+      "16 Critical Operations UX": [
+        "Mức độ Ý nghĩa Yêu cầu UX Ví dụ:",
+        "**Soft Lock** Khóa tạm thời, có thể mở lại `VCT_Modal` hỏi Yes/No bình thường Khóa tài khoản, Đình chỉ VĐV:",
+        "**Hard Delete** Xóa vĩnh viễn, mất dữ liệu liên đới **Confirmation Modal yêu cầu nhập Text** Xóa một Giải Đấu, Xóa một hạng cân đã có kết quả:",
+        "**Transfer** Chuyển đổi quyền sở hữu lớn **Xác thực OTP/Password lần 2** Duyệt chuyển CLB cho VĐV, Cấp quyền Admin:"
+      ],
+      "17 CSS Architecture": [
+        "Layer                 Sử dụng                                   :",
+        "TailwindCSS 4.2+      Utility-first styling                     :",
+        "CSS Custom Properties `--vct-*` design tokens                   :",
+        "CSS Modules           Module-specific (e.g., `admin.module.css`):"
+      ],
+      "19 Print Media UX": [
+        "1. ✅ Force Light Theme: Trình duyệt in phải luôn ép về biến CSS Light Theme (nền trắng, chữ đen). Tuyệt đối cấm in nền Xám/Đen tốn mực.",
+        "2. ✅ Ẩn Menu: Sidebar và Header phải gắn class `.vct-no-print`.",
+        "3. ✅ A4 Sizing: Sơ đồ bốc thăm/Lịch đấu phải wrap trong khung `.vct-print-a4` (width `210mm`, padding `20mm`)."
+      ],
+      "A Visual AntiPatterns": [
+        "#   ❌ CẤM                                 ✅ ĐÚNG                      :",
+        "1   Hardcode colors: `color: '#FF0000'`    Token: `text-vct-danger`     :",
+        "2   Tailwind `dark:` modifier              CSS variables tự chuyển đổi  :",
+        "3   Inline style: `style={{ margin: 15 }}` Tailwind utilities / tokens  :",
+        "4   Import `lucide-react` trực tiếp        `VCT_Icons` wrapper          :",
+        "5   Emoji làm icon: 👤                     SVG qua `VCT_Icons`          :",
+        "6   Component không có `VCT_` prefix       Luôn prefix `VCT_`           :",
+        "7   Ship UI \"basic/simple/MVP\"             Premium, professional feel   :",
+        "8   Custom button/card không qua `@vct/ui` Import từ `@vct/ui`          :",
+        "9   Font hardcode: `font-size: 14px`       Token: `var(--vct-font-base)`:",
+        "10  Z-index hardcode: `z-index: 999`       Token: `var(--vct-z-modal)`  :"
+      ],
+      "B PreDelivery Visual Checklist": [
+        "[ ] Không emoji làm icon (dùng VCT_Icons)",
+        "[ ] Hover states không gây layout shift",
+        "[ ] Chỉ dùng theme tokens (không hardcode colors)",
+        "[ ] Giao diện premium, professional",
+        "[ ] Test CẢ 2 modes",
+        "[ ] Glass elements visible cả 2 modes",
+        "[ ] Text contrast ≥ 4.5:1",
+        "[ ] Borders visible cả 2 modes",
+        "[ ] Clickable elements có `cursor-pointer`",
+        "[ ] Transitions smooth (150–300ms)",
+        "[ ] Focus states visible cho keyboard",
+        "[ ] Touch targets ≥ 44px trên mobile",
+        "[ ] Responsive tại 375px, 768px, 1024px, 1440px",
+        "[ ] Không horizontal scroll trên mobile",
+        "[ ] Không content ẩn sau fixed elements",
+        "[ ] Interactive elements keyboard-navigable",
+        "[ ] Images có alt text",
+        "[ ] Form fields có labels",
+        "[ ] Skip-to-content link hoạt động"
+      ],
+      "CrossReference": [
+        "Tài liệu                 Đường dẫn                                        Phạm vi                                            :",
+        "**Frontend Architecture**    `/docs/architecture/frontend-architecture.md`                             Engineering: monorepo, routing, state, API, testing:",
+        "Architecture Guard Rails `/docs/architecture/architecture-guard-rails.md` Full-stack architecture rules                      :",
+        "Global CSS               `/apps/next/app/globals.css`                     Token definitions                                  :",
+        "JS Tokens                `/packages/ui/src/tokens.ts`                     JS token exports                                   :",
+        "Component API            `/packages/ui/src/index.ts`                      Component exports                                  :"
+      ]
+    }
+  }
+}

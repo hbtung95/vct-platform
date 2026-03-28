@@ -1,102 +1,74 @@
 ---
 name: vct-frontend
-description: VCT Platform frontend engineering patterns — delegates to docs/architecture/frontend-architecture.md for monorepo architecture, routing, state management, API integration, i18n, testing, and code patterns.
+description: "VCT Platform frontend — Next.js 16, React 19, TailwindCSS 4, Zustand 5, micro-frontend architecture, domain ownership, i18n, accessibility (WCAG 2.1 AA), and design system."
 ---
 
-# VCT Platform Frontend Architecture
+# VCT Frontend — Web Platform Engineering
 
-> **When to activate**: Tasks involving frontend engineering — pages, routing, API calls, state management, navigation, i18n, testing, or code structure.
->
-> **📖 Primary Reference**: [`docs/architecture/frontend-architecture.md`](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/frontend-architecture.md) & [`docs/architecture/dashboard-architecture.md`](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/dashboard-architecture.md)
-
----
-
-## Scope
-
-This skill covers **HOW THINGS ARE BUILT** — the Engineering Architecture:
-
-| Topic | Document Section |
-|-------|-----------------|
-| Technology Stack & Versions | **§1** |
-| Monorepo & Package Boundaries | **§2** |
-| Layout Architecture (AppShell) | **§3** |
-| Routing & App Router | **§4** |
-| Page Patterns (Standard, Admin, Dashboard) | **§5** |
-| State Management (Zustand, hooks) | **§6** |
-| API Integration & Fetch | **§7** |
-| Form & Validation (Zod 4) | **§8** |
-| i18n Rules | **§9** |
-| Error Handling | **§10** |
-| Performance & Code Splitting | **§11** |
-| RBAC & Permissions UI | **§12** |
-| Real-time UI & WebSocket | **§13** |
-| Mobile (Expo) | **§14** |
-| Testing Strategy | **§15** |
-| Naming Conventions | **§16** |
-| Engineering Anti-Patterns | **§A** |
-| Engineering Checklist | **§B** |
-| New Feature Workflow | **§C** |
-
-## Micro Frontend (MFE) Domain Awareness
-
-> **📖 MFE Reference**: [`vct-micro-frontend` SKILL](file:///d:/VCT%20PLATFORM/vct-platform/.agents/skills/vct-micro-frontend/SKILL.md) · [`micro-frontend-architecture.md`](file:///d:/VCT%20PLATFORM/vct-platform/docs/architecture/micro-frontend-architecture.md)
-
-**TRƯỚC KHI CODE bất kỳ feature frontend nào**, xác định domain ownership:
-
-| Domain | Modules | Rule |
-|--------|---------|------|
-| D1: Tournament | `tournament`, `calendar`, `rankings`, `pwa` | Scoring, brackets, live |
-| D2: Athlete | `athletes`, `people`, `training`, `parent` | Profile, training flow |
-| D3: Organization | `federation`, `provincial`, `club`, `clubs`, `organizations` | Hierarchy, approvals |
-| D4: Admin | `admin`, `settings`, `reporting`, `data` | Admin workspace |
-| D5: Finance | `finance`, `marketplace`, `notifications` | Billing, payments |
-| D6: Heritage | `heritage`, `community`, `public` | Cultural, belt ranking |
-| D7: Platform | `layout`, `auth`, `theme`, `i18n`, `hooks`, `components`, `home`, `dashboard`, `portals`, `user`, `mobile` | Shared Shell |
-
-**Import Rules**: ❌ Domain-to-domain import CẤM → ✅ Dùng shared hooks, URL navigation, `shared-types`
-
-## NOT in scope
-
-Design tokens, colors, typography, component catalog, animations → see `vct-ui-ux` SKILL / `docs/architecture/ui-architecture.md`
-
----
-
-## Quick Access — Package Boundaries
+> Consolidated: frontend + micro-frontend + mfe-domain-owner + ui-ux + accessibility + i18n-manager + web-design-guidelines
+> **⚠️ BẮT BUỘC (V5.0 Architecture)**: Sử dụng lệnh `node ai-tools/scripts/ast-parser.js <đường_dẫn_file>` để lấy sơ đồ X-quang của file trước khi dùng `view_file`. Tuyệt đối không đọc mù toàn bộ file code dài.
+## 1. Architecture
 
 ```
-apps/next ──→ packages/app ──→ packages/shared-types
-apps/expo ──→       │               │
-                    ▼               ▼
-              packages/ui ──→ packages/shared-utils
+apps/next/app/         # App Router pages
+packages/app/features/ # Feature code (shared web+mobile)
+packages/ui/           # @vct/ui component library
+packages/i18n/         # Locale files & useI18n hook
 ```
 
-| Rule | Description |
-|------|-------------|
-| F1 | `shared-types` → imports NOTHING |
-| F2 | `shared-utils` → NO `ui` or `app` |
-| F3 | `packages/ui` → NO `packages/app` |
-| F7 | Route pages → thin wrappers ONLY |
+**Reference**: Full architecture in `docs/architecture/frontend-architecture.md`
 
-## Quick Access — Import Standards
+## 2. Code Conventions
 
-```tsx
-import { VCT_Card, VCT_Button } from '@vct/ui'
-import { VCT_Icons } from '../components/vct-icons'
-import { useI18n } from '../i18n'
-import { useTheme } from '../theme/ThemeProvider'
-```
+- **Router**: App Router `app/{route}/page.tsx` (NOT `pages/`)
+- **Components**: `VCT_` prefix from `@vct/ui`
+- **State**: Zustand 5 stores in `packages/app/features/{feature}/store.ts`
+- **Validation**: Zod 4 schemas
+- **i18n**: All text via `useI18n()` → `t('key')` — NO hardcoded strings
+- **Styling**: CSS variable tokens `--vct-*`, no Tailwind `dark:` modifier
+- **Loading**: Skeleton components for all async data
+- **Errors**: Error boundaries for critical sections
 
-> **DIP Rule (Dependency Inversion)**: UI Components MUST NOT know *how* data is fetched. Never hardcode `fetch` or `axios` inside a UI Component. Always inject data and actions via Custom Hooks or Context. The UI is completely decoupled from the data layer.
+## 3. Micro-Frontend Domains
 
-## Quick Access — Custom Hooks (20)
+| Domain | Routes | Owner Focus |
+|--------|--------|-------------|
+| D1: Tournament | `/tournament/*`, `/referee-scoring/*`, `/scoreboard/*`, `/calendar/*`, `/rankings/*` | Competition flows |
+| D2: Athlete | `/athlete-portal/*`, `/people/*`, `/training/*`, `/parent/*` | Athlete lifecycle |
+| D3: Organization | `/federation/*`, `/provincial/*`, `/club/*`, `/organizations/*` | Org management |
+| D4: Admin | `/admin/*`, `/settings/*`, reporting | Admin tools |
+| D5: Finance | `/finance/*`, `/marketplace/*`, notifications | Financial flows |
+| D6: Heritage | `/heritage/*`, `/community/*`, `/public/*` | Cultural content |
+| D7: Platform | Shell, auth, theme, i18n, shared hooks, dashboard | Core infrastructure |
 
-`useAdminAPI` · `useApiQuery` · `useCalendarAPI` · `useClubAPI` · `useCommunityAPI` · `useDebounce` · `useDivisions` · `useFederationAPI` · `useFinanceAPI` · `useHeritageAPI` · `useNotificationAPI` · `usePagination` · `usePeopleAPI` · `usePublicAPI` · `useRankingsAPI` · `useRealtimeNotifications` · `useTrainingAPI` · `useWebSocket` · `useRouteActionGuard` · `useToast`
+**Cross-Domain**: Define contracts via `shared-types` before implementation.
 
-## Enforcement
+## 4. Design System (`@vct/ui`)
 
-```bash
-npm run lint:arch           # ESLint boundaries
-npm run lint:boundaries     # Custom grep-based check
-npm run typecheck           # TypeScript
-npm run lint                # Full lint
-```
+- **Reference**: `docs/architecture/ui-architecture.md` for design tokens, component catalog, theming
+- 59+ components with consistent API patterns
+- Dark/light theme via CSS variables
+- Animation: subtle micro-interactions, no janky transitions
+
+## 5. Accessibility (WCAG 2.1 AA)
+
+- ARIA labels on all interactive elements
+- Keyboard navigation (Tab, Enter, Escape, Arrow keys)
+- Color contrast ratio ≥ 4.5:1 (text), ≥ 3:1 (large text)
+- Focus management: visible focus ring, logical tab order
+- Screen reader: `aria-live` for dynamic updates
+- Testing: axe-core automated checks
+
+## 6. i18n Management
+
+- Default: Vietnamese (`vi`) + English (`en`)
+- Locale files: `packages/i18n/locales/{lang}.json`
+- Number/date/currency: `Intl` API with locale-aware formatting
+- RTL: prepared but not active
+- Audit: no hardcoded strings, all keys in locale files
+
+## 7. Data Analytics & Telemetry (Tracking)
+
+- **Implementation Responsibility**: Frontend is responsible for integrating all client-side UI tracking tools (Google Analytics, Mixpanel, Meta Pixel, etc.).
+- **Event Tracking**: Implement tracking hooks/services (`useTracking`) to capture User Actions without polluting business logic.
+- **Micro-Frontend Alignment**: Each MF Domain must expose standardized tracking events to the shell application.

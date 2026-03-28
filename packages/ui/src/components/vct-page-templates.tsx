@@ -277,26 +277,14 @@ export function VCT_PageTemplate_Wizard({
                         <div key={step.id} className="flex items-center flex-1">
                             <button
                                 onClick={() => i < currentStep && onStepChange(i)}
-                                className="flex items-center gap-2"
-                                style={{
-                                    background: 'none', border: 'none', cursor: i < currentStep ? 'pointer' : 'default',
-                                    padding: 0,
-                                }}
+                                className={`flex items-center gap-2 bg-transparent border-none p-0 ${i < currentStep ? 'cursor-pointer' : 'cursor-default'}`}
                             >
                                 <div
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                                    style={{
-                                        background: i <= currentStep ? 'var(--vct-accent-cyan)' : 'var(--vct-bg-input)',
-                                        color: i <= currentStep ? '#fff' : 'var(--vct-text-tertiary)',
-                                    }}
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i <= currentStep ? 'bg-(--vct-accent-cyan) text-white' : 'bg-(--vct-bg-input) text-(--vct-text-tertiary)'}`}
                                 >
                                     {i < currentStep ? '✓' : step.icon || i + 1}
                                 </div>
-                                <VCT_Text variant="small" style={{
-                                    fontWeight: i === currentStep ? 700 : 400,
-                                    color: i <= currentStep ? 'var(--vct-text-primary)' : 'var(--vct-text-tertiary)',
-                                    whiteSpace: 'nowrap',
-                                }}>
+                                <VCT_Text variant="small" className={`whitespace-nowrap ${i === currentStep ? 'font-bold' : 'font-normal'} ${i <= currentStep ? 'text-(--vct-text-primary)' : 'text-(--vct-text-tertiary)'}`}>
                                     {step.label}
                                 </VCT_Text>
                             </button>
