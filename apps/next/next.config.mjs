@@ -11,6 +11,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:18080'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   transpilePackages: [
     'react-native',
     'react-native-web',

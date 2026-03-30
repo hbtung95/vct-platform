@@ -15,6 +15,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      web:
+        condition: service_started
     networks:
       - vct-frontend
     deploy:
@@ -30,6 +32,42 @@ services:
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/healthz"]
       interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ── Next.js Web Frontend ───────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/next/Dockerfile
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://api:18080
+      - NEXT_PUBLIC_API_BASE_URL=/api/
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - vct-frontend
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 15s
       timeout: 5s
       retries: 3
     restart: unless-stopped
@@ -94,7 +132,7 @@ services:
 
   # ── Database Migration Runner (one-shot) ────────────────────
   migrate:
-    image: postgres:17-alpine
+    image: postgres:18.3-alpine
     volumes:
       - ./infra/scripts/migrate.sh:/migrate.sh:ro
       - ./backend/db/migrations:/migrations:ro
@@ -149,7 +187,7 @@ services:
 
   # ── Database Backup (daily at 2 AM) ────────────────────────
   db-backup:
-    image: postgres:17-alpine
+    image: postgres:18.3-alpine
     volumes:
       - ./infra/scripts/backup.sh:/backup.sh:ro
       - ./infra/scripts/backup-verify.sh:/backup-verify.sh:ro

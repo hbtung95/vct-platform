@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -17,6 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"vct-platform/backend/internal/apierror"
+	"vct-platform/backend/internal/store"
 	"vct-platform/backend/internal/util"
 )
 
@@ -204,7 +204,7 @@ type ServiceConfig struct {
 	AuditLimit      int
 	AllowDemoUsers  bool
 	CredentialsJSON string
-	DB              *sql.DB // optional — enables persistent user storage in core.users
+	DBStore         *store.PostgresStore // enables persistent user storage in core.users via bridge
 	Cache           CacheClient
 }
 
@@ -291,9 +291,9 @@ func NewService(config ServiceConfig) *Service {
 		cache:        config.Cache,
 	}
 
-	if config.DB != nil {
-		svc.userStore = NewPgUserStore(config.DB)
-		slog.Info("PostgreSQL user store enabled", slog.String("table", "core.users"))
+	if config.DBStore != nil {
+		svc.userStore = NewPgUserStore(config.DBStore)
+		slog.Info("PostgreSQL user store bridge enabled", slog.String("table", "core.users"))
 		svc.syncCredentialsToDB(credentials)
 	}
 
@@ -524,7 +524,8 @@ func (s *Service) Login(input LoginRequest, requestCtx RequestContext) (LoginRes
 	if s.userStore != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		stored, err := s.userStore.FindByUsername(ctx, username)
+		// Treat username input as email for v3.0 core.users
+		stored, err := s.userStore.FindByEmail(ctx, username)
 		if err != nil {
 			slog.Warn("DB lookup error, falling back to in-memory", slog.String("user", username), slog.String("error", err.Error()))
 		}
@@ -532,7 +533,7 @@ func (s *Service) Login(input LoginRequest, requestCtx RequestContext) (LoginRes
 			cred = userCredential{
 				passwordHash: stored.PasswordHash,
 				displayName:  stored.FullName,
-				allowedRole:  stored.Roles,
+				allowedRole:  []UserRole{stored.Role},
 				userID:       stored.ID,
 			}
 			found = true
@@ -1145,7 +1146,12 @@ func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (Lo
 	if s.userStore != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		existing, err := s.userStore.FindByUsername(ctx, username)
+		email := username
+		if !strings.Contains(username, "@") {
+			// Prevent DB error on email validation if username is raw
+			email = username + "@demo.vct.vn"
+		}
+		existing, err := s.userStore.FindByEmail(ctx, email)
 		if err != nil {
 			slog.Warn("DB duplicate check error", slog.String("user", username), slog.String("error", err.Error()))
 		}
@@ -1187,16 +1193,11 @@ func (s *Service) Register(input RegisterRequest, requestCtx RequestContext) (Lo
 
 		if dbErr := s.userStore.Create(ctx2, &StoredUser{
 			ID:           userID,
-			TenantID:     SystemTenantID,
-			Username:     username,
 			Email:        email,
 			PasswordHash: string(hash),
 			FullName:     displayName,
 			Role:         role,
-			Roles:        []UserRole{role},
 			IsActive:     true,
-			Locale:       "vi",
-			Timezone:     "Asia/Ho_Chi_Minh",
 		}); dbErr != nil {
 			slog.Warn("DB persist failed, user saved in-memory only", slog.String("user", username), slog.String("error", dbErr.Error()))
 		} else {
@@ -1266,8 +1267,14 @@ func (s *Service) syncCredentialsToDB(credentials map[string]userCredential) {
 
 	synced := 0
 	for username, cred := range credentials {
+		// Treat username as email
+		email := username
+		if !strings.Contains(username, "@") {
+			email = username + "@demo.vct.vn" // provide fake email since v3.0 requires valid email format or unique string
+		}
+
 		// Check if already exists
-		existing, err := s.userStore.FindByUsername(ctx, username)
+		existing, err := s.userStore.FindByEmail(ctx, email)
 		if err != nil {
 			slog.Warn("sync check failed", slog.String("user", username), slog.String("error", err.Error()))
 			continue
@@ -1276,23 +1283,13 @@ func (s *Service) syncCredentialsToDB(credentials map[string]userCredential) {
 			continue // already in DB
 		}
 
-		email := ""
-		if strings.Contains(username, "@") {
-			email = username
-		}
-
 		if err := s.userStore.Create(ctx, &StoredUser{
 			ID:           cred.userID,
-			TenantID:     SystemTenantID,
-			Username:     username,
 			Email:        email,
 			PasswordHash: cred.passwordHash,
 			FullName:     cred.displayName,
 			Role:         cred.allowedRole[0],
-			Roles:        cred.allowedRole,
 			IsActive:     true,
-			Locale:       "vi",
-			Timezone:     "Asia/Ho_Chi_Minh",
 		}); err != nil {
 			slog.Warn("sync failed", slog.String("user", username), slog.String("error", err.Error()))
 		} else {

@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # --------------------------------------------------------
+  # TẦNG 1: POSTGRESQL 18 PRIMARY (Lưu trữ Dữ liệu Gốc)
+  # --------------------------------------------------------
+  postgres:
+    image: postgres:18.3-alpine  # Bản MỚI NHẤT Chairman phê duyệt
+    container_name: vct_viettel_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vct_platform
+      POSTGRES_USER: vct_admin
+      POSTGRES_PASSWORD: VCT_Super_Secret_Password_2026
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "5432:5432" # Bypass để dev debug, nhưng App Backend phải gọi qua PgBouncer (6432)
+    volumes:
+      - viettel_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vct_admin -d vct_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --------------------------------------------------------
+  # TẦNG 2: PGBOUNCER (Connection Pooler - Transaction Mode)
+  # --------------------------------------------------------
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: vct_viettel_pgbouncer
+    restart: unless-stopped
+    environment:
+      - DB_USER=vct_admin
+      - DB_PASSWORD=VCT_Super_Secret_Password_2026
+      - DB_HOST=postgres
+      - DB_NAME=vct_platform
+      - LISTEN_PORT=6432
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=500
+      - DEFAULT_POOL_SIZE=40
+      - MIN_POOL_SIZE=10
+      - IGNORE_STARTUP_PARAMETERS=extra_float_digits
+    ports:
+      - "6432:6432" # Backend Node/Go sẽ connect port này
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --------------------------------------------------------
+  # TẦNG 3: REDIS 7 (High-Load Cache & Pub/Sub Giải Quốc gia)
+  # --------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: vct_viettel_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - viettel_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --------------------------------------------------------
+  # TẦNG 4: NATS JETSTREAM (Event-Sourcing / Message Broker)
+  # --------------------------------------------------------
+  nats:
+    image: nats:latest
+    container_name: vct_viettel_nats
+    restart: unless-stopped
+    command: ["-js"] # Bật JetStream cho Append-Only Logs chống ghi đè
+    ports:
+      - "4222:4222" # Port connect
+      - "8222:8222" # Dashboard HTTP
+    volumes:
+      - viettel_nats_data:/data
+
+
+volumes:
+  viettel_postgres_data:
+  viettel_redis_data:
+  viettel_nats_data:

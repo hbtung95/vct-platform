@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- VCT Platform — PostgreSQL Initialization
+-- VCT Platform — PostgreSQL 18.3 Initialization
 -- Runs once on first container startup (via /docker-entrypoint-initdb.d)
 -- ═══════════════════════════════════════════════════════════════
 
@@ -11,6 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "ltree";       -- 0063: hierarchy trees
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";     -- 0059: fuzzy text search
 CREATE EXTENSION IF NOT EXISTS "btree_gist";  -- exclusion constraints
+CREATE EXTENSION IF NOT EXISTS "unaccent";    -- Vietnamese diacritics removal
 
 -- Create API view schema
 CREATE SCHEMA IF NOT EXISTS api_v1;

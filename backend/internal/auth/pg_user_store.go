@@ -2,130 +2,91 @@ package auth
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	"vct-platform/backend/internal/apierror"
+	"vct-platform/backend/internal/store"
 )
 
-// SystemTenantID is the root tenant used for auth-level user records.
-const SystemTenantID = "00000000-0000-7000-8000-000000000001"
-
-// PgUserStore implements UserStore backed by the core.users table.
+// PgUserStore implements UserStore using the v3.0 core_store.go Data Access Layer.
 type PgUserStore struct {
-	db *sql.DB
+	dbStore *store.PostgresStore
 }
 
-// NewPgUserStore creates a PostgreSQL-backed user store.
-func NewPgUserStore(db *sql.DB) *PgUserStore {
-	return &PgUserStore{db: db}
+// NewPgUserStore creates a PostgreSQL-backed user store using the new bridge layer.
+func NewPgUserStore(dbStore *store.PostgresStore) *PgUserStore {
+	return &PgUserStore{dbStore: dbStore}
 }
 
-// FindByUsername looks up a user by username in core.users.
-func (s *PgUserStore) FindByUsername(ctx context.Context, username string) (*StoredUser, error) {
-	const query = `
-		SELECT id, tenant_id, username, COALESCE(email,''), COALESCE(phone,''),
-		       password_hash, full_name, is_active,
-		       COALESCE(locale,'vi'), COALESCE(timezone,'Asia/Ho_Chi_Minh'),
-		       COALESCE(metadata->>'roles', '[]')
-		FROM core.users
-		WHERE username = $1 AND is_deleted = false
-		LIMIT 1
-	`
-	row := s.db.QueryRowContext(ctx, query, strings.ToLower(strings.TrimSpace(username)))
+// FindByEmail looks up a user by email in core.users.
+func (s *PgUserStore) FindByEmail(ctx context.Context, email string) (*StoredUser, error) {
+	emailStr := strings.ToLower(strings.TrimSpace(email))
 
-	var u StoredUser
-	var rolesJSON string
-	err := row.Scan(
-		&u.ID, &u.TenantID, &u.Username, &u.Email, &u.Phone,
-		&u.PasswordHash, &u.FullName, &u.IsActive,
-		&u.Locale, &u.Timezone, &rolesJSON,
-	)
-	if err == sql.ErrNoRows {
-		return nil, nil // not found — not an error
-	}
+	u, err := s.dbStore.CoreGetUserByEmail(ctx, emailStr)
 	if err != nil {
 		return nil, apierror.Wrap(err, "AUTH_500_DB", "lỗi truy vấn người dùng")
 	}
-
-	// Parse roles from metadata JSON array
-	var roles []string
-	if err := json.Unmarshal([]byte(rolesJSON), &roles); err == nil {
-		for _, r := range roles {
-			u.Roles = append(u.Roles, UserRole(r))
-		}
-	}
-	if len(u.Roles) > 0 {
-		u.Role = u.Roles[0]
+	if u == nil {
+		return nil, nil // not found
 	}
 
-	return &u, nil
+	phone := ""
+	if u.Phone != nil {
+		phone = *u.Phone
+	}
+
+	return &StoredUser{
+		ID:           u.ID,
+		Email:        u.Email,
+		Phone:        phone,
+		PasswordHash: *u.PasswordHash,
+		FullName:     u.FullName,
+		Role:         UserRole(u.Role),
+		IsActive:     u.IsActive,
+	}, nil
 }
 
-// Create inserts a new user into core.users.
+// Create inserts a new user into core.users via bridge.
 func (s *PgUserStore) Create(ctx context.Context, user *StoredUser) error {
-	tenantID := user.TenantID
-	if tenantID == "" {
-		tenantID = SystemTenantID
+	email := strings.ToLower(strings.TrimSpace(user.Email))
+
+	// Ensure email uniqueness
+	existing, err := s.dbStore.CoreGetUserByEmail(ctx, email)
+	if err != nil {
+		return apierror.Wrap(err, "AUTH_500_DB", "lỗi kiểm tra người dùng tồn tại")
+	}
+	if existing != nil {
+		return apierror.New("AUTH_409_EXISTS", "email đăng nhập đã tồn tại")
 	}
 
-	// Encode roles as JSON array in metadata
-	rolesJSON, _ := json.Marshal(rolesToStrings(user.Roles))
-	metadata := fmt.Sprintf(`{"roles": %s}`, string(rolesJSON))
+	phonePtr := &user.Phone
+	if user.Phone == "" {
+		phonePtr = nil
+	}
+	
+	hashPtr := &user.PasswordHash
 
-	const query = `
-		INSERT INTO core.users (id, tenant_id, username, email, phone, password_hash, full_name, locale, timezone, metadata)
-		VALUES ($1, $2, $3, NULLIF($4,''), NULLIF($5,''), $6, $7, $8, $9, $10::jsonb)
-		ON CONFLICT (tenant_id, username) DO NOTHING
-	`
-	result, err := s.db.ExecContext(ctx, query,
-		user.ID,
-		tenantID,
-		strings.ToLower(strings.TrimSpace(user.Username)),
-		strings.TrimSpace(user.Email),
-		strings.TrimSpace(user.Phone),
-		user.PasswordHash,
-		strings.TrimSpace(user.FullName),
-		coalesce(user.Locale, "vi"),
-		coalesce(user.Timezone, "Asia/Ho_Chi_Minh"),
-		metadata,
-	)
-	if err != nil {
+	coreUser := &store.CoreUser{
+		Email:        email,
+		Phone:        phonePtr,
+		FullName:     user.FullName,
+		PasswordHash: hashPtr,
+		Role:         string(user.Role),
+		IsActive:     user.IsActive,
+	}
+
+	if err := s.dbStore.CoreCreateUser(ctx, coreUser); err != nil {
 		return apierror.Wrap(err, "AUTH_500_DB", "lỗi tạo người dùng")
 	}
 
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return apierror.New("AUTH_409_EXISTS", "tên đăng nhập đã tồn tại")
-	}
+	user.ID = coreUser.ID
 	return nil
 }
 
-// UpdateLastLogin stamps last_login_at for a user.
+// UpdateLastLogin is a no-op right now for v3.0 since we moved tracking to sessions/event_logs.
+// If needed, we can add last_login_at back to core.users or rely on core.sessions.
 func (s *PgUserStore) UpdateLastLogin(ctx context.Context, userID string) error {
-	const query = `UPDATE core.users SET last_login_at = NOW() WHERE id = $1`
-	_, err := s.db.ExecContext(ctx, query, userID)
-	if err != nil {
-		return apierror.Wrap(err, "AUTH_500_DB", "lỗi cập nhật thời gian đăng nhập")
-	}
+	// Not needed in v3.0 core.users anymore, we have core.sessions.
 	return nil
 }
 
-// ── helpers ──────────────────────────────────────────────────────
-
-func rolesToStrings(roles []UserRole) []string {
-	out := make([]string, len(roles))
-	for i, r := range roles {
-		out[i] = string(r)
-	}
-	return out
-}
-
-func coalesce(val, fallback string) string {
-	if strings.TrimSpace(val) == "" {
-		return fallback
-	}
-	return val
-}
