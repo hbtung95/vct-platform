@@ -53,3 +53,11 @@ func (s *Service) UpdateStatus(ctx context.Context, id string, status domain.Tra
 	}
 	return s.repo.Update(ctx, id, patch)
 }
+
+func (s *Service) UpdateAthlete(ctx context.Context, id string, patch map[string]interface{}) (*domain.Athlete, error) {
+	return s.repo.Update(ctx, id, patch)
+}
+
+func (s *Service) DeleteAthlete(ctx context.Context, id string) error {
+	return s.repo.Delete(ctx, id)
+}

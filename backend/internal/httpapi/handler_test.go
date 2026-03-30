@@ -81,28 +81,9 @@ func TestApprovalWorkflowDefinitions(t *testing.T) {
 	}
 }
 
-func TestGetDefaultWorkflowDefinitions(t *testing.T) {
-	workflows := getDefaultWorkflowDefinitions()
-	if len(workflows) != 15 {
-		t.Errorf("expected 15 workflows, got %d", len(workflows))
-	}
+// TestGetDefaultWorkflowDefinitions was migrated to the federation module
+// along with the getDefaultWorkflowDefinitions function.
 
-	// Validate each workflow has required fields
-	for i, wf := range workflows {
-		code, ok := wf["code"].(string)
-		if !ok || code == "" {
-			t.Errorf("workflow %d: missing or empty code", i)
-		}
-		displayName, ok := wf["display_name"].(string)
-		if !ok || displayName == "" {
-			t.Errorf("workflow %d (%s): missing display_name", i, code)
-		}
-		steps, ok := wf["steps"].([]map[string]any)
-		if !ok || len(steps) == 0 {
-			t.Errorf("workflow %d (%s): missing or empty steps", i, code)
-		}
-	}
-}
 
 // ═══════════════════════════════════════════════════════════════
 // INTERNATIONAL HANDLER TESTS

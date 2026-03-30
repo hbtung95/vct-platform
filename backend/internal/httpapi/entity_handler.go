@@ -92,7 +92,7 @@ func (s *Server) handleEntityCollection(entity string, principal *auth.Principal
 		var createdMap map[string]any
 		json.Unmarshal(created, &createdMap)
 		createdID, _ := createdMap["id"].(string)
-		s.broadcastEntityChange(entity, "created", createdID, createdMap, nil)
+		s.BroadcastEntityChange(entity, "created", createdID, createdMap, nil)
 		successJSONBytes(w, http.StatusCreated, created)
 	default:
 		apiMethodNotAllowed(w)
@@ -151,7 +151,7 @@ func (s *Server) handleEntityAction(entity, action string, principal *auth.Princ
 		}
 		var updatedMap map[string]any
 		json.Unmarshal(updated, &updatedMap)
-		s.broadcastEntityChange(entity, "updated", id, updatedMap, nil)
+		s.BroadcastEntityChange(entity, "updated", id, updatedMap, nil)
 		successJSONBytes(w, http.StatusOK, updated)
 	case http.MethodDelete:
 		if err := s.authorizeEntityAction(principal, entity, authz.ActionDelete); err != nil {
@@ -159,7 +159,7 @@ func (s *Server) handleEntityAction(entity, action string, principal *auth.Princ
 			return
 		}
 		s.store.Delete(entity, id)
-		s.broadcastEntityChange(entity, "deleted", id, nil, nil)
+		s.BroadcastEntityChange(entity, "deleted", id, nil, nil)
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		apiMethodNotAllowed(w)
@@ -193,7 +193,7 @@ func (s *Server) handleBulkReplace(entity string, principal *auth.Principal, w h
 		apiBadRequest(w, err)
 		return
 	}
-	s.broadcastEntityChange(entity, "replaced", "", nil, map[string]any{
+	s.BroadcastEntityChange(entity, "replaced", "", nil, map[string]any{
 		"count": len(replaced),
 	})
 	// replaced is []map[string]any but the return of ReplaceAll should be ... wait, let's see what ReplaceAll returns.
@@ -226,7 +226,7 @@ func (s *Server) handleImport(entity string, principal *auth.Principal, w http.R
 		return
 	}
 	report := s.store.Import(entity, payload.Items)
-	s.broadcastEntityChange(entity, "imported", "", nil, map[string]any{
+	s.BroadcastEntityChange(entity, "imported", "", nil, map[string]any{
 		"imported": len(report.Imported),
 		"rejected": len(report.Rejected),
 	})

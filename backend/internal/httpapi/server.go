@@ -15,6 +15,7 @@ import (
 	"vct-platform/backend/internal/apiversioning"
 	"vct-platform/backend/internal/auth"
 	"vct-platform/backend/internal/config"
+	"vct-platform/backend/internal/shared/httputil"
 	"vct-platform/backend/internal/domain/approval"
 	"vct-platform/backend/internal/domain/athlete"
 	"vct-platform/backend/internal/domain/btc"
@@ -66,6 +67,7 @@ type Server struct {
 	loginRateLimiter *rateLimiter // stricter limit for auth endpoints
 	metricsRegistry  *metrics.Registry
 	versionRegistry  *apiversioning.Registry
+	modules          []httputil.Module
 
 	// ── Core Domain Modules ─────────────────────────────
 	Core struct {
@@ -260,7 +262,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) broadcastEntityChange(
+func (s *Server) BroadcastEntityChange(
 	entity string,
 	action string,
 	itemID string,

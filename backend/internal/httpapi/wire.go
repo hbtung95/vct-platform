@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"vct-platform/backend/internal/adapter"
 	"vct-platform/backend/internal/apiversioning"
 	"vct-platform/backend/internal/auth"
+	"vct-platform/backend/internal/shared/httputil"
 	"vct-platform/backend/internal/cache"
 	"vct-platform/backend/internal/config"
 	"vct-platform/backend/internal/domain/approval"
@@ -42,11 +44,26 @@ import (
 	"vct-platform/backend/internal/store"
 	"vct-platform/backend/internal/worker"
 	natsadapter "vct-platform/backend/internal/adapter/nats"
+	// Decentralized Modules (Hybrid Architecture)
+	athletemod "vct-platform/backend/internal/athlete"
+	communitymod "vct-platform/backend/internal/community"
+	federationmod "vct-platform/backend/internal/federation"
+	financemod "vct-platform/backend/internal/finance"
+	heritagemod "vct-platform/backend/internal/heritage"
+	marketplacemod "vct-platform/backend/internal/marketplace"
+	provincialmod "vct-platform/backend/internal/provincial"
+	rankingmod "vct-platform/backend/internal/ranking"
+	scoringmod "vct-platform/backend/internal/scoring"
+	supportmod "vct-platform/backend/internal/support"
+	tournamentmod "vct-platform/backend/internal/tournament"
+	organizationmod "vct-platform/backend/internal/organization"
+	clubmod "vct-platform/backend/internal/club"
+	parentmod "vct-platform/backend/internal/parent"
 )
 
 // New creates a fully wired Server, resolving storage, injecting all domain
 // services, and upgrading to PostgreSQL adapters when the driver is "postgres".
-func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
+func New(cfg config.Config, logger *slog.Logger, modules ...httputil.Module) (*Server, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -113,6 +130,7 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 		loginRateLimiter: newRateLimiter(1, time.Second, 5),    // 5 burst, 1/s — stricter for auth
 		metricsRegistry:  metrics.NewRegistry(),
 		versionRegistry:  apiversioning.NewRegistry(),
+		modules:          modules,
 
 		Core: struct {
 			Athlete      *athlete.Service
@@ -296,7 +314,7 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 
 	// Wire EventBus → WebSocket hub: broadcast domain events to connected clients
 	s.eventBus.Subscribe(func(event events.DomainEvent) {
-		s.broadcastEntityChange(
+		s.BroadcastEntityChange(
 			event.EntityType,
 			string(event.Type),
 			event.EntityID,
@@ -305,8 +323,7 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 		)
 	})
 
-	// Seed default approval workflow definitions into the repository
-	s.seedDefaultWorkflows()
+	// Seed default approval workflows (deferred to after federation module init)
 
 	// ── Upgrade to PG adapters when storage driver is postgres ──
 	if storageDriver == "postgres" && cfg.PostgresURL != "" {
@@ -439,6 +456,148 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 		Status:     apiversioning.StatusActive,
 		ReleasedAt: time.Now().UTC(),
 	})
+
+	// ── Hybrid Architecture Modules Registration ──────────
+	// These modules are self-contained and self-registering.
+	// We instantiate them and pass them as variadic arguments to New().
+	// For now, we instantiate them INSIDE New for simplicity, but in a
+	// pure DI container they would be passed in.
+
+	authFn := func(r *http.Request) (string, error) {
+		p, err := s.principalFromRequest(r)
+		if err != nil {
+			return "", err
+		}
+		return p.User.ID, nil
+	}
+
+	// 1. Scoring Module
+	scoringMod := scoringmod.New(scoringmod.Deps{
+		DB:           s.sqlDB,
+		Logger:       logger,
+		Broadcaster:  s,
+		AuthFn:       authFn,
+		Config:       scoring.DefaultScoringConfig(),
+		Registration: s.Core.Registration,
+	})
+
+	// 2. Heritage Module
+	heritageMod := heritagemod.New(heritagemod.Deps{
+		Service:     s.Core.Heritage,
+		Logger:      logger,
+		Broadcaster: s,
+		AuthFn:      authFn,
+	})
+
+	// 3. Ranking Module
+	rankingMod := rankingmod.New(rankingmod.Deps{
+		Service: s.Core.Ranking,
+		Logger:  logger,
+		AuthFn:  authFn,
+	})
+
+	// 4. Athlete Module
+	athleteMod := athletemod.New(athletemod.Deps{
+		Service:     s.Core.Athlete,
+		Profile:     s.Extended.AthleteProfile,
+		Training:    s.Extended.TrainingSession,
+		Broadcaster: s,
+		AuthFn:      authFn,
+		Logger:      logger,
+	})
+
+	// 5. Community Module
+	communityMod := communitymod.New(communitymod.Deps{
+		Service:     s.Core.Community,
+		Broadcaster: s,
+		Logger:      logger,
+	})
+
+	// 6. Support Module
+	supportMod := supportmod.New(supportmod.Deps{
+		Service: s.Extended.Support,
+		Logger:  logger,
+	})
+
+	// 7. Marketplace Module
+	marketplaceMod := marketplacemod.New(marketplacemod.Deps{
+		Service:     s.Extended.Marketplace,
+		Broadcaster: s,
+		Logger:      logger,
+	})
+
+	// 8. Tournament Module
+	tournamentMod := tournamentmod.New(tournamentmod.Deps{
+		Service:     s.Core.Tournament,
+		Mgmt:        s.Extended.TournamentMgmt,
+		BTC:         s.Extended.BTC,
+		Broadcaster: s,
+		Logger:      logger,
+	})
+
+	// 9. Finance Module
+	financeMod := financemod.New(financemod.Deps{
+		Service:      s.Core.Finance,
+		Subscription: s.Extended.Subscription,
+		Logger:       logger,
+	})
+
+	// 10. Federation Module
+	federationMod := federationmod.New(federationmod.Deps{
+		Main:          s.Federation.Main,
+		Approval:      s.Federation.Approval,
+		Certification: s.Federation.Certification,
+		Discipline:    s.Federation.Discipline,
+		Document:      s.Federation.Document,
+		International: s.Federation.International,
+		AuthFn:        authFn,
+		Broadcaster:   s,
+		Logger:        logger,
+	})
+
+	// Seed default approval workflow definitions via federation module
+	federationMod.SeedDefaultWorkflows(context.Background(), s.Federation.WorkflowRepo)
+
+	// 11. Provincial Module
+	provincialMod := provincialmod.New(provincialmod.Deps{
+		Service:         s.Provincial.Main,
+		FedService:      s.Federation.Main,
+		TournamentStore: s.Provincial.TournamentStore,
+		FinanceStore:    s.Provincial.FinanceStore,
+		CertStore:       s.Provincial.CertStore,
+		DisciplineStore: s.Provincial.DisciplineStore,
+		DocStore:        s.Provincial.DocStore,
+		AuthFn:          authFn,
+		Logger:          logger,
+	})
+
+	// 12. Organization Module
+	organizationMod := organizationmod.New(organizationmod.Deps{
+		Service:     s.Core.Organization,
+		Broadcaster: s,
+		Logger:      logger,
+	})
+
+	// 13. Club Module
+	clubMod := clubmod.New(clubmod.Deps{
+		Service:     s.Core.Club,
+		Broadcaster: s,
+		Logger:      logger,
+	})
+	
+	// 14. Parent Module
+	parentMod := parentmod.New(parentmod.Deps{
+		Service:     s.Extended.Parent,
+		AuthFn:      authFn,
+		Logger:      logger,
+	})
+
+	// Add to modules slice
+	s.modules = append(s.modules,
+		scoringMod, heritageMod, rankingMod, athleteMod, communityMod,
+		supportMod, marketplaceMod, tournamentMod, financeMod,
+		federationMod, provincialMod, organizationMod, clubMod, parentMod,
+	)
 
 	return s, nil
 }
